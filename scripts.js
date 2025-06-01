@@ -197,68 +197,26 @@ function setGreeting() {
     console.log(`当前时间: ${hour}:${minute.toString().padStart(2, '0')}, 问候语: ${greeting}`);
 }
 
-// 监听用户输入，将其封装为[{"role": "user", "content": "用户输入"}]后将其存为全局变量
+// 用户输入监听现在由Vue组件处理，这个函数保留为空以保持兼容性
 async function listenUserInput() {
-    const userInputElement = document.getElementById('userInput');
-    const wordcountElement = document.getElementById('wordcount');
-    if (!userInputElement) return null;
-    userInputElement.addEventListener('input', () => {
-        // 组成用户的输入
-        window.globalData.userInput = [{"role": "user", "content": userInputElement.value.trim()}];
-        console.log('用户输入:', window.globalData.userInput, 'extra_messages:', window.globalData.extra_messages);
-        
-        // 统计输入的字数，一个汉字算一个字，一个英文单词算一个字，一个数字算一个字，一个符号算一个字
-        let wordcount = 0;
-        if (userInputElement.value.length > 0) {
-            wordcount = userInputElement.value.length;
-        } else {
-            wordcountElement.textContent = '';
-        }
-        wordcountElement.textContent = wordcount;
-
-        // TODO 快速补全模式
-
-        // TODO 用户输入长度大于0时sendButton才可点击，等于0时sendButton不可点击，鼠标移到sendButton上显示一个小的禁止符号
-    });
+    // 用户输入现在由Vue Sender组件处理
+    console.log('用户输入监听已由Vue组件接管');
 }
 
 
 
 
 
-// 思维导图的按钮点击事件,默认是没选中，点击后按钮的颜色变化，再点击后按钮为不选中，同时需要将extra_messages中的prompt_id为mindmap_prompt的元素删除
+// 思维导图按钮现在由Vue组件处理，这个函数保留为空以保持兼容性
 function bindMindMapButton() {
-    const mindMapButton = document.getElementById('mindMapButton');
-    if (!mindMapButton) return null;
-    mindMapButton.addEventListener('click', async () => {
-        if (mindMapButton.classList.contains('bg-purple-50')) {
-            mindMapButton.classList.remove('bg-purple-50');
-            window.globalData.extra_messages = window.globalData.extra_messages.filter(item => item.prompt_id !== 'mindmap_prompt');
-            console.log('删除思维导图，当前extra_messages:', window.globalData.extra_messages);
-        } else {
-            mindMapButton.classList.add('bg-purple-50');
-            const requestBody = {
-                prompt_id: 'mindmap_prompt',
-                parameters: {}
-            };
-            if (!window.globalData.extra_messages.some(item => item.prompt_id === 'mindmap_prompt')) {
-                const response = await axios.post('/api/prompt/get', requestBody);
-                if (response.data.content) {
-                    window.globalData.extra_messages.push({ "prompt_id": "mindmap_prompt", "content": response.data.content});
-                    console.log('添加思维导图，当前extra_messages:', window.globalData.extra_messages);
-                }
-            }
-        }
-    });
+    // 思维导图按钮现在由Vue组件处理
+    console.log('思维导图按钮绑定已由Vue组件接管');
 }
 
-// 绑定sendButton点击事件
+// 发送按钮现在由Vue组件处理，这个函数保留为空以保持兼容性
 function bindSendButton() {
-    const sendButton = document.getElementById('sendButton');
-    if (!sendButton) return null;
-    sendButton.addEventListener('click', () => {
-        sendMessage();
-    });
+    // 发送按钮现在由Vue Sender组件处理
+    console.log('发送按钮绑定已由Vue组件接管');
 }
 
 // 发送消息
@@ -269,11 +227,7 @@ async function sendMessage() {
         return;
     }
 
-    // 清空用户输入框
-    const userInputElement = document.getElementById('userInput');
-    if (userInputElement) {
-        userInputElement.value = '';
-    }
+    // 输入框清空现在由Vue组件处理
     // 发送消息，发送时需要将extra_messages这个列表中的每个content字段，每个字段都是完整的一个字典，添加到userInput的最前面，同时注意需要将extra_messages解包后组成新的列表,否则会出现 [[{'role': 'user', 'content': '请你调用思维导图的工具，根据用户的输入的query生成对应的思维导图，使cloud模式'}], {'role': 'user', 'content': '你好'}] 这种格式，导致请求失败，不是一个字典的列表了
     // 遍历extra_messages，将每个字典的content字段添加到userInput的最前面
     const messages = [];
@@ -389,33 +343,10 @@ function bindNotificationSelector() {
     updateNotificationDisplay();
 }
 
-// 闪电按钮功能
+// 闪电按钮现在由Vue组件处理，这个函数保留为空以保持兼容性
 function bindFlashButton() {
-    const flashButton = document.getElementById('flashButton');
-    if (!flashButton) return;
-
-    // 初始化闪电按钮状态
-    let isFlashActive = false;
-
-    flashButton.addEventListener('click', () => {
-        const iconSpan = flashButton.querySelector('.material-icons');
-
-        if (isFlashActive) {
-            // 当前是紫色，切换回灰色
-            iconSpan.classList.remove('text-purple-500');
-            iconSpan.classList.add('text-gray-500');
-            window.globalData.iscompletion = false;
-            isFlashActive = false;
-            console.log('闪电按钮已关闭,iscompletion:', window.globalData.iscompletion);
-        } else {
-            // 当前是灰色，切换为紫色
-            iconSpan.classList.remove('text-gray-500');
-            iconSpan.classList.add('text-purple-500');
-            window.globalData.iscompletion = true;
-            isFlashActive = true;
-            console.log('闪电按钮已激活,iscompletion:', window.globalData.iscompletion);
-        }
-    });
+    // 闪电按钮现在由Vue组件处理
+    console.log('闪电按钮绑定已由Vue组件接管');
 }
 
 // 从localStorage加载用户信息到全局变量

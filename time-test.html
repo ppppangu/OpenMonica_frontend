@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>时间问候语测试</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">时间问候语测试</h1>
+        
+        <!-- 当前时间显示 -->
+        <div class="bg-white p-6 rounded-lg shadow-sm mb-6">
+            <h2 class="text-xl font-semibold mb-4">当前时间</h2>
+            <div class="text-2xl font-mono text-blue-600" id="currentTime"></div>
+            <div class="text-lg mt-2" id="currentGreeting"></div>
+        </div>
+        
+        <!-- 时间段规则 -->
+        <div class="bg-white p-6 rounded-lg shadow-sm mb-6">
+            <h2 class="text-xl font-semibold mb-4">时间段规则</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="p-4 bg-yellow-50 rounded-lg">
+                    <h3 class="font-semibold text-yellow-800">早上好 🌅</h3>
+                    <p class="text-yellow-700">4:00 - 11:30</p>
+                </div>
+                <div class="p-4 bg-orange-50 rounded-lg">
+                    <h3 class="font-semibold text-orange-800">下午好 ☀️</h3>
+                    <p class="text-orange-700">11:30 - 19:00</p>
+                </div>
+                <div class="p-4 bg-blue-50 rounded-lg">
+                    <h3 class="font-semibold text-blue-800">晚上好 🌆</h3>
+                    <p class="text-blue-700">19:00 - 4:00</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 时间测试 -->
+        <div class="bg-white p-6 rounded-lg shadow-sm mb-6">
+            <h2 class="text-xl font-semibold mb-4">时间测试</h2>
+            <div class="flex items-center space-x-4 mb-4">
+                <label class="text-sm font-medium">测试时间:</label>
+                <input type="time" id="testTime" class="border border-gray-300 rounded px-3 py-2">
+                <button onclick="testTime()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                    测试
+                </button>
+            </div>
+            <div id="testResult" class="text-lg font-semibold"></div>
+        </div>
+        
+        <!-- 24小时测试表格 -->
+        <div class="bg-white p-6 rounded-lg shadow-sm">
+            <h2 class="text-xl font-semibold mb-4">24小时测试表格</h2>
+            <button onclick="generateFullDayTest()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mb-4">
+                生成24小时测试
+            </button>
+            <div id="fullDayTest" class="overflow-x-auto"></div>
+        </div>
+    </div>
+
+    <script>
+        // 时间判断函数（与主项目保持一致）
+        function getGreeting(hour, minute) {
+            // 将时间转换为分钟数，便于比较
+            const currentTime = hour * 60 + minute;
+            
+            // 时间段定义（以分钟为单位）
+            const morningStart = 4 * 60;        // 4:00
+            const morningEnd = 11 * 60 + 30;    // 11:30
+            const afternoonEnd = 19 * 60;       // 19:00 (7:00 PM)
+            
+            if (currentTime >= morningStart && currentTime < morningEnd) {
+                // 早上4:00 - 11:30
+                return '早上好 🌅';
+            } else if (currentTime >= morningEnd && currentTime < afternoonEnd) {
+                // 中午11:30 - 下午7:00
+                return '下午好 ☀️';
+            } else {
+                // 其他时间（晚上7:00 - 早上4:00）
+                return '晚上好 🌆';
+            }
+        }
+
+        // 更新当前时间显示
+        function updateCurrentTime() {
+            const now = new Date();
+            const hour = now.getHours();
+            const minute = now.getMinutes();
+            const second = now.getSeconds();
+            
+            const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:${second.toString().padStart(2, '0')}`;
+            const greeting = getGreeting(hour, minute);
+            
+            document.getElementById('currentTime').textContent = timeString;
+            document.getElementById('currentGreeting').textContent = greeting;
+        }
+
+        // 测试指定时间
+        function testTime() {
+            const testTimeInput = document.getElementById('testTime');
+            const testResult = document.getElementById('testResult');
+            
+            if (!testTimeInput.value) {
+                testResult.textContent = '请选择一个时间';
+                testResult.className = 'text-lg font-semibold text-red-600';
+                return;
+            }
+            
+            const [hour, minute] = testTimeInput.value.split(':').map(Number);
+            const greeting = getGreeting(hour, minute);
+            
+            testResult.textContent = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')} - ${greeting}`;
+            testResult.className = 'text-lg font-semibold text-green-600';
+        }
+
+        // 生成24小时测试表格
+        function generateFullDayTest() {
+            const container = document.getElementById('fullDayTest');
+            let html = '<table class="min-w-full border border-gray-300"><thead><tr class="bg-gray-50"><th class="border border-gray-300 px-4 py-2">时间</th><th class="border border-gray-300 px-4 py-2">问候语</th></tr></thead><tbody>';
+            
+            // 测试关键时间点
+            const testTimes = [
+                [0, 0], [3, 59], [4, 0], [4, 1],
+                [11, 29], [11, 30], [11, 31],
+                [18, 59], [19, 0], [19, 1],
+                [23, 59]
+            ];
+            
+            testTimes.forEach(([hour, minute]) => {
+                const greeting = getGreeting(hour, minute);
+                const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                
+                let bgColor = '';
+                if (greeting.includes('早上好')) bgColor = 'bg-yellow-50';
+                else if (greeting.includes('下午好')) bgColor = 'bg-orange-50';
+                else bgColor = 'bg-blue-50';
+                
+                html += `<tr class="${bgColor}"><td class="border border-gray-300 px-4 py-2 font-mono">${timeStr}</td><td class="border border-gray-300 px-4 py-2">${greeting}</td></tr>`;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // 页面加载完成后开始更新时间
+        document.addEventListener('DOMContentLoaded', () => {
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 1000); // 每秒更新一次
+        });
+    </script>
+</body>
+</html>

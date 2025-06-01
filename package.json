@@ -1,0 +1,32 @@
+{
+  "name": "ai-chat-frontend",
+  "version": "1.0.0",
+  "description": "AI Chat Interface with Node.js backend",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "ant-design-vue": "^4.2.6",
+    "ant-design-x-vue": "^1.2.4",
+    "axios": "^1.9.0",
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "form-data": "^4.0.2",
+    "js-yaml": "^4.1.0",
+    "node-fetch": "^3.3.2",
+    "pg": "^8.16.0",
+    "uuid": "^11.1.0"
+  },
+  "keywords": [
+    "ai",
+    "chat",
+    "frontend",
+    "nodejs"
+  ],
+  "author": "",
+  "license": "MIT"
+}

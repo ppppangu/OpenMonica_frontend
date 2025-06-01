@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Interface - 画图</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 flex h-screen">
+    <aside class="w-20 bg-white p-4 flex flex-col items-center justify-between border-r">
+        <div class="flex flex-col items-center space-y-6">
+            <button class="p-2 rounded-lg hover:bg-gray-100">
+                <span class="material-icons text-gray-600">menu</span>
+            </button>
+            <button id="chatButton" class="p-2 rounded-lg hover:bg-gray-100">
+                <span class="material-icons text-gray-600">chat_bubble_outline</span>
+            </button>
+            <button id="brushButton" class="p-2 rounded-lg bg-purple-100 text-purple-600">
+                <span class="material-icons">brush</span>
+            </button>
+            <button class="p-2 rounded-lg hover:bg-gray-100">
+                <span class="material-icons text-gray-600">videocam</span>
+            </button>
+            <button class="p-2 rounded-lg hover:bg-gray-100">
+                <span class="material-icons text-gray-600">mic</span>
+            </button>
+            <button class="p-2 rounded-lg hover:bg-gray-100">
+                <span class="material-icons text-gray-600">explore</span>
+            </button>
+            <button class="p-2 rounded-lg hover:bg-gray-100">
+                <span class="material-icons text-gray-600">bookmark_border</span>
+            </button>
+            <button class="p-2 rounded-lg hover:bg-gray-100">
+                <span class="material-icons text-gray-600">more_horiz</span>
+            </button>
+        </div>
+        <div class="flex flex-col items-center space-y-6">
+            <button id="helpButton" class="p-2 rounded-lg hover:bg-gray-100">
+                <span class="material-icons text-gray-600">help_outline</span>
+            </button>
+            <button id="settingsButton" class="p-2 rounded-lg hover:bg-gray-100">
+                <span class="material-icons text-gray-600">settings</span>
+            </button>
+            <div class="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white text-lg font-semibold">
+                M
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <header class="flex justify-between items-center mb-8">
+            <h1 class="text-4xl font-semibold text-gray-800">画图</h1>
+        </header>
+
+        <div id="brushContainer" class="bg-white p-8 rounded-xl shadow-sm">
+            <div id="brushContent">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">AI 画图工具</h2>
+                <p class="text-gray-600 mb-6">使用先进的AI技术生成高质量图片和艺术作品</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="border border-gray-200 rounded-lg p-6">
+                        <h3 class="text-lg font-medium text-gray-700 mb-3">图片生成</h3>
+                        <p class="text-gray-600 text-sm mb-4">从文本描述生成精美图片</p>
+                        <button class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600">
+                            开始创作
+                        </button>
+                    </div>
+
+                    <div class="border border-gray-200 rounded-lg p-6">
+                        <h3 class="text-lg font-medium text-gray-700 mb-3">艺术风格</h3>
+                        <p class="text-gray-600 text-sm mb-4">多种艺术风格可选</p>
+                        <button class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                            选择风格
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+
+
+    <script src="./public/js/common.js"></script>
+    <script src="./public/js/sidebutton.js"></script>
+    <script src="scripts.js"></script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设置</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex h-screen">
+    <aside class="w-20 bg-white p-4 flex flex-col items-center justify-between border-r">
+        <div class="flex flex-col items-center space-y-6">
+            <button class="p-2 rounded-lg hover:bg-gray-100">
+                <span class="material-icons text-gray-600">menu</span>
+            </button>
+            <button id="chatButton" class="p-2 rounded-lg hover:bg-gray-100">
+                <span class="material-icons text-gray-600">chat_bubble_outline</span>
+            </button>
+            <button id="brushButton" class="p-2 rounded-lg hover:bg-gray-100">
+                <span class="material-icons text-gray-600">brush</span>
+            </button>
+            <button class="p-2 rounded-lg hover:bg-gray-100">
+                <span class="material-icons text-gray-600">videocam</span>
+            </button>
+            <button class="p-2 rounded-lg hover:bg-gray-100">
+                <span class="material-icons text-gray-600">mic</span>
+            </button>
+            <button class="p-2 rounded-lg hover:bg-gray-100">
+                <span class="material-icons text-gray-600">explore</span>
+            </button>
+            <button class="p-2 rounded-lg hover:bg-gray-100">
+                <span class="material-icons text-gray-600">bookmark_border</span>
+            </button>
+            <button class="p-2 rounded-lg hover:bg-gray-100">
+                <span class="material-icons text-gray-600">more_horiz</span>
+            </button>
+        </div>
+        <div class="flex flex-col items-center space-y-6">
+            <button id="helpButton" class="p-2 rounded-lg hover:bg-gray-100">
+                <span class="material-icons text-gray-600">help_outline</span>
+            </button>
+            <button id="settingsButton" class="p-2 rounded-lg bg-purple-100 text-purple-600">
+                <span class="material-icons">settings</span>
+            </button>
+            <div class="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white text-lg font-semibold">
+                M
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 p-8 overflow-hidden flex flex-col">
+        <header class="flex justify-between items-center mb-8">
+            <h1 class="text-4xl font-semibold text-gray-800">设置</h1>
+            <div class="flex items-center text-sm text-gray-600">
+                <span class="material-icons text-sm mr-1">info_outline</span>
+                <span>更改将自动保存</span>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1 min-h-0">
+            <section class="bg-white p-8 rounded-xl shadow-sm flex flex-col">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">个性化</h2>
+                <p class="text-gray-600 mb-6">
+                    设置您的个人偏好和背景信息，以获得更个性化的AI回答。
+                </p>
+                <textarea
+                    id="userPrompt"
+                    class="w-full flex-1 p-4 border border-gray-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm leading-relaxed overflow-y-auto"
+                    placeholder="你来自哪里？&#10;你的兴趣和爱好是什么？&#10;你是做什么的？AI应该如何称呼您？&#10;AI应该使用什么语气与您交流？&#10;AI的回复应该有多长？"
+                ></textarea>
+            </section>
+
+            <section class="bg-white p-8 rounded-xl shadow-sm flex flex-col">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">模型记忆</h2>
+                <p class="text-gray-600 mb-6">
+                    AI对您的了解和记忆，这些信息将帮助AI更好地理解您的需求。
+                </p>
+                <textarea
+                    id="modelMemory"
+                    class="w-full flex-1 p-4 border border-gray-200 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm leading-relaxed overflow-y-auto"
+                    placeholder="AI将在这里记录对您的了解..."
+                ></textarea>
+            </section>
+
+            <section class="bg-white p-8 rounded-xl shadow-sm flex flex-col">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">通用设置</h2>
+                <p class="text-gray-600 mb-6">
+                    界面和交互设置，个性化您的使用体验。
+                </p>
+                <div class="space-y-6 flex-1 overflow-y-auto">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-700 mb-3">主题设置</h3>
+                        <div class="space-y-2">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="radio" name="theme" value="light" class="mr-3 text-purple-600" checked>
+                                <span class="text-gray-700">浅色主题</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="radio" name="theme" value="dark" class="mr-3 text-purple-600">
+                                <span class="text-gray-700">深色主题</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="radio" name="theme" value="auto" class="mr-3 text-purple-600">
+                                <span class="text-gray-700">跟随系统</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-700 mb-3">语言设置</h3>
+                        <select class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            <option value="zh-CN">简体中文</option>
+                            <option value="en-US">English</option>
+                            <option value="ja-JP">日本語</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-700 mb-3">通知设置</h3>
+                        <div class="space-y-2">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" class="mr-3 text-purple-600" checked>
+                                <span class="text-gray-700">桌面通知</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" class="mr-3 text-purple-600">
+                                <span class="text-gray-700">声音提醒</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="./public/js/common.js"></script>
+<script src="./public/js/sidebutton.js"></script>
+<script src="./public/js/settings.js"></script>
+</body>
+</html>

@@ -113,12 +113,33 @@ async function handleLogin(event) {
         });
         
         if (response.data.success) {
-            showSuccess('登录成功！正在跳转...');
-            
+            showSuccess('登录成功！正在初始化...');
+
             // 保存用户信息到localStorage
             localStorage.setItem('userToken', response.data.token);
             localStorage.setItem('userInfo', JSON.stringify(response.data.user));
-            
+
+            // 更新全局用户信息
+            if (window.globalData) {
+                window.globalData.userInfo = {
+                    uuid: response.data.user.uuid || '',
+                    username: response.data.user.username || '',
+                    email: response.data.user.email || '',
+                    isLoggedIn: true
+                };
+                window.globalData.user_id = response.data.user.uuid || response.data.user.id;
+            }
+
+            // 初始化session管理
+            if (typeof window.initializeSession === 'function') {
+                try {
+                    await window.initializeSession();
+                    console.log('Session初始化完成');
+                } catch (error) {
+                    console.error('Session初始化失败:', error);
+                }
+            }
+
             // 2秒后跳转到首页
             setTimeout(() => {
                 window.location.href = 'index.html';

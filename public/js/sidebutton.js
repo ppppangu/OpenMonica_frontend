@@ -35,15 +35,39 @@ function setActiveButton(activeButtonId) {
     }
 }
 
+// 绑定菜单按钮
+function bindMenuButton() {
+    const menuButton = document.getElementById('menuButton');
+    if (!menuButton) return;
+
+    menuButton.addEventListener('click', () => {
+        console.log('菜单按钮被点击');
+        if (getCurrentPageName() === 'index') {
+            // 在index页面上切换显示会话列表
+            console.log('当前在index页面，尝试调用toggleConversations');
+            console.log('toggleConversations函数存在:', typeof window.toggleConversations === 'function');
+
+            if (typeof window.toggleConversations === 'function') {
+                console.log('调用toggleConversations');
+                window.toggleConversations();
+            } else {
+                console.error('toggleConversations函数不存在');
+            }
+        }
+    });
+}
+
 // 绑定聊天按钮
 function bindChatButton() {
     const chatButton = document.getElementById('chatButton');
     if (!chatButton) return;
-    
+
     chatButton.addEventListener('click', () => {
+        console.log('聊天按钮被点击');
         if (getCurrentPageName() !== 'index') {
             window.location.href = 'index.html';
         }
+        // 移除了会话列表功能，现在只负责页面跳转
     });
 }
 
@@ -87,6 +111,7 @@ function bindSettingsButton() {
 // 初始化侧边按钮
 function initSideButtons() {
     // 绑定所有按钮事件
+    bindMenuButton();
     bindChatButton();
     bindBrushButton();
     bindHelpButton();

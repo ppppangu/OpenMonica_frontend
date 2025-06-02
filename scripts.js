@@ -3,8 +3,8 @@ window.globalData = {
     availableModels: [],
     selectedModelId: '',
     selectedModelName: 'Sonnet',
-    user_id: 'user-109',
-    session_id: 'xx1',
+    user_id: '', // 将在登录后动态设置
+    session_id: '', // 将通过session管理器动态设置
     extra_messages: [],
     userInput: [],
     open_predict: false,
@@ -31,31 +31,11 @@ const modelList = document.getElementById('modelList');
 const selectedModelSpan = document.getElementById('selectedModel');
 const expandIcon = modelSelector.querySelector('.material-icons:last-child');
 
-// 获取模型列表
+// 模型加载现在由Vue组件处理，这个函数保留为空以保持兼容性
 async function loadModels() {
-    try {
-        console.log('正在获取模型列表...');
-        const response = await axios.get("/api/models");
-        const models = response.data;
-
-        // 更新客户端全局变量
-        window.globalData.availableModels = models;
-        console.log('模型列表加载成功:', models);
-
-        // 渲染模型列表
-        renderModelList(models);
-
-        // 设置默认选中的模型
-        if (models.length > 0) {
-            selectModel(models[0].id, models[0].name);
-        }
-
-        return models;
-    } catch (error) {
-        console.error('获取模型失败:', error);
-        renderErrorState();
-        return [];
-    }
+    // 模型加载现在由Vue组件处理
+    console.log('模型加载已由Vue组件接管');
+    return [];
 }
 
 // 渲染模型列表
@@ -142,25 +122,10 @@ function toggleDropdown() {
     }
 }
 
-// 初始化事件监听器
+// 模型事件监听现在由Vue组件处理，这个函数保留为空以保持兼容性
 function initEventListeners() {
-    // 模型选择器点击事件
-    modelSelector.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleDropdown();
-    });
-
-    // 点击其他地方关闭下拉菜单
-    document.addEventListener('click', (e) => {
-        if (!modelSelector.contains(e.target) && !modelDropdown.contains(e.target)) {
-            hideDropdown();
-        }
-    });
-
-    // 阻止下拉菜单内部点击事件冒泡
-    modelDropdown.addEventListener('click', (e) => {
-        e.stopPropagation();
-    });
+    // 模型选择器事件现在由Vue组件处理
+    console.log('模型选择器事件监听已由Vue组件接管');
 }
 
 // 设置问候语
@@ -350,7 +315,7 @@ function bindFlashButton() {
 }
 
 // 从localStorage加载用户信息到全局变量
-function loadUserInfo() {
+async function loadUserInfo() {
     try {
         const userToken = localStorage.getItem('userToken');
         const userInfoStr = localStorage.getItem('userInfo');
@@ -366,7 +331,25 @@ function loadUserInfo() {
                 isLoggedIn: true
             };
 
+            // 设置 user_id
+            window.globalData.user_id = userInfo.uuid || '';
+
             console.log('用户信息已加载到全局变量:', window.globalData.userInfo);
+
+            // 使用新的session管理器初始化session
+            if (typeof window.initializeSession === 'function') {
+                try {
+                    await window.initializeSession();
+                    console.log('Session初始化完成');
+                } catch (error) {
+                    console.error('Session初始化失败:', error);
+                    // 如果session初始化失败，使用默认session
+                    window.globalData.session_id = 'session_default_' + Date.now();
+                }
+            } else {
+                // 如果session管理器不可用，使用旧的逻辑
+                await loadLatestSessionId();
+            }
         } else {
             // 用户未登录
             window.globalData.userInfo = {
@@ -375,6 +358,8 @@ function loadUserInfo() {
                 email: '',
                 isLoggedIn: false
             };
+            window.globalData.user_id = '';
+            window.globalData.session_id = '';
             console.log('用户未登录');
         }
     } catch (error) {
@@ -385,6 +370,44 @@ function loadUserInfo() {
             email: '',
             isLoggedIn: false
         };
+        window.globalData.user_id = '';
+        window.globalData.session_id = '';
+    }
+}
+
+// 加载最新的会话ID
+async function loadLatestSessionId() {
+    if (!window.globalData.user_id) {
+        console.log('用户ID不存在，无法获取会话列表');
+        return;
+    }
+
+    try {
+        console.log('正在获取最新会话ID，用户ID:', window.globalData.user_id);
+        const response = await axios.post('/api/user/chat/list', {
+            user_id: window.globalData.user_id
+        });
+
+        if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+            // 按时间戳排序，获取最新的会话
+            const sortedSessions = response.data.sort((a, b) =>
+                new Date(b.timestamp) - new Date(a.timestamp)
+            );
+
+            const latestSession = sortedSessions[0];
+            window.globalData.session_id = latestSession.session_id;
+
+            console.log('已设置最新会话ID:', window.globalData.session_id);
+        } else {
+            // 如果没有会话，生成一个新的会话ID
+            window.globalData.session_id = 'session_' + Date.now();
+            console.log('没有现有会话，生成新会话ID:', window.globalData.session_id);
+        }
+    } catch (error) {
+        console.error('获取会话列表失败:', error);
+        // 如果获取失败，生成一个新的会话ID
+        window.globalData.session_id = 'session_' + Date.now();
+        console.log('获取会话失败，生成新会话ID:', window.globalData.session_id);
     }
 }
 
@@ -396,14 +419,31 @@ function checkUserLoginStatus() {
         window.location.href = 'login.html';
     } else {
         console.log('用户已登录:', window.globalData.userInfo.username);
+        // 更新全局user_id为用户的UUID
+        window.globalData.user_id = window.globalData.userInfo.uuid;
+        console.log('更新全局user_id为:', window.globalData.user_id);
     }
 }
 
 // 页面加载完成后初始化
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     console.log('页面加载完成，开始初始化...');
-    loadUserInfo(); // 加载用户信息
+    await loadUserInfo(); // 加载用户信息（异步）
     checkUserLoginStatus(); // 检查登录状态
+
+    // 如果用户已登录，初始化会话
+    if (window.globalData.userInfo.isLoggedIn) {
+        console.log('用户已登录，开始初始化会话...');
+        if (window.sessionManager) {
+            try {
+                const sessionId = await window.sessionManager.initializeSession();
+                console.log('会话初始化完成，session_id:', sessionId);
+            } catch (error) {
+                console.error('会话初始化失败:', error);
+            }
+        }
+    }
+
     setGreeting();
     initEventListeners();
     loadModels();

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>跨页面Session测试</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
+    <style>
+        .test-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 16px 0;
+            background: white;
+        }
+        .log-area {
+            background: #f3f4f6;
+            border-radius: 4px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-success { background-color: #10b981; }
+        .status-warning { background-color: #f59e0b; }
+        .status-error { background-color: #ef4444; }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">跨页面Session管理测试</h1>
+        
+        <!-- 当前状态 -->
+        <div class="test-card">
+            <h2 class="text-xl font-semibold mb-4">当前状态</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <p class="text-sm text-gray-600 mb-2">当前页面</p>
+                    <p id="currentPage" class="font-medium">-</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 mb-2">用户登录状态</p>
+                    <p id="loginStatus" class="font-medium">
+                        <span class="status-indicator status-error"></span>检查中...
+                    </p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 mb-2">当前Session ID</p>
+                    <p id="currentSessionId" class="font-medium text-sm">-</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 页面跳转测试 -->
+        <div class="test-card">
+            <h2 class="text-xl font-semibold mb-4">页面跳转测试</h2>
+            <p class="text-gray-600 mb-4">测试从不同页面跳转到chat页面时的session管理行为</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <button onclick="testPageJump('index.html')" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                    跳转到 Chat
+                </button>
+                <button onclick="testPageJump('settings.html')" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                    跳转到 Settings
+                </button>
+                <button onclick="testPageJump('help.html')" class="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600">
+                    跳转到 Help
+                </button>
+                <button onclick="testPageJump('brush.html')" class="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600">
+                    跳转到 Brush
+                </button>
+            </div>
+        </div>
+
+        <!-- Session操作测试 -->
+        <div class="test-card">
+            <h2 class="text-xl font-semibold mb-4">Session操作测试</h2>
+            <div class="space-x-2 mb-4">
+                <button onclick="testInitSession()" class="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600">
+                    初始化Session
+                </button>
+                <button onclick="testCreateSession()" class="px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600">
+                    创建新Session
+                </button>
+                <button onclick="testGetSessionList()" class="px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600">
+                    获取Session列表
+                </button>
+                <button onclick="clearLocalStorage()" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
+                    清除LocalStorage
+                </button>
+            </div>
+        </div>
+
+        <!-- Session列表 -->
+        <div class="test-card">
+            <h2 class="text-xl font-semibold mb-4">Session列表</h2>
+            <div id="sessionListDisplay" class="text-gray-500">
+                点击"获取Session列表"按钮查看
+            </div>
+        </div>
+
+        <!-- 实时日志 -->
+        <div class="test-card">
+            <h2 class="text-xl font-semibold mb-4">实时日志</h2>
+            <div id="logDisplay" class="log-area">
+                等待操作...
+            </div>
+            <div class="mt-2 space-x-2">
+                <button onclick="clearLog()" class="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600">
+                    清空日志
+                </button>
+                <button onclick="exportLog()" class="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">
+                    导出日志
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入必要的脚本 -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="./scripts.js"></script>
+    <script src="./public/js/common.js"></script>
+    <script src="./public/js/session-manager.js"></script>
+
+    <script>
+        let logBuffer = [];
+
+        // 重写console.log来捕获日志
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        
+        console.log = function(...args) {
+            originalConsoleLog.apply(console, args);
+            addToLog('LOG', args.join(' '));
+        };
+        
+        console.error = function(...args) {
+            originalConsoleError.apply(console, args);
+            addToLog('ERROR', args.join(' '));
+        };
+
+        function addToLog(level, message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] [${level}] ${message}`;
+            logBuffer.push(logEntry);
+            
+            const logDisplay = document.getElementById('logDisplay');
+            logDisplay.textContent = logBuffer.join('\n');
+            logDisplay.scrollTop = logDisplay.scrollHeight;
+        }
+
+        function clearLog() {
+            logBuffer = [];
+            document.getElementById('logDisplay').textContent = '日志已清空...';
+        }
+
+        function exportLog() {
+            const logContent = logBuffer.join('\n');
+            const blob = new Blob([logContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `session-test-log-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function updateStatus() {
+            // 更新当前页面
+            const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+            document.getElementById('currentPage').textContent = currentPage;
+
+            // 更新登录状态
+            const loginStatusEl = document.getElementById('loginStatus');
+            if (window.globalData && window.globalData.userInfo && window.globalData.userInfo.isLoggedIn) {
+                loginStatusEl.innerHTML = '<span class="status-indicator status-success"></span>已登录 (' + window.globalData.userInfo.username + ')';
+            } else {
+                loginStatusEl.innerHTML = '<span class="status-indicator status-error"></span>未登录';
+            }
+
+            // 更新Session ID
+            const sessionIdEl = document.getElementById('currentSessionId');
+            const currentSessionId = window.globalData?.session_id || 
+                                   (window.sessionManager ? window.sessionManager.getCurrentSessionId() : null) ||
+                                   localStorage.getItem('currentSessionId');
+            
+            if (currentSessionId) {
+                sessionIdEl.textContent = currentSessionId;
+            } else {
+                sessionIdEl.textContent = '未设置';
+            }
+        }
+
+        function testPageJump(page) {
+            addToLog('INFO', `准备跳转到页面: ${page}`);
+            addToLog('INFO', `当前Session ID: ${window.globalData?.session_id || '未设置'}`);
+            
+            // 记录跳转前的状态
+            const beforeJump = {
+                sessionId: window.globalData?.session_id,
+                localStorage: localStorage.getItem('currentSessionId'),
+                timestamp: new Date().toISOString()
+            };
+            
+            addToLog('INFO', `跳转前状态: ${JSON.stringify(beforeJump)}`);
+            
+            // 执行跳转
+            window.location.href = page;
+        }
+
+        async function testInitSession() {
+            addToLog('INFO', '开始测试Session初始化...');
+            
+            if (window.sessionManager && typeof window.sessionManager.initializeSession === 'function') {
+                try {
+                    const sessionId = await window.sessionManager.initializeSession();
+                    addToLog('SUCCESS', `Session初始化完成: ${sessionId}`);
+                    updateStatus();
+                } catch (error) {
+                    addToLog('ERROR', `Session初始化失败: ${error.message}`);
+                }
+            } else {
+                addToLog('ERROR', 'SessionManager不可用');
+            }
+        }
+
+        async function testCreateSession() {
+            addToLog('INFO', '开始测试创建新Session...');
+            
+            if (!window.globalData?.userInfo?.isLoggedIn) {
+                addToLog('ERROR', '用户未登录，无法创建Session');
+                return;
+            }
+
+            try {
+                const userId = window.globalData.userInfo.uuid || window.globalData.user_id;
+                const response = await axios.post('/api/user/chat/create', {
+                    user_id: userId
+                });
+                
+                if (response.data && response.data.session_id) {
+                    addToLog('SUCCESS', `新Session创建成功: ${response.data.session_id}`);
+                    
+                    if (window.sessionManager) {
+                        await window.sessionManager.switchToSession(response.data.session_id);
+                    }
+                    updateStatus();
+                } else {
+                    addToLog('ERROR', '创建Session响应格式错误');
+                }
+            } catch (error) {
+                addToLog('ERROR', `创建Session失败: ${error.message}`);
+            }
+        }
+
+        async function testGetSessionList() {
+            addToLog('INFO', '开始获取Session列表...');
+            
+            if (!window.globalData?.userInfo?.isLoggedIn) {
+                addToLog('ERROR', '用户未登录，无法获取Session列表');
+                return;
+            }
+
+            try {
+                const userId = window.globalData.userInfo.uuid || window.globalData.user_id;
+                const response = await axios.post('/api/user/chat/list', {
+                    user_id: userId
+                });
+                
+                if (response.data && Array.isArray(response.data)) {
+                    const sessions = response.data.sort((a, b) => 
+                        new Date(b.timestamp) - new Date(a.timestamp)
+                    );
+                    
+                    addToLog('SUCCESS', `获取到${sessions.length}个Session`);
+                    
+                    // 显示Session列表
+                    const listDisplay = document.getElementById('sessionListDisplay');
+                    if (sessions.length === 0) {
+                        listDisplay.innerHTML = '<p class="text-gray-500">暂无Session记录</p>';
+                    } else {
+                        listDisplay.innerHTML = sessions.map((session, index) => `
+                            <div class="p-3 border rounded mb-2 ${session.session_id === window.globalData?.session_id ? 'bg-blue-50 border-blue-200' : 'bg-gray-50'}">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <p class="font-medium">Session ${index + 1} ${session.session_id === window.globalData?.session_id ? '(当前)' : ''}</p>
+                                        <p class="text-sm text-gray-600">ID: ${session.session_id}</p>
+                                        <p class="text-sm text-gray-600">时间: ${new Date(session.timestamp).toLocaleString()}</p>
+                                    </div>
+                                    <button onclick="switchToSessionTest('${session.session_id}')" 
+                                            class="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">
+                                        切换
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                } else {
+                    addToLog('ERROR', 'Session列表格式错误');
+                }
+            } catch (error) {
+                addToLog('ERROR', `获取Session列表失败: ${error.message}`);
+            }
+        }
+
+        async function switchToSessionTest(sessionId) {
+            addToLog('INFO', `切换到Session: ${sessionId}`);
+            
+            if (window.sessionManager) {
+                await window.sessionManager.switchToSession(sessionId);
+                updateStatus();
+                await testGetSessionList(); // 刷新列表显示
+            } else {
+                addToLog('ERROR', 'SessionManager不可用');
+            }
+        }
+
+        function clearLocalStorage() {
+            addToLog('INFO', '清除localStorage中的Session数据...');
+            localStorage.removeItem('currentSessionId');
+            addToLog('SUCCESS', 'localStorage已清除');
+            updateStatus();
+        }
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', async () => {
+            addToLog('INFO', '页面加载完成，开始初始化...');
+            
+            // 等待全局数据加载
+            setTimeout(async () => {
+                updateStatus();
+                addToLog('INFO', '状态更新完成');
+                
+                if (window.globalData && window.globalData.userInfo && window.globalData.userInfo.isLoggedIn) {
+                    addToLog('INFO', '用户已登录，可以进行Session测试');
+                } else {
+                    addToLog('WARNING', '用户未登录，请先登录后再进行测试');
+                }
+            }, 1000);
+        });
+
+        // 定期更新状态
+        setInterval(updateStatus, 5000);
+    </script>
+</body>
+</html>

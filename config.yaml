@@ -3,7 +3,7 @@ chat_api: "http://2.tcp.cpolar.cn:12682/v1/chat/completions"
 predict_api: "http://2.tcp.cpolar.cn:12682/v1/chat/predict"
 get_model: "http://2.tcp.cpolar.cn:12682/v1/models"
 get_prompt_api: "http://2.tcp.cpolar.cn:12682/v1/prompts"
-user_manage_api: "http://127.0.0.1:12356"
+user_manage_api: "http://192.168.132.149:8006"
 mcp_tool_server_api: "http://2.tcp.cpolar.cn:12682"
 
 # 用户管理数据库，host禁止写公网ip，只能写内网ip

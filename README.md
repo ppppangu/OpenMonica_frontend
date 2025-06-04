@@ -1,22 +1,85 @@
-# AI 聊天界面
+# AI Chat Interface - 静态版本
 
-## 环境设置与启动
+这是一个简化的AI聊天界面，已移除所有JavaScript脚本，只保留基本的HTML结构和组件完整性。
 
-### 方法一：使用批处理文件（Windows）
+## 📁 项目结构
 
-1. **安装 Node.js**
+```
+前端/
+├── index.html          # 主聊天界面
+├── settings.html       # 设置页面
+├── help.html          # 帮助页面
+├── knowledgebase.html  # 知识库管理页面
+├── basedetail.html    # 知识库详情页面
+├── home.html          # 用户账户页面
+├── login.html         # 登录页面
+├── styles.css         # 统一样式文件
+├── server.js          # 基本Express服务器
+├── package.json       # 项目配置
+└── README.md          # 项目说明
+```
 
-   - 访问 https://nodejs.org/
-   - 下载并安装 LTS 版本
-2. **安装项目依赖**
+## ✨ 主要特性
 
-   - 双击运行 `安装依赖.bat`
-3. **启动服务器**
+### 🎨 保持的组件完整性
 
-   - 双击运行 `启动服务器-nodejs.bat`
-   - 浏览器会自动打开 http://localhost:3000
+- **侧边栏导航** - 所有页面保持一致的侧边栏设计
+- **表单结构** - 所有表单都转换为标准HTML表单
+- **页面布局** - 保持原有的视觉设计和布局
+- **样式系统** - 继续使用Tailwind CSS和Material Icons
 
-### 方法二：使用命令行
+### 🔄 简化的功能
+
+- **静态导航** - 使用HTML链接代替JavaScript路由
+- **标准表单** - 所有交互都通过HTML表单提交
+- **移除脚本** - 删除所有Vue.js、React和自定义JavaScript
+- **统一样式** - 所有CSS整合到单个styles.css文件
+- **保留样式** - 保持所有CSS样式和视觉效果
+
+## 📄 页面说明
+
+### 1. index.html - 主聊天界面
+
+- 简化的聊天输入表单
+- 静态的工具栏和模型选择
+- 保持原有的视觉设计
+
+### 2. settings.html - 设置页面
+
+- 用户提示词表单
+- 模型记忆表单
+- 通用设置表单
+
+### 3. help.html - 帮助页面
+
+- 静态帮助内容
+- 保持导航结构
+
+### 4. knowledgebase.html - 知识库管理
+
+- 纯知识库管理界面（已移除聊天框）
+- 静态知识库卡片展示
+- 新建知识库功能
+
+### 5. basedetail.html - 知识库详情
+- 知识库详情页面，显示具体知识库内容
+- 左侧文档列表，右侧PDF文档查看器
+- 支持文档搜索、上传和管理功能
+
+### 6. home.html - 用户账户
+
+- 个人信息表单
+- 密码管理表单
+- 偏好设置表单
+
+### 6. login.html - 登录页面
+
+- 登录表单
+- 注册表单
+
+## 🚀 使用方法
+
+### 方式一：Express服务器（推荐）
 
 ```bash
 # 安装依赖
@@ -25,137 +88,107 @@ npm install
 # 启动服务器
 npm start
 
-# 或者使用开发模式（自动重启）
-npm run dev
+# 访问 http://localhost:3000
 ```
 
-### 测试API连接
+### 方式二：直接打开
 
-1. 打开 `test-api.html` 文件
-2. 点击"测试API"按钮查看API是否可用
-3. 查看返回的原始数据格式
-
-### 使用模型选择功能
-
-1. 点击页面底部的"Sonnet"按钮（带有下拉箭头）
-2. 等待模型列表加载完成
-3. 从下拉菜单中选择想要的模型
-4. 选中的模型会显示在按钮上，并保存在全局状态中
-
-**程序会自动：**
-
-- 获取API返回的真实模型列表
-- 如果API不可用，自动使用模拟数据
-- 适配多种API响应格式
-
-## 配置说明
-
-### config.yaml
-
-```yaml
-get_model: http://localhost:8080/v1/models
+```bash
+# 直接在浏览器中打开任意HTML文件
+open index.html
 ```
 
-- `get_model`: 获取模型列表的API端点
+### 方式三：其他本地服务器
 
-## API接口
+```bash
+# 使用Python简单服务器
+python -m http.server 8000
 
-### GET /v1/models
+# 或使用Node.js serve
+npx serve .
 
-返回可用模型列表
-
-**响应格式:**
-
-```json
-{
-  "data": [
-    {
-      "id": "model-id",
-      "name": "Model Name",
-      "description": "Model description"
-    }
-  ]
-}
+# 然后访问 http://localhost:8000
 ```
 
-## 技术实现
+## 🖥️ 服务器特性
 
-### 前端技术栈
+### Express服务器功能
+- **静态文件托管** - 自动托管所有HTML、CSS文件
+- **路由支持** - 支持干净的URL路径（如 `/settings` 而不是 `/settings.html`）
+- **表单处理** - 基本的API端点用于表单提交
+- **控制台日志** - 显示所有表单提交的数据
+- **404处理** - 自动重定向到登录页面
 
-- HTML5
-- CSS3 (Tailwind CSS)
-- Vanilla JavaScript
-- Material Icons
+### 可访问的页面
+- `http://localhost:3000/` - 登录页面（login.html）
+- `http://localhost:3000/index` - 主聊天界面（index.html）
+- `http://localhost:3000/settings` - 设置页面
+- `http://localhost:3000/help` - 帮助页面
+- `http://localhost:3000/knowledgebase` - 知识库管理
+- `http://localhost:3000/basedetail` - 知识库详情
+- `http://localhost:3000/home` - 用户账户
+- `http://localhost:3000/login` - 登录页面
 
-### 核心功能
+## 📋 表单端点
 
-1. **配置读取**: 从config.yaml读取API配置
-2. **API调用**: 使用fetch API获取模型列表
-3. **DOM操作**: 动态渲染模型选项
-4. **事件处理**: 处理点击事件和状态更新
-5. **状态管理**: 全局变量管理选中的模型
+所有表单都配置了相应的API端点：
 
-### 关键函数
+- **聊天**: `POST /api/chat`
+- **用户设置**: `POST /api/settings/*`
+- **用户认证**: `POST /api/auth/*`
+- **用户资料**: `POST /api/user/*`
 
-- `loadConfig()`: 读取配置文件
-- `fetchAvailableModels()`: 获取模型列表
-- `renderModelList()`: 渲染模型选项
-- `selectModel()`: 选择模型并更新状态
-- `initModelSelector()`: 初始化模型选择器
+## 🎯 设计原则
 
-## 自定义配置
+### 1. **简化优先**
 
-如果要连接到实际的API服务器，只需修改 `config.yaml`中的 `get_model`字段：
+- 移除所有复杂的JavaScript逻辑
+- 保持最基本的HTML结构
+- 使用标准表单提交
 
-```yaml
-get_model: https://your-api-server.com/v1/models
-```
+### 2. **组件完整性**
 
-确保API服务器返回符合格式的JSON响应。
+- 保持所有视觉组件的完整性
+- 维持一致的设计语言
+- 确保用户体验的连贯性
 
-## 故障排除
+### 3. **易于理解**
 
-### Sonnet点击后显示"加载失败"的解决方案
+- 代码结构清晰简单
+- 适合初学者学习
+- 便于本地或局域网使用
 
-这是初学者最常遇到的问题，主要原因和解决方法：
+## 🔧 自定义
 
-#### 1. CORS跨域问题（最常见）
+### 修改样式
 
-**问题**: 直接双击HTML文件打开时，浏览器阻止网络请求
-**解决方案**:
+- 所有样式都使用Tailwind CSS类
+- 可以直接修改HTML中的class属性
+- 保持响应式设计
 
-- 双击 `启动服务器.bat` 启动本地服务器
-- 在浏览器访问 `http://localhost:8000`
+### 添加功能
 
-#### 2. API端点不可用
+- 可以添加简单的JavaScript增强
+- 建议保持轻量级的实现
+- 避免复杂的框架依赖
 
-**问题**: config.yaml中的API地址无法访问
-**解决方案**:
+### 后端集成
 
-- 程序已自动添加模拟数据功能
-- 即使API不可用，也会显示示例模型
+- 所有表单都已配置action属性
+- 可以直接连接到后端API
+- 支持标准的HTTP表单提交
 
-#### 3. 网络连接问题
+## 📝 注意事项
 
-**问题**: 无法连接到外部API服务器
-**解决方案**:
+1. **无JavaScript依赖** - 项目不依赖任何JavaScript框架
+2. **静态资源** - 所有外部资源都通过CDN加载
+3. **表单提交** - 需要后端服务器处理表单数据
+4. **浏览器兼容** - 支持所有现代浏览器
 
-- 检查网络连接
-- 使用模拟数据模式（自动启用）
+## 🤝 贡献
 
-### 其他常见问题
+欢迎提交问题和改进建议！
 
-1. **模型列表加载失败**: 检查config.yaml中的API端点是否正确
-2. **CORS错误**: 确保API服务器设置了正确的CORS头
-3. **端口冲突**: 如果8000端口被占用，修改start-server.py中的PORT变量
-4. **Python未安装**: 直接双击index.html使用模拟数据模式
+## 📄 许可证
 
-## 扩展功能
-
-可以考虑添加的功能：
-
-- 模型搜索过滤
-- 模型分类显示
-- 模型详细信息展示
-- 收藏常用模型
-- 模型使用历史记录
+MIT License

@@ -7,72 +7,7 @@
     <title>AI Chat Interface</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-    <style>
-        body {
-            font-family: 'Roboto', sans-serif;
-        }
-
-        /* 模型选择器样式 */
-        #modelDropdown {
-            max-height: 300px;
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: #cbd5e0 #f7fafc;
-        }
-
-        #modelDropdown::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        #modelDropdown::-webkit-scrollbar-track {
-            background: #f7fafc;
-            border-radius: 3px;
-        }
-
-        #modelDropdown::-webkit-scrollbar-thumb {
-            background: #cbd5e0;
-            border-radius: 3px;
-        }
-
-        #modelDropdown::-webkit-scrollbar-thumb:hover {
-            background: #a0aec0;
-        }
-
-        .model-option {
-            transition: all 0.2s ease;
-        }
-
-        .model-option:hover {
-            transform: translateX(2px);
-        }
-
-        /* 帮助页面样式 */
-        .help-nav {
-            position: sticky;
-            top: 2rem;
-            align-self: flex-start;
-            max-height: calc(100vh - 4rem);
-            overflow-y: auto;
-        }
-
-        .help-nav a.active {
-            color: #7c3aed;
-            font-weight: 500;
-        }
-
-        .help-content {
-            scroll-behavior: smooth;
-        }
-
-        .help-content section {
-            scroll-margin-top: 2rem;
-        }
-
-        /* 确保主容器不会影响sticky定位 */
-        .main-container {
-            min-height: 100vh;
-        }
-    </style>
+    <link href="styles.css" rel="stylesheet" />
 </head>
 
 <body class="bg-gray-50 flex h-screen">
@@ -81,12 +16,12 @@
             <button class="p-2 rounded-lg hover:bg-gray-100">
                 <span class="material-icons text-gray-600">menu</span>
             </button>
-            <button id="chatButton" class="p-2 rounded-lg hover:bg-gray-100">
+            <a href="index.html" class="p-2 rounded-lg hover:bg-gray-100">
                 <span class="material-icons text-gray-600">chat_bubble_outline</span>
-            </button>
-            <button id="brushButton" class="p-2 rounded-lg hover:bg-gray-100">
-                <span class="material-icons text-gray-600">brush</span>
-            </button>
+            </a>
+            <a href="knowledgebase.html" class="p-2 rounded-lg hover:bg-gray-100">
+                <span class="material-icons text-gray-600">storage</span>
+            </a>
             <button class="p-2 rounded-lg hover:bg-gray-100">
                 <span class="material-icons text-gray-600">videocam</span>
             </button>
@@ -104,15 +39,15 @@
             </button>
         </div>
         <div class="flex flex-col items-center space-y-6">
-            <button id="helpButton" class="p-2 rounded-lg bg-purple-100 text-purple-600">
+            <button class="p-2 rounded-lg bg-purple-100 text-purple-600">
                 <span class="material-icons">help_outline</span>
             </button>
-            <button id="settingsButton" class="p-2 rounded-lg hover:bg-gray-100">
+            <a href="settings.html" class="p-2 rounded-lg hover:bg-gray-100">
                 <span class="material-icons text-gray-600">settings</span>
-            </button>
-            <button id="userProfileButton" class="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white text-lg font-semibold hover:bg-purple-600 transition-colors relative">
+            </a>
+            <a href="home.html" class="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white text-lg font-semibold hover:bg-purple-600 transition-colors">
                 M
-            </button>
+            </a>
         </div>
     </aside>
     <main class="flex-1 p-8 overflow-hidden flex flex-col">
@@ -456,189 +391,7 @@
         </div>
     </main>
 
-    <script>
-        // 帮助页面导航功能
-        document.addEventListener('DOMContentLoaded', function() {
-            const navLinks = document.querySelectorAll('.nav-link');
-            const sections = document.querySelectorAll('section[id]');
 
-            // 平滑滚动到目标部分
-            navLinks.forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const targetId = this.getAttribute('href').substring(1);
-                    const targetSection = document.getElementById(targetId);
-
-                    if (targetSection) {
-                        targetSection.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'start'
-                        });
-
-                        // 更新活动状态
-                        updateActiveNav(targetId);
-                    }
-                });
-            });
-
-            // 滚动时更新导航高亮
-            function updateActiveNav(activeId) {
-                navLinks.forEach(link => {
-                    link.classList.remove('active');
-                    if (link.getAttribute('href') === '#' + activeId) {
-                        link.classList.add('active');
-                    }
-                });
-            }
-
-            // 监听滚动事件，自动高亮当前部分
-            let ticking = false;
-            function updateNavOnScroll() {
-                if (!ticking) {
-                    requestAnimationFrame(() => {
-                        const scrollPosition = window.scrollY + 100;
-
-                        for (let i = sections.length - 1; i >= 0; i--) {
-                            const section = sections[i];
-                            if (section.offsetTop <= scrollPosition) {
-                                updateActiveNav(section.id);
-                                break;
-                            }
-                        }
-                        ticking = false;
-                    });
-                    ticking = true;
-                }
-            }
-
-            window.addEventListener('scroll', updateNavOnScroll);
-        });
-
-
-    </script>
-
-    <!-- 用户弹窗 -->
-    <div id="userPopup" class="fixed bottom-24 left-4 w-80 bg-white rounded-lg shadow-lg border hidden z-50">
-        <div class="p-6">
-            <!-- 用户信息 -->
-            <div class="flex items-center mb-6">
-                <div class="w-12 h-12 rounded-full bg-purple-500 flex items-center justify-center text-white text-xl font-semibold mr-4">
-                    T
-                </div>
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-800">tian wang</h3>
-                    <p class="text-sm text-gray-500">meidici911@gmail.com</p>
-                </div>
-            </div>
-
-            <!-- 套餐信息 -->
-            <div class="bg-gray-50 rounded-lg p-4 mb-6">
-                <h4 class="text-sm font-medium text-gray-700 mb-3">套餐: Unlimited</h4>
-                <div class="space-y-2">
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm text-gray-600 flex items-center">
-                            <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                            标准查询
-                        </span>
-                        <span class="text-sm font-medium">∞</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm text-gray-600 flex items-center">
-                            <span class="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
-                            高级查询
-                        </span>
-                        <span class="text-sm font-medium">∞</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm text-gray-600 flex items-center">
-                            <span class="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
-                            高级积分
-                        </span>
-                        <span class="text-sm font-medium">4500</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 菜单选项 -->
-            <div class="space-y-2">
-                <button id="myAccountBtn" class="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                    <span class="text-gray-700">我的账户</span>
-                    <span class="material-icons text-gray-400">chevron_right</span>
-                </button>
-                <button id="helpCenterBtn" class="w-full flex items-center justify-between p-3 rounded-lg bg-purple-50 text-purple-600">
-                    <span>帮助中心</span>
-                    <span class="material-icons text-purple-400">chevron_right</span>
-                </button>
-                <button id="logoutBtn" class="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors text-red-600">
-                    <span>退出登录</span>
-                    <span class="material-icons text-red-400">logout</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // 用户弹窗功能
-        document.addEventListener('DOMContentLoaded', function() {
-            const userProfileButton = document.getElementById('userProfileButton');
-            const userPopup = document.getElementById('userPopup');
-            const myAccountBtn = document.getElementById('myAccountBtn');
-            const helpCenterBtn = document.getElementById('helpCenterBtn');
-            const logoutBtn = document.getElementById('logoutBtn');
-
-            let isPopupVisible = false;
-
-            // 切换弹窗显示/隐藏
-            function toggleUserPopup() {
-                isPopupVisible = !isPopupVisible;
-                if (isPopupVisible) {
-                    userPopup.classList.remove('hidden');
-                } else {
-                    userPopup.classList.add('hidden');
-                }
-            }
-
-            // 点击用户头像按钮
-            userProfileButton.addEventListener('click', (e) => {
-                e.stopPropagation();
-                toggleUserPopup();
-            });
-
-            // 点击页面其他地方关闭弹窗
-            document.addEventListener('click', (e) => {
-                if (isPopupVisible && !userPopup.contains(e.target) && e.target !== userProfileButton) {
-                    userPopup.classList.add('hidden');
-                    isPopupVisible = false;
-                }
-            });
-
-            // 我的账户按钮
-            myAccountBtn.addEventListener('click', () => {
-                window.location.href = 'home.html';
-            });
-
-            // 帮助中心按钮（当前页面，不跳转）
-            helpCenterBtn.addEventListener('click', () => {
-                userPopup.classList.add('hidden');
-                isPopupVisible = false;
-            });
-
-            // 退出登录按钮
-            logoutBtn.addEventListener('click', () => {
-                if (confirm('确定要退出登录吗？')) {
-                    alert('已退出登录');
-                    userPopup.classList.add('hidden');
-                    isPopupVisible = false;
-                }
-            });
-        });
-    </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script src="./public/js/common.js"></script>
-    <script src="./public/js/session-manager.js"></script>
-    <script src="./public/js/sidebutton.js"></script>
-    <script src="./scripts.js"></script>
 </body>
 
 </html>

@@ -8,145 +8,168 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="styles.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100 flex h-screen">
-    <aside class="w-20 bg-white p-4 flex flex-col items-center justify-between border-r">
-        <div class="flex flex-col items-center space-y-6">
-            <button class="p-2 rounded-lg hover:bg-gray-100">
+<body class="bg-gray-100 h-screen">
+<!-- 第一容器：固定侧边栏 -->
+<div id="container-sidebar" class="container-sidebar">
+    <div class="sidebar-content">
+        <div class="sidebar-nav-top">
+            <button class="sidebar-nav-item">
                 <span class="material-icons text-gray-600">menu</span>
             </button>
-            <a href="index.html" class="p-2 rounded-lg hover:bg-gray-100">
+            <a href="index.html" class="sidebar-nav-item">
                 <span class="material-icons text-gray-600">chat_bubble_outline</span>
             </a>
-            <a href="knowledgebase.html" class="p-2 rounded-lg hover:bg-gray-100">
+            <a href="knowledgebase.html" class="sidebar-nav-item">
                 <span class="material-icons text-gray-600">storage</span>
             </a>
-            <button class="p-2 rounded-lg hover:bg-gray-100">
+            <button class="sidebar-nav-item">
                 <span class="material-icons text-gray-600">videocam</span>
             </button>
-            <button class="p-2 rounded-lg hover:bg-gray-100">
+            <button class="sidebar-nav-item">
                 <span class="material-icons text-gray-600">mic</span>
             </button>
-            <button class="p-2 rounded-lg hover:bg-gray-100">
+            <button class="sidebar-nav-item">
                 <span class="material-icons text-gray-600">explore</span>
             </button>
-            <button class="p-2 rounded-lg hover:bg-gray-100">
+            <button class="sidebar-nav-item">
                 <span class="material-icons text-gray-600">bookmark_border</span>
             </button>
-            <button class="p-2 rounded-lg hover:bg-gray-100">
+            <button class="sidebar-nav-item">
                 <span class="material-icons text-gray-600">more_horiz</span>
             </button>
         </div>
-        <div class="flex flex-col items-center space-y-6">
-            <a href="help.html" class="p-2 rounded-lg hover:bg-gray-100">
+        <div class="sidebar-nav-bottom">
+            <a href="help.html" class="sidebar-nav-item">
                 <span class="material-icons text-gray-600">help_outline</span>
             </a>
-            <button class="p-2 rounded-lg bg-purple-100 text-purple-600">
+            <button class="sidebar-nav-item sidebar-nav-active">
                 <span class="material-icons">settings</span>
             </button>
-            <a href="home.html" class="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white text-lg font-semibold hover:bg-purple-600 transition-colors">
+            <a href="home.html" class="sidebar-user-avatar">
                 M
             </a>
         </div>
-    </aside>
+    </div>
+</div>
 
-    <main class="flex-1 p-8 overflow-hidden flex flex-col">
-        <header class="flex justify-between items-center mb-8">
-            <h1 class="text-4xl font-semibold text-gray-800">设置</h1>
-            <div class="flex items-center text-sm text-gray-600">
-                <span class="material-icons text-sm mr-1">info_outline</span>
+<!-- 第二容器：顶部容器 -->
+<div id="container-settings-header" class="container-settings-header">
+    <div class="settings-header-content">
+        <div class="settings-header-left">
+            <h1 class="settings-page-title">设置</h1>
+        </div>
+        <div class="settings-header-right">
+            <div class="settings-auto-save-info">
+                <span class="material-icons">info_outline</span>
                 <span>更改将自动保存</span>
             </div>
-        </header>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1 min-h-0">
-            <section class="bg-white p-8 rounded-xl shadow-sm flex flex-col">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-semibold text-gray-800">个性化</h2>
-                    <div id="userPromptAutoSaveIndicator" class="text-sm hidden"></div>
-                </div>
-                <p class="text-gray-600 mb-6">
-                    设置您的个人偏好和背景信息，以获得更个性化的AI回答。修改后会在3秒内自动保存。
-                </p>
-                <form action="/api/settings/user-prompt" method="post">
-                    <textarea
-                        name="user_prompt"
-                        class="w-full flex-1 p-4 border border-gray-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm leading-relaxed overflow-y-auto"
-                        placeholder="你来自哪里？&#10;你的兴趣和爱好是什么？&#10;你是做什么的？AI应该如何称呼您？&#10;AI应该使用什么语气与您交流？&#10;AI的回复应该有多长？"
-                    ></textarea>
-                    <button type="submit" class="mt-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600">保存</button>
-                </form>
-            </section>
-
-            <section class="bg-white p-8 rounded-xl shadow-sm flex flex-col">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-semibold text-gray-800">模型记忆</h2>
-                    <div id="modelMemoryAutoSaveIndicator" class="text-sm hidden"></div>
-                </div>
-                <p class="text-gray-600 mb-6">
-                    AI对您的了解和记忆，这些信息将帮助AI更好地理解您的需求。修改后会在3秒内自动保存。
-                </p>
-                <form action="/api/settings/model-memory" method="post">
-                    <textarea
-                        name="model_memory"
-                        class="w-full flex-1 p-4 border border-gray-200 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm leading-relaxed overflow-y-auto"
-                        placeholder="AI将在这里记录对您的了解..."
-                    ></textarea>
-                    <button type="submit" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">保存</button>
-                </form>
-            </section>
-
-            <section class="bg-white p-8 rounded-xl shadow-sm flex flex-col">
-                <h2 class="text-2xl font-semibold text-gray-800 mb-4">通用设置</h2>
-                <p class="text-gray-600 mb-6">
-                    界面和交互设置，个性化您的使用体验。
-                </p>
-                <form action="/api/settings/general" method="post" class="space-y-6 flex-1 overflow-y-auto">
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-700 mb-3">主题设置</h3>
-                        <div class="space-y-2">
-                            <label class="flex items-center cursor-pointer">
-                                <input type="radio" name="theme" value="light" class="mr-3 text-purple-600" checked>
-                                <span class="text-gray-700">浅色主题</span>
-                            </label>
-                            <label class="flex items-center cursor-pointer">
-                                <input type="radio" name="theme" value="dark" class="mr-3 text-purple-600">
-                                <span class="text-gray-700">深色主题</span>
-                            </label>
-                            <label class="flex items-center cursor-pointer">
-                                <input type="radio" name="theme" value="auto" class="mr-3 text-purple-600">
-                                <span class="text-gray-700">跟随系统</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-700 mb-3">语言设置</h3>
-                        <select name="language" class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                            <option value="zh-CN">简体中文</option>
-                            <option value="en-US">English</option>
-                            <option value="ja-JP">日本語</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-700 mb-3">通知设置</h3>
-                        <div class="space-y-2">
-                            <label class="flex items-center cursor-pointer">
-                                <input type="checkbox" name="notifications[]" value="desktop" class="mr-3 text-purple-600" checked>
-                                <span class="text-gray-700">桌面通知</span>
-                            </label>
-                            <label class="flex items-center cursor-pointer">
-                                <input type="checkbox" name="notifications[]" value="sound" class="mr-3 text-purple-600">
-                                <span class="text-gray-700">声音提醒</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="w-full px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600">保存设置</button>
-                </form>
-            </section>
         </div>
-    </main>
+    </div>
+</div>
+
+<!-- 设置内容布局容器 -->
+<div id="container-settings-layout" class="container-settings-layout">
+
+    <!-- 第三容器：用户提示设置区域 -->
+    <div id="container-user-prompt" class="container-user-prompt">
+        <div class="settings-section-header">
+            <div class="settings-section-title-group">
+                <h2 class="settings-section-title">个性化</h2>
+                <div id="userPromptAutoSaveIndicator" class="auto-save-indicator"></div>
+            </div>
+        </div>
+        <div class="settings-section-content">
+            <p class="settings-section-description">
+                设置您的个人偏好和背景信息，以获得更个性化的AI回答。修改后会在3秒内自动保存。
+            </p>
+            <form action="/api/settings/user-prompt" method="post" class="settings-form">
+                <textarea
+                    name="user_prompt"
+                    class="settings-textarea settings-textarea-purple"
+                    placeholder="你来自哪里？&#10;你的兴趣和爱好是什么？&#10;你是做什么的？AI应该如何称呼您？&#10;AI应该使用什么语气与您交流？&#10;AI的回复应该有多长？"
+                ></textarea>
+            </form>
+        </div>
+    </div>
+
+    <!-- 第四容器：模型记忆设置区域 -->
+    <div id="container-model-memory" class="container-model-memory">
+        <div class="settings-section-header">
+            <div class="settings-section-title-group">
+                <h2 class="settings-section-title">模型记忆</h2>
+                <div id="modelMemoryAutoSaveIndicator" class="auto-save-indicator"></div>
+            </div>
+        </div>
+        <div class="settings-section-content">
+            <p class="settings-section-description">
+                AI对您的了解和记忆，这些信息将帮助AI更好地理解您的需求。修改后会在3秒内自动保存。
+            </p>
+            <form action="/api/settings/model-memory" method="post" class="settings-form">
+                <textarea
+                    name="model_memory"
+                    class="settings-textarea settings-textarea-blue"
+                    placeholder="AI将在这里记录对您的了解..."
+                ></textarea>
+            </form>
+        </div>
+    </div>
+
+    <!-- 第五容器：通用设置区域 -->
+    <div id="container-general-settings" class="container-general-settings">
+        <div class="settings-section-header">
+            <div class="settings-section-title-group">
+                <h2 class="settings-section-title">通用设置</h2>
+            </div>
+        </div>
+        <div class="settings-section-content">
+            <p class="settings-section-description">
+                界面和交互设置，个性化您的使用体验。
+            </p>
+            <form action="/api/settings/general" method="post" class="settings-form settings-form-general">
+                <div class="settings-group">
+                    <h3 class="settings-group-title">主题设置</h3>
+                    <div class="settings-radio-group">
+                        <label class="settings-radio-item">
+                            <input type="radio" name="theme" value="light" class="settings-radio" checked>
+                            <span class="settings-radio-label">浅色主题</span>
+                        </label>
+                        <label class="settings-radio-item">
+                            <input type="radio" name="theme" value="dark" class="settings-radio">
+                            <span class="settings-radio-label">深色主题</span>
+                        </label>
+                        <label class="settings-radio-item">
+                            <input type="radio" name="theme" value="auto" class="settings-radio">
+                            <span class="settings-radio-label">跟随系统</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3 class="settings-group-title">语言设置</h3>
+                    <select name="language" class="settings-select">
+                        <option value="zh-CN">简体中文</option>
+                        <option value="en-US">English</option>
+                        <option value="ja-JP">日本語</option>
+                    </select>
+                </div>
+
+                <div class="settings-group">
+                    <h3 class="settings-group-title">通知设置</h3>
+                    <div class="settings-checkbox-group">
+                        <label class="settings-checkbox-item">
+                            <input type="checkbox" name="notifications[]" value="desktop" class="settings-checkbox" checked>
+                            <span class="settings-checkbox-label">桌面通知</span>
+                        </label>
+                        <label class="settings-checkbox-item">
+                            <input type="checkbox" name="notifications[]" value="sound" class="settings-checkbox">
+                            <span class="settings-checkbox-label">声音提醒</span>
+                        </label>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>

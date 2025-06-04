@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Interface - 知识库管理</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <link href="styles.css" rel="stylesheet" />
+</head>
+<body class="bg-gray-50 h-screen">
+<!-- 全局控制器 -->
+<input type="checkbox" id="knowledge-panel-toggle" class="hidden" checked>
+
+<!-- 第一容器：固定侧边栏 -->
+<div id="container-sidebar" class="container-sidebar">
+    <div class="sidebar-content">
+        <div class="sidebar-nav-top">
+            <button class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">menu</span>
+            </button>
+            <a href="index.html" class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">chat_bubble_outline</span>
+            </a>
+            <label for="knowledge-panel-toggle" class="sidebar-nav-item sidebar-nav-active">
+                <span class="material-icons">storage</span>
+            </label>
+            <button class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">videocam</span>
+            </button>
+            <button class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">mic</span>
+            </button>
+            <button class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">explore</span>
+            </button>
+            <button class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">bookmark_border</span>
+            </button>
+            <button class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">more_horiz</span>
+            </button>
+        </div>
+        <div class="sidebar-nav-bottom">
+            <a href="help.html" class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">help_outline</span>
+            </a>
+            <a href="settings.html" class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">settings</span>
+            </a>
+            <a href="home.html" class="sidebar-user-avatar">
+                M
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- 第二容器：知识库管理面板 -->
+<div id="container-knowledge-panel" class="container-knowledge-panel">
+    <div class="knowledge-panel-header">
+        <h3 class="knowledge-panel-title">知识库管理</h3>
+    </div>
+    <div class="knowledge-panel-content">
+        <div class="knowledge-panel-item">
+            <div class="knowledge-panel-icon">
+                <span class="material-icons">folder</span>
+            </div>
+            <div class="knowledge-panel-info">
+                <div class="knowledge-panel-item-title">知识库管理</div>
+                <div class="knowledge-panel-item-desc">管理和组织知识库</div>
+            </div>
+        </div>
+
+        <div class="knowledge-panel-item">
+            <div class="knowledge-panel-icon">
+                <span class="material-icons">account_tree</span>
+            </div>
+            <div class="knowledge-panel-info">
+                <div class="knowledge-panel-item-title">知识库可视化</div>
+                <div class="knowledge-panel-item-desc">知识图谱和关系展示</div>
+            </div>
+        </div>
+
+        <div class="knowledge-panel-item">
+            <div class="knowledge-panel-icon">
+                <span class="material-icons">auto_awesome</span>
+            </div>
+            <div class="knowledge-panel-info">
+                <div class="knowledge-panel-item-title">知识库增强</div>
+                <div class="knowledge-panel-item-desc">AI增强和优化建议</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 第三容器：主内容区域 -->
+<div id="container-knowledge-main" class="container-knowledge-main">
+    <div class="knowledge-main-content">
+        <header class="knowledge-main-header">
+            <h1 class="knowledge-main-title">知识库管理</h1>
+        </header>
+
+        <!-- 知识库网格区域 -->
+        <div class="knowledge-grid-container">
+            <div class="knowledge-grid-header">
+                <h2 class="knowledge-grid-title">我的知识库</h2>
+                <button class="knowledge-create-btn">
+                    <span class="material-icons">add</span>
+                    新建知识库
+                </button>
+            </div>
+
+            <!-- 知识库卡片网格 -->
+            <div class="knowledge-cards-grid">
+                <!-- 示例知识库卡片 -->
+                <a href="basedetail.html" class="knowledge-card knowledge-card-blue">
+                    <div class="knowledge-card-header">
+                        <div class="knowledge-card-icon">📝</div>
+                        <button class="knowledge-card-menu" onclick="event.preventDefault(); event.stopPropagation();">
+                            <span class="material-icons">more_vert</span>
+                        </button>
+                    </div>
+                    <h3 class="knowledge-card-title">金融知识库</h3>
+                    <p class="knowledge-card-desc">学习金融过程中的知识库</p>
+                    <div class="knowledge-card-count">4 个文档</div>
+                </a>
+
+                <div class="knowledge-card knowledge-card-green">
+                    <div class="knowledge-card-header">
+                        <div class="knowledge-card-icon">📚</div>
+                        <button class="knowledge-card-menu">
+                            <span class="material-icons">more_vert</span>
+                        </button>
+                    </div>
+                    <h3 class="knowledge-card-title">法律知识库</h3>
+                    <p class="knowledge-card-desc">法律相关资料</p>
+                    <div class="knowledge-card-count">3 个文档</div>
+                </div>
+
+                <div class="knowledge-card knowledge-card-purple">
+                    <div class="knowledge-card-header">
+                        <div class="knowledge-card-icon">🎨</div>
+                        <button class="knowledge-card-menu">
+                            <span class="material-icons">more_vert</span>
+                        </button>
+                    </div>
+                    <h3 class="knowledge-card-title">设计知识库</h3>
+                    <p class="knowledge-card-desc">设计相关的资料和灵感</p>
+                    <div class="knowledge-card-count">7 个文档</div>
+                </div>
+
+                <!-- 新建知识库卡片 -->
+                <div class="knowledge-card knowledge-card-create">
+                    <div class="knowledge-card-create-content">
+                        <div class="knowledge-card-create-icon">
+                            <span class="material-icons">add_circle_outline</span>
+                        </div>
+                        <h3 class="knowledge-card-create-title">新建知识库</h3>
+                        <p class="knowledge-card-create-desc">点击创建新的知识库</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 知识库操作区域 -->
+            <div class="knowledge-actions-section">
+                <div class="knowledge-actions-content">
+                    <div class="knowledge-stats">
+                        共 3 个知识库
+                    </div>
+                    <div class="knowledge-actions">
+                        <button class="knowledge-action-btn">
+                            <span class="material-icons">import_export</span>
+                            导入知识库
+                        </button>
+                        <button class="knowledge-action-btn">
+                            <span class="material-icons">settings</span>
+                            管理设置
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -7,206 +7,233 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
     <link href="styles.css" rel="stylesheet"/>
 </head>
-<body class="bg-gray-50 flex h-screen">
-<aside class="w-20 bg-white p-4 flex flex-col items-center justify-between border-r">
-    <div class="flex flex-col items-center space-y-6">
-        <button class="p-2 rounded-lg hover:bg-gray-100">
-            <span class="material-icons text-gray-600">menu</span>
-        </button>
-        <button class="p-2 rounded-lg bg-purple-100 text-purple-600">
-            <span class="material-icons">chat_bubble_outline</span>
-        </button>
-        <a href="knowledgebase.html" class="p-2 rounded-lg hover:bg-gray-100">
-            <span class="material-icons text-gray-600">storage</span>
-        </a>
-        <button class="p-2 rounded-lg hover:bg-gray-100">
-            <span class="material-icons text-gray-600">videocam</span>
-        </button>
-        <button class="p-2 rounded-lg hover:bg-gray-100">
-            <span class="material-icons text-gray-600">mic</span>
-        </button>
-        <button class="p-2 rounded-lg hover:bg-gray-100">
-            <span class="material-icons text-gray-600">explore</span>
-        </button>
-        <button class="p-2 rounded-lg hover:bg-gray-100">
-            <span class="material-icons text-gray-600">bookmark_border</span>
-        </button>
-        <button class="p-2 rounded-lg hover:bg-gray-100">
-            <span class="material-icons text-gray-600">more_horiz</span>
-        </button>
-    </div>
-    <div class="flex flex-col items-center space-y-6">
-        <a href="help.html" class="p-2 rounded-lg hover:bg-gray-100">
-            <span class="material-icons text-gray-600">help_outline</span>
-        </a>
-        <a href="settings.html" class="p-2 rounded-lg hover:bg-gray-100">
-            <span class="material-icons text-gray-600">settings</span>
-        </a>
-        <a href="home.html" class="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white text-lg font-semibold hover:bg-purple-600 transition-colors">
-            M
-        </a>
-    </div>
-</aside>
-<main class="flex-1 p-8 overflow-y-auto">
-    <header class="flex justify-between items-center mb-8">
-        <h1 class="text-4xl font-semibold text-gray-800">欢迎 👋</h1>
-    </header>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <section class="md:col-span-2 bg-white p-6 rounded-xl shadow-sm">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-semibold text-gray-700">工具</h2>
-                <a class="text-sm text-purple-600 hover:text-purple-800 flex items-center" href="#">
-                    更多 <span class="material-icons text-sm ml-1">chevron_right</span>
-                </a>
+<body class="bg-gray-50 h-screen">
+<!-- 全局控制器 -->
+<input type="checkbox" id="chat-panel-toggle" class="hidden" checked>
+
+<!-- 第一容器：固定侧边栏 -->
+<div id="container-sidebar" class="container-sidebar">
+    <div class="sidebar-content">
+        <div class="sidebar-nav-top">
+            <div class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">menu</span>
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 text-center">
-                <!--                <div class="flex flex-col items-center p-3 rounded-lg hover:bg-gray-50 cursor-pointer">-->
-                <!--                    <span class="material-icons text-purple-500 text-3xl mb-2">forum</span>-->
-                <!--                    <span class="text-sm text-gray-600">全能聊天</span>-->
-                <!--                </div>-->
-                <div class="flex flex-col items-center p-3 rounded-lg hover:bg-gray-50 cursor-pointer">
-                    <span class="material-icons text-blue-500 text-3xl mb-2">edit</span>
-                    <span class="text-sm text-gray-600">写作</span>
+            <label for="chat-panel-toggle" class="sidebar-nav-item sidebar-nav-active">
+                <span class="material-icons">chat_bubble_outline</span>
+            </label>
+            <a href="knowledgebase.html" class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">storage</span>
+            </a>
+            <button class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">videocam</span>
+            </button>
+            <button class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">mic</span>
+            </button>
+            <button class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">explore</span>
+            </button>
+            <button class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">bookmark_border</span>
+            </button>
+            <button class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">more_horiz</span>
+            </button>
+        </div>
+        <div class="sidebar-nav-bottom">
+            <a href="help.html" class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">help_outline</span>
+            </a>
+            <a href="settings.html" class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">settings</span>
+            </a>
+            <a href="home.html" class="sidebar-user-avatar">
+                M
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- 第二容器：聊天记录面板 -->
+<div id="container-chat-history" class="container-chat-history">
+    <div class="chat-history-header">
+        <h3 class="chat-history-title">聊天记录</h3>
+    </div>
+    <div class="chat-history-content">
+        <div class="chat-session-item">
+            <div class="chat-session-title">Conversation Session1</div>
+            <div class="chat-session-time">2024-01-15 14:30</div>
+            <button class="chat-session-delete">
+                <span class="material-icons">delete</span>
+            </button>
+        </div>
+        <div class="chat-session-item">
+            <div class="chat-session-title">Conversation Session2</div>
+            <div class="chat-session-time">2024-01-15 13:20</div>
+            <button class="chat-session-delete">
+                <span class="material-icons">delete</span>
+            </button>
+        </div>
+        <div class="chat-session-item">
+            <div class="chat-session-title">Conversation Session3</div>
+            <div class="chat-session-time">2024-01-15 12:10</div>
+            <button class="chat-session-delete">
+                <span class="material-icons">delete</span>
+            </button>
+        </div>
+        <div class="chat-session-item">
+            <div class="chat-session-title">Conversation Session4</div>
+            <div class="chat-session-time">2024-01-15 11:00</div>
+            <button class="chat-session-delete">
+                <span class="material-icons">delete</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 第三容器：主内容区域 -->
+<div id="container-main-content" class="container-main-content">
+    <div class="main-content-wrapper">
+        <!-- 主内容头部 -->
+        <header class="main-content-header">
+            <h1 class="main-content-title">欢迎 👋</h1>
+        </header>
+
+        <!-- 主内容网格布局 -->
+        <div class="main-content-grid">
+            <!-- 工具区域模块 -->
+            <section class="content-module content-module-tools">
+                <div class="module-header">
+                    <h2 class="module-title">工具</h2>
+                    <a class="module-link" href="#">
+                        更多 <span class="material-icons">chevron_right</span>
+                    </a>
                 </div>
-                <div class="flex flex-col items-center p-3 rounded-lg hover:bg-gray-50 cursor-pointer">
-                    <span class="material-icons text-green-500 text-3xl mb-2">translate</span>
-                    <span class="text-sm text-gray-600">翻译</span>
+                <div class="tools-grid">
+                    <div class="tool-item">
+                        <span class="material-icons text-blue-500">edit</span>
+                        <span class="tool-label">写作</span>
+                    </div>
+                    <div class="tool-item">
+                        <span class="material-icons text-green-500">translate</span>
+                        <span class="tool-label">翻译</span>
+                    </div>
+                    <div class="tool-item">
+                        <span class="material-icons text-teal-500">image_search</span>
+                        <span class="tool-label">思维导图</span>
+                    </div>
+                    <div class="tool-item">
+                        <span class="material-icons text-orange-500">search</span>
+                        <span class="tool-label">搜索</span>
+                    </div>
                 </div>
-                <!--                <div class="flex flex-col items-center p-3 rounded-lg hover:bg-gray-50 cursor-pointer">-->
-                <!--                    <span class="material-icons text-red-500 text-3xl mb-2">find_in_page</span>-->
-                <!--                    <span class="text-sm text-gray-600">语法检查</span>-->
-                <!--                </div>-->
-                <!--                <div class="flex flex-col items-center p-3 rounded-lg hover:bg-gray-50 cursor-pointer">-->
-                <!--                    <span class="material-icons text-yellow-500 text-3xl mb-2">lightbulb</span>-->
-                <!--                    <span class="text-sm text-gray-600">翻译</span>-->
-                <!--                </div>-->
-                <!--                <div class="flex flex-col items-center p-3 rounded-lg hover:bg-gray-50 cursor-pointer">-->
-                <!--                    <span class="material-icons text-indigo-500 text-3xl mb-2">smart_toy</span>-->
-                <!--                    <span class="text-sm text-gray-600">AI 检测</span>-->
-                <!--                </div>-->
-                <!--                <div class="flex flex-col items-center p-3 rounded-lg hover:bg-gray-50 cursor-pointer">-->
-                <!--                    <span class="material-icons text-pink-500 text-3xl mb-2">description</span>-->
-                <!--                    <span class="text-sm text-gray-600">ChatPDF</span>-->
-                <!--                </div>-->
-                <div class="flex flex-col items-center p-3 rounded-lg hover:bg-gray-50 cursor-pointer">
-                    <span class="material-icons text-teal-500 text-3xl mb-2">image_search</span>
-                    <span class="text-sm text-gray-600">思维导图</span>
+            </section>
+            <!-- 画图区域模块 -->
+            <section class="content-module content-module-drawing">
+                <div class="module-header">
+                    <h2 class="module-title">画图</h2>
+                    <a class="module-link" href="#">
+                        更多 <span class="material-icons">chevron_right</span>
+                    </a>
                 </div>
-                <div class="flex flex-col items-center p-3 rounded-lg hover:bg-gray-50 cursor-pointer">
-                    <span class="material-icons text-orange-500 text-3xl mb-2">search</span>
-                    <span class="text-sm text-gray-600">搜索</span>
+                <div class="drawing-categories">
+                    <div class="drawing-category">
+                        <h3 class="category-title">图片生成</h3>
+                        <p class="category-desc">支持 MJV6、专业修图等</p>
+                        <div class="category-examples">
+                            <img alt="Abstract swirl logo" class="example-image" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0YFryYjxDWDdohsTdc5zEnm3QlOft46WqF4fr0SxnzuEYsEfGO0FCpiQKOQ-k8I8_9WP2JJKv7zwcFltvlYR6YmjOPtJ9vxcuLusDt5Fk1E79cQHooNTqASPXfQSHdWy9Nt7B4WG452YNXMKd5Sfr3O3in_Gtlbk8M_rEM6703GaLU0dPzP20wRWqnhg_7V9f35NGNa2DJn2tWtfUYtAEaaFPnhDdsVVZxVZ_PeG9LGd_21fCLH6teiiFpZ7cLxxWwcD6Uxkqh4I"/>
+                            <img alt="Stylized S logo" class="example-image" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA0dreO1-yUeF4wzHtOKa55I7B_TIf2QYM6tHqaWYB_1JO0tIsJxU-l6gICniVV1lDy-QScNd7SitXgvjg7soaqRo67KuOrOkTFy9ByWX-qOZfxNVg06VT0EtBbLSGk3N3rbhcI3cLI51SfvJgG2uEPHbvMq6o8b2RZbwo5482BTTS0UWHmfCSMeKCl4CeX580SAhQ9Sl1yLjPcknnxv3Blcokqnkxdzna2fSbsehKHdxNVmQfOM16xFJzqv9v3dXJRozEaA4oVrJo"/>
+                            <img alt="Colorful abstract shape logo" class="example-image" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtIoRcEqhwSHP9Qu3RchGHD3bwTYwK7aHJSCujkMXWBd888DM8tf-0RiljYL7bfI_b2ysp6lX495xaik_nWO8rYISf0i46lU1cfF82KHUVswly2XeW0ABCxb0A9qc-YpL1dc6ykpo5kmalseHKJMSN2PskZZAAXgwDzVnSLq3Ha_qItqOw5_S5N1NzIyixqWioB7hDHRWSdLFJu-rj_Gjig3zH9e4i9fxu26ktlWR3VUQjE908Z34VN9c6Rq4kmMSuorfDWayPrIc"/>
+                        </div>
+                    </div>
+                    <div class="drawing-category">
+                        <h3 class="category-title">视频生成</h3>
+                        <p class="category-desc">支持 Pika 及 Runway Gen2</p>
+                        <div class="category-examples">
+                            <img alt="Geometric logo 1" class="example-image bordered" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAcBLFEXDTxiDKGUhe6bghy4z8AU3Cf7Bkbmnmt40QfWJGEQhdSW6n9lFKYXN9TkOLWg-WlKBWgif4LwKkD2-owQnwEsjb3teohy3TLL_QBeEACCYbtbCRgHxODzkNwd1IxN8v8SGuPQFd18Xk56n6LjBBCgkLQWrOHQiPG5QpFuKZ-PsqAa5j436SCm3OaK8ChYaRWaJD9pbZ-q0ebg48p4ofAz0W2MHdMWoKvtGiu00ntB9D3xxpdIyHgCKIxks0Rw5yl56pAzS4"/>
+                            <img alt="Geometric logo 2" class="example-image bordered" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDg4COeYvQR6L3JnU8UYYpsdL66yThSgRY3OLlywlD9KlBtuB8t_yJ5Z8dcw2JpyYTJpTRJRxOfUhwGU8SAIPlZBLDfrPi4IVNifXfcoZ0q8gz5Drbr0uB73tkYSvclwjUv2EXXDwL22fEH2gesQ8r8CE-0QGpIIb0Ai-pFT4VtV-xngqvFIR71-VQz-5vJJwcrZrxcUhbxTSQ_BB2W3bIWTNLDd5qGsRliZEqbNiTpX5tBiyGqgoWMODdXGju0nTU6lxLkM9vc844"/>
+                            <img alt="Geometric logo 3" class="example-image bordered" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD3yerdcPZFTFjDmy-3Z7PX1MXJfJBYoBqojgGfo9Pspro_3HJiJuk2XzwUa--_0sHv7CHofF3JTBh_SFvszznjxFPxis4Vx6s13DvQVkbgIYS5hAB8adXzXVA2wHs5jbAC46X4vGKWx-87ixSXYGilZwGKbiUnhiE5tyK8hQDBlE3qSaYR8SuEgn4IEyE0eMFmnv2C6vZ2t21yIJx8LRq2peHdBWYLZRN3p-ZXjJQIipbw_bfCRkZkPC-_hTNnSyfDGGxDsuhCoBU"/>
+                        </div>
+                    </div>
+                    <div class="drawing-category">
+                        <h3 class="category-title">设计工具</h3>
+                        <p class="category-desc">标语、海报等更多</p>
+                        <div class="category-examples">
+                            <img alt="Avatar 1" class="example-image rounded" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSgJbKcRHXdjVnqcWavt4zDYN068vR6hc_cfC4B0q1DZ8LW3pDLna-4XOVYcxAUhzvUVKTtTmsYZPBAlMi9vbjToh4TQ9EEXHwtWQEm6YhvJiTPiFme1T-GWf-NdAJ4MSZapi2AmpORNSG18xiQalWqpdyvUk0PB9MvE1GXPlGymMhfFW2frv-SG0MzQRBQ_BTWD6OcHz56Y9WqMG1jaIpf6Ss5_ktJMgkna32j42LBAyLzGoCp_YXg7nIal8xi-f1L0iGwVVZ464"/>
+                            <img alt="Avatar 2" class="example-image rounded" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBBX8Ch50GovlrIHqZwGL2tNWarTZeF0yBhzi0It_JD34KxZs-otTuBeon-73BZjF3ShXv2K5DuLgrXJ4tLa2G2ULKypN0AlVnqC0nqPEJK3UUIEIZnvNL267f-OforIOv-JwLYEacNb-anHIBDOtCuOhtVGExLgMnlViQ14gbzyzrV_77ri2OHPj-sVoZeU-MXEoTrCp265QF2kA-yQBUoCcdoy8P74EhBR1Xyx16xBs-jnRvvZJfQABZeA28C5kE-Ye2V5U73-g"/>
+                            <img alt="Avatar 3" class="example-image rounded" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCeXzjXJRj1kXAzjjjFIUezfOjeCUi6rd_o95RuFLl5azXvANdlYVtffLumoeYlAImKvwW_QR9RyHKxxXro7RPc-gYcMH6CNMqNG1FCx8Cb0gV07_7KILtNWFNrmTreReYZsW9ux52b98x7bEMiAsaJdPAPHsMYUdvIlxg8PLIuTwPHZ6IwpxMdDWFGTUapaEm2NYUoZiP4JhN_VL7tFrXnqftfWZJCkTce_ahUgpBAVSswq1PTjALs1sOxS6TY0xuVmGSnryrZaSo"/>
+                            <img alt="Avatar 4" class="example-image rounded" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCP4ucDTijRweLxsXSFA1kd-glTTZzX80b1W2xyEbgu9-3dA2ORxUoOz4Nfk7e6f0SMQZv0k0ewFxxANHSj-vOp0fa8A4a4LNRwhA9To9SJEoIOw69CFBAq49TL_8tArfu6pclK-fI6Y3x6f_VNstIaQJF6ewo9Yt4wYeBLa1Z_4cI3TsihMtYHfi2T22CZ1CjNYYzN31uauBZbi2hptuXAEYlnoHtFoBYBmTrwqgWJuJNKAPkU8dgO8DrGuV-V65w6O-gwv8h5I0Q"/>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+        <!-- 推广区域模块 -->
+        <section class="content-module content-module-promotion">
+            <div class="promotion-content">
+                <div class="promotion-info">
+                    <img alt="Monica app icon" class="promotion-icon" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmRpKmz88KNCjomaMZyRpdSX0kIKrfVWV7MTT-rBQBoEcCkgDjVwOkRgKUTt2RiA91uqE5HoLxo0NFCzcZN4yBHxKp7mNCcwsUHeh4nfrU70ogOG_5D9BCwYo40pWNTYcg5aWZStjTVUdjL7PtqX96dR9toQciHdDJW2pEOecPa1DPAJcfNGX7ajMKa-BH0jmCbyNH2grNZRFXPnEZJw6lV1KKqCgKMjIESMxKj9Q2IdycWV65oB-Iqaw07R_kqZ6fG1VgvKvDr3Q"/>
+                    <div class="promotion-text">
+                        <h3 class="promotion-title">在所有平台实时互通使用智达AI助手</h3>
+                        <p class="promotion-desc">App、终端 Pro</p>
+                    </div>
+                </div>
+                <img alt="QR code" class="promotion-qr" src="https://pics5.baidu.com/feed/4b90f603738da977034c9f91d037b9168718e39a.jpeg@f_auto?token=2d263fb9f37411ca0f6accc659dd79b3"/>
+            </div>
+        </section>
+
+        <!-- AI 聊天显示区域模块 -->
+        <section class="content-module content-module-chat-display">
+            <div class="module-header">
+                <h2 class="module-title">AI 聊天</h2>
+            </div>
+            <div class="chat-display-area">
+                <div class="chat-placeholder">
+                    在所有平台实时互通使用智达AI助手
                 </div>
             </div>
         </section>
-        <section class="bg-white p-6 rounded-xl shadow-sm">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-semibold text-gray-700">画图</h2>
-                <a class="text-sm text-purple-600 hover:text-purple-800 flex items-center" href="#">
-                    更多 <span class="material-icons text-sm ml-1">chevron_right</span>
-                </a>
-            </div>
-            <div class="space-y-4">
-                <div>
-                    <h3 class="text-base font-medium text-gray-700">图片生成</h3>
-                    <p class="text-xs text-gray-500 mb-2">支持 MJV6、专业修图等</p>
-                    <div class="flex space-x-2">
-                        <img alt="Abstract swirl logo" class="w-10 h-10 rounded-md" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0YFryYjxDWDdohsTdc5zEnm3QlOft46WqF4fr0SxnzuEYsEfGO0FCpiQKOQ-k8I8_9WP2JJKv7zwcFltvlYR6YmjOPtJ9vxcuLusDt5Fk1E79cQHooNTqASPXfQSHdWy9Nt7B4WG452YNXMKd5Sfr3O3in_Gtlbk8M_rEM6703GaLU0dPzP20wRWqnhg_7V9f35NGNa2DJn2tWtfUYtAEaaFPnhDdsVVZxVZ_PeG9LGd_21fCLH6teiiFpZ7cLxxWwcD6Uxkqh4I"/>
-                        <img alt="Stylized S logo" class="w-10 h-10 rounded-md" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA0dreO1-yUeF4wzHtOKa55I7B_TIf2QYM6tHqaWYB_1JO0tIsJxU-l6gICniVV1lDy-QScNd7SitXgvjg7soaqRo67KuOrOkTFy9ByWX-qOZfxNVg06VT0EtBbLSGk3N3rbhcI3cLI51SfvJgG2uEPHbvMq6o8b2RZbwo5482BTTS0UWHmfCSMeKCl4CeX580SAhQ9Sl1yLjPcknnxv3Blcokqnkxdzna2fSbsehKHdxNVmQfOM16xFJzqv9v3dXJRozEaA4oVrJo"/>
-                        <img alt="Colorful abstract shape logo" class="w-10 h-10 rounded-md" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtIoRcEqhwSHP9Qu3RchGHD3bwTYwK7aHJSCujkMXWBd888DM8tf-0RiljYL7bfI_b2ysp6lX495xaik_nWO8rYISf0i46lU1cfF82KHUVswly2XeW0ABCxb0A9qc-YpL1dc6ykpo5kmalseHKJMSN2PskZZAAXgwDzVnSLq3Ha_qItqOw5_S5N1NzIyixqWioB7hDHRWSdLFJu-rj_Gjig3zH9e4i9fxu26ktlWR3VUQjE908Z34VN9c6Rq4kmMSuorfDWayPrIc"/>
-                    </div>
-                </div>
-                <div>
-                    <h3 class="text-base font-medium text-gray-700">视频生成</h3>
-                    <p class="text-xs text-gray-500 mb-2">支持 Pika 及 Runway Gen2</p>
-                    <div class="flex space-x-2">
-                        <img alt="Geometric logo 1" class="w-10 h-10 rounded-md p-1 border" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAcBLFEXDTxiDKGUhe6bghy4z8AU3Cf7Bkbmnmt40QfWJGEQhdSW6n9lFKYXN9TkOLWg-WlKBWgif4LwKkD2-owQnwEsjb3teohy3TLL_QBeEACCYbtbCRgHxODzkNwd1IxN8v8SGuPQFd18Xk56n6LjBBCgkLQWrOHQiPG5QpFuKZ-PsqAa5j436SCm3OaK8ChYaRWaJD9pbZ-q0ebg48p4ofAz0W2MHdMWoKvtGiu00ntB9D3xxpdIyHgCKIxks0Rw5yl56pAzS4"/>
-                        <img alt="Geometric logo 2" class="w-10 h-10 rounded-md p-1 border" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDg4COeYvQR6L3JnU8UYYpsdL66yThSgRY3OLlywlD9KlBtuB8t_yJ5Z8dcw2JpyYTJpTRJRxOfUhwGU8SAIPlZBLDfrPi4IVNifXfcoZ0q8gz5Drbr0uB73tkYSvclwjUv2EXXDwL22fEH2gesQ8r8CE-0QGpIIb0Ai-pFT4VtV-xngqvFIR71-VQz-5vJJwcrZrxcUhbxTSQ_BB2W3bIWTNLDd5qGsRliZEqbNiTpX5tBiyGqgoWMODdXGju0nTU6lxLkM9vc844"/>
-                        <img alt="Geometric logo 3" class="w-10 h-10 rounded-md p-1 border" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD3yerdcPZFTFjDmy-3Z7PX1MXJfJBYoBqojgGfo9Pspro_3HJiJuk2XzwUa--_0sHv7CHofF3JTBh_SFvszznjxFPxis4Vx6s13DvQVkbgIYS5hAB8adXzXVA2wHs5jbAC46X4vGKWx-87ixSXYGilZwGKbiUnhiE5tyK8hQDBlE3qSaYR8SuEgn4IEyE0eMFmnv2C6vZ2t21yIJx8LRq2peHdBWYLZRN3p-ZXjJQIipbw_bfCRkZkPC-_hTNnSyfDGGxDsuhCoBU"/>
-                    </div>
-                </div>
-                <div>
-                    <h3 class="text-base font-medium text-gray-700">设计工具</h3>
-                    <p class="text-xs text-gray-500 mb-2">标语、海报等更多</p>
-                    <div class="flex space-x-2">
-                        <img alt="Avatar 1" class="w-10 h-10 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSgJbKcRHXdjVnqcWavt4zDYN068vR6hc_cfC4B0q1DZ8LW3pDLna-4XOVYcxAUhzvUVKTtTmsYZPBAlMi9vbjToh4TQ9EEXHwtWQEm6YhvJiTPiFme1T-GWf-NdAJ4MSZapi2AmpORNSG18xiQalWqpdyvUk0PB9MvE1GXPlGymMhfFW2frv-SG0MzQRBQ_BTWD6OcHz56Y9WqMG1jaIpf6Ss5_ktJMgkna32j42LBAyLzGoCp_YXg7nIal8xi-f1L0iGwVVZ464"/>
-                        <img alt="Avatar 2" class="w-10 h-10 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBBX8Ch50GovlrIHqZwGL2tNWarTZeF0yBhzi0It_JD34KxZs-otTuBeon-73BZjF3ShXv2K5DuLgrXJ4tLa2G2ULKypN0AlVnqC0nqPEJK3UUIEIZnvNL267f-OforIOv-JwLYEacNb-anHIBDOtCuOhtVGExLgMnlViQ14gbzyzrV_77ri2OHPj-sVoZeU-MXEoTrCp265QF2kA-yQBUoCcdoy8P74EhBR1Xyx16xBs-jnRvvZJfQABZeA28C5kE-Ye2V5U73-g"/>
-                        <img alt="Avatar 3" class="w-10 h-10 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCeXzjXJRj1kXAzjjjFIUezfOjeCUi6rd_o95RuFLl5azXvANdlYVtffLumoeYlAImKvwW_QR9RyHKxxXro7RPc-gYcMH6CNMqNG1FCx8Cb0gV07_7KILtNWFNrmTreReYZsW9ux52b98x7bEMiAsaJdPAPHsMYUdvIlxg8PLIuTwPHZ6IwpxMdDWFGTUapaEm2NYUoZiP4JhN_VL7tFrXnqftfWZJCkTce_ahUgpBAVSswq1PTjALs1sOxS6TY0xuVmGSnryrZaSo"/>
-                        <img alt="Avatar 4" class="w-10 h-10 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCP4ucDTijRweLxsXSFA1kd-glTTZzX80b1W2xyEbgu9-3dA2ORxUoOz4Nfk7e6f0SMQZv0k0ewFxxANHSj-vOp0fa8A4a4LNRwhA9To9SJEoIOw69CFBAq49TL_8tArfu6pclK-fI6Y3x6f_VNstIaQJF6ewo9Yt4wYeBLa1Z_4cI3TsihMtYHfi2T22CZ1CjNYYzN31uauBZbi2hptuXAEYlnoHtFoBYBmTrwqgWJuJNKAPkU8dgO8DrGuV-V65w6O-gwv8h5I0Q"/>
-                    </div>
-                </div>
-            </div>
-        </section>
     </div>
-    <section class="mt-8 bg-white p-6 rounded-xl shadow-sm flex justify-between items-center">
-        <div class="flex items-center">
-            <img alt="Monica app icon" class="w-10 h-10 rounded-lg mr-4" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmRpKmz88KNCjomaMZyRpdSX0kIKrfVWV7MTT-rBQBoEcCkgDjVwOkRgKUTt2RiA91uqE5HoLxo0NFCzcZN4yBHxKp7mNCcwsUHeh4nfrU70ogOG_5D9BCwYo40pWNTYcg5aWZStjTVUdjL7PtqX96dR9toQciHdDJW2pEOecPa1DPAJcfNGX7ajMKa-BH0jmCbyNH2grNZRFXPnEZJw6lV1KKqCgKMjIESMxKj9Q2IdycWV65oB-Iqaw07R_kqZ6fG1VgvKvDr3Q"/>
-            <div>
-                <h3 class="text-base font-medium text-gray-700">在所有平台实时互通使用智达AI助手</h3>
-                <p class="text-sm text-gray-500">App、终端 Pro</p>
-            </div>
+</div>
+
+<!-- 第四容器：聊天输入框 -->
+<div id="container-chat-input" class="container-chat-input">
+    <form action="/api/chat" method="post" class="chat-input-form">
+        <!-- 工具栏 -->
+        <div class="flex items-center space-x-2 overflow-x-auto whitespace-nowrap border-b border-gray-200 pb-2 mb-4">
+            <button type="button" class="px-3 py-1.5 text-sm rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 flex items-center">
+                <span class="material-icons text-sm mr-1">auto_awesome</span> 翻译
+            </button>
+            <button type="button" class="px-3 py-1.5 text-sm rounded-lg text-gray-600 hover:bg-gray-100 flex items-center">
+                <span class="material-icons text-sm mr-1">article</span> 日常
+            </button>
+            <button type="button" class="px-3 py-1.5 text-sm rounded-lg text-gray-600 hover:bg-gray-100 flex items-center">
+                <span class="material-icons text-sm mr-1">school</span> 思维导图
+            </button>
+            <button type="button" class="px-3 py-1.5 text-sm rounded-lg text-gray-600 hover:bg-gray-100 flex items-center">
+                <span class="material-icons text-sm mr-1">search</span> 搜索
+            </button>
         </div>
-        <img alt="QR code" class="w-20 h-20" src="https://pics5.baidu.com/feed/4b90f603738da977034c9f91d037b9168718e39a.jpeg@f_auto?token=2d263fb9f37411ca0f6accc659dd79b3"/>
-    </section>
 
-    <!-- 简化的聊天界面 -->
-    <div class="mt-8 bg-white p-6 rounded-xl shadow-sm">
-        <h2 class="text-xl font-semibold text-gray-700 mb-4">AI 聊天</h2>
-
-        <!-- 聊天消息显示区域 -->
-        <div class="border border-gray-200 rounded-lg p-4 h-64 overflow-y-auto mb-4 bg-gray-50">
-            <div class="text-center text-gray-500 mt-20">
-                在所有平台实时互通使用智达AI助手
-            </div>
-        </div>
-
-        <!-- 聊天输入表单 -->
-        <form action="/api/chat" method="post" class="space-y-4">
-            <!-- 工具栏 -->
-            <div class="flex items-center space-x-2 overflow-x-auto whitespace-nowrap border-b border-gray-200 pb-2">
-                <button type="button" class="px-3 py-1.5 text-sm rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 flex items-center">
-                    <span class="material-icons text-sm mr-1">auto_awesome</span> 翻译
-                </button>
-                <button type="button" class="px-3 py-1.5 text-sm rounded-lg text-gray-600 hover:bg-gray-100 flex items-center">
-                    <span class="material-icons text-sm mr-1">article</span> 日常
-                </button>
-                <button type="button" class="px-3 py-1.5 text-sm rounded-lg text-gray-600 hover:bg-gray-100 flex items-center">
-                    <span class="material-icons text-sm mr-1">school</span> 思维导图
-                </button>
-                <button type="button" class="px-3 py-1.5 text-sm rounded-lg text-gray-600 hover:bg-gray-100 flex items-center">
-                    <span class="material-icons text-sm mr-1">search</span> 搜索
-                </button>
-            </div>
-
-            <!-- 输入区域 -->
-            <div class="border border-gray-200 rounded-lg bg-white shadow-sm">
-                <textarea
-                    name="message"
-                    placeholder="先帮我写一篇关于人工智能的演讲稿，再做成思维导图"
-                    class="w-full p-3 border-none resize-y focus:ring-0 text-gray-700 placeholder-gray-400 text-base rounded-lg min-h-[80px] max-h-[400px]"
-                    rows="3"
-                    required
-                ></textarea>
-                <div class="flex items-center justify-between p-3 border-t border-gray-100">
-                    <div class="flex items-center space-x-2">
-                        <button type="button" class="p-1.5 rounded-md hover:bg-gray-100">
-                            <span class="material-icons text-gray-500 text-xl">mic_none</span>
-                        </button>
-                        <button type="button" class="p-1.5 rounded-md hover:bg-gray-100">
-                            <span class="material-icons text-gray-500 text-xl">attach_file</span>
-                        </button>
-                    </div>
-                    <div class="flex items-center space-x-3">
-                        <button type="submit" class="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 flex items-center">
-                            <span class="material-icons text-sm mr-1">send</span>
-                            发送
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 底部工具栏 -->
-            <div class="flex items-center justify-between">
+        <!-- 输入区域 -->
+        <div class="border border-gray-200 rounded-lg bg-white shadow-sm">
+            <textarea
+                name="message"
+                placeholder="先帮我写一篇关于人工智能的演讲稿，再做成思维导图"
+                class="w-full p-3 border-none resize-y focus:ring-0 text-gray-700 placeholder-gray-400 text-base rounded-lg min-h-[80px] max-h-[200px]"
+                rows="3"
+                required
+            ></textarea>
+            <div class="flex items-center justify-between p-3 border-t border-gray-100">
                 <div class="flex items-center space-x-2">
+                    <button type="button" class="p-1.5 rounded-md hover:bg-gray-100">
+                        <span class="material-icons text-gray-500 text-xl">mic_none</span>
+                    </button>
+                    <button type="button" class="p-1.5 rounded-md hover:bg-gray-100">
+                        <span class="material-icons text-gray-500 text-xl">attach_file</span>
+                    </button>
+                </div>
+                <div class="flex items-center space-x-3">
                     <select name="model" class="flex items-center px-3 py-1.5 text-sm bg-purple-50 text-purple-700 rounded-lg border-none">
                         <option value="sonnet">Sonnet</option>
                         <option value="gpt4">GPT-4</option>
@@ -216,11 +243,15 @@
                         <option value="web">全网</option>
                         <option value="local">本地</option>
                     </select>
+                    <button type="submit" class="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 flex items-center">
+                        <span class="material-icons text-sm mr-1">send</span>
+                        发送
+                    </button>
                 </div>
             </div>
-        </form>
-    </div>
-</main>
+        </div>
+    </form>
+</div>
 
 
 

@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>知识库管理系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 侧边栏样式 */
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 2rem 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 0 2rem 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .sidebar-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(45deg, #3498db, #2ecc71);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .sidebar-subtitle {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 1rem 2rem;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-left-color: #3498db;
+            transform: translateX(5px);
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 1rem;
+            opacity: 0.7;
+        }
+
+        /* 主内容区域 */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+            background: #f8f9fa;
+        }
+
+        /* 页面头部 */
+        .page-header {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-description {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+
+        /* 内容容器 */
+        .content-container {
+            display: none;
+        }
+
+        .content-container.active {
+            display: block;
+        }
+
+        /* 卡片样式 */
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .card-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 0.5rem;
+            color: #3498db;
+        }
+
+        /* 统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        /* 表格样式 */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        /* 按钮样式 */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+
+        /* 表单样式 */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        /* 搜索框 */
+        .search-container {
+            position: relative;
+            margin-bottom: 2rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1rem 1rem 1rem 3rem;
+            border: 2px solid #e9ecef;
+            border-radius: 50px;
+            font-size: 1rem;
+            background: white;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #7f8c8d;
+        }
+
+        /* 标签样式 */
+        .tag {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: #e3f2fd;
+            color: #1976d2;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .tag.success {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .tag.warning {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .tag.danger {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+
+        /* 进度条 */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            transition: width 0.3s ease;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .page-title {
+                font-size: 1.5rem;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+                position: fixed;
+                top: 1rem;
+                left: 1rem;
+                z-index: 1001;
+                background: #2c3e50;
+                color: white;
+                border: none;
+                padding: 0.5rem;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+        }
+
+        .mobile-menu-btn {
+            display: none;
+        }
+
+        /* 文件上传区域 */
+        .upload-area {
+            border: 2px dashed #3498db;
+            border-radius: 8px;
+            padding: 3rem;
+            text-align: center;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            background: #e3f2fd;
+            border-color: #2980b9;
+        }
+
+        .upload-area.dragover {
+            background: #e3f2fd;
+            border-color: #2980b9;
+            transform: scale(1.02);
+        }
+
+        /* 树形结构 */
+        .tree-container {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .tree-item {
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .tree-item:hover {
+            background: #f8f9fa;
+        }
+
+        .tree-item.selected {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .tree-indent {
+            margin-left: 1.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+
+    <div class="container">
+        <!-- 侧边栏导航 -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2 class="sidebar-title">知识库管理</h2>
+                <p class="sidebar-subtitle">Knowledge Base Management</p>
+            </div>
+
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="#" class="nav-link active" onclick="showContent('dashboard')">
+                        <span class="nav-icon">📊</span>
+                        概览仪表板
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" onclick="showContent('documents')">
+                        <span class="nav-icon">📄</span>
+                        文档管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" onclick="showContent('categories')">
+                        <span class="nav-icon">📁</span>
+                        分类管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" onclick="showContent('search')">
+                        <span class="nav-icon">🔍</span>
+                        搜索索引
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" onclick="showContent('permissions')">
+                        <span class="nav-icon">🔐</span>
+                        权限管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" onclick="showContent('import-export')">
+                        <span class="nav-icon">📤</span>
+                        导入导出
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" onclick="showContent('analytics')">
+                        <span class="nav-icon">📈</span>
+                        数据分析
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" onclick="showContent('settings')">
+                        <span class="nav-icon">⚙️</span>
+                        系统设置
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <!-- 概览仪表板容器 -->
+            <div id="dashboard" class="content-container active">
+                <div class="page-header">
+                    <h1 class="page-title">知识库概览</h1>
+                    <p class="page-description">全面了解您的知识库运营状况和关键指标</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">1,247</div>
+                        <div class="stat-label">总文档数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">23</div>
+                        <div class="stat-label">分类数量</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">156</div>
+                        <div class="stat-label">活跃用户</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">89%</div>
+                        <div class="stat-label">搜索成功率</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">
+                        <span class="card-icon">📈</span>
+                        最近活动
+                    </h3>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>时间</th>
+                                    <th>操作</th>
+                                    <th>用户</th>
+                                    <th>文档</th>
+                                    <th>状态</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>2024-01-15 14:30</td>
+                                    <td>创建文档</td>
+                                    <td>张三</td>
+                                    <td>API接口文档</td>
+                                    <td><span class="tag success">成功</span></td>
+                                </tr>
+                                <tr>
+                                    <td>2024-01-15 14:25</td>
+                                    <td>更新文档</td>
+                                    <td>李四</td>
+                                    <td>用户手册</td>
+                                    <td><span class="tag success">成功</span></td>
+                                </tr>
+                                <tr>
+                                    <td>2024-01-15 14:20</td>
+                                    <td>删除文档</td>
+                                    <td>王五</td>
+                                    <td>过期文档</td>
+                                    <td><span class="tag warning">待审核</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 文档管理容器 -->
+            <div id="documents" class="content-container">
+                <div class="page-header">
+                    <h1 class="page-title">文档管理</h1>
+                    <p class="page-description">管理和组织您的知识库文档</p>
+                </div>
+
+                <div class="card">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <h3 class="card-title">
+                            <span class="card-icon">📄</span>
+                            文档列表
+                        </h3>
+                        <div>
+                            <button class="btn btn-primary" onclick="showUploadModal()">+ 新建文档</button>
+                            <button class="btn btn-secondary">批量操作</button>
+                        </div>
+                    </div>
+
+                    <div class="search-container">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" class="search-input" placeholder="搜索文档标题、内容或标签...">
+                    </div>
+
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox"></th>
+                                    <th>标题</th>
+                                    <th>分类</th>
+                                    <th>作者</th>
+                                    <th>更新时间</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><input type="checkbox"></td>
+                                    <td>API接口文档</td>
+                                    <td><span class="tag">技术文档</span></td>
+                                    <td>张三</td>
+                                    <td>2024-01-15</td>
+                                    <td><span class="tag success">已发布</span></td>
+                                    <td>
+                                        <button class="btn btn-primary"
+                                            style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">编辑</button>
+                                        <button class="btn btn-danger"
+                                            style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">删除</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><input type="checkbox"></td>
+                                    <td>用户操作手册</td>
+                                    <td><span class="tag">用户指南</span></td>
+                                    <td>李四</td>
+                                    <td>2024-01-14</td>
+                                    <td><span class="tag warning">草稿</span></td>
+                                    <td>
+                                        <button class="btn btn-primary"
+                                            style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">编辑</button>
+                                        <button class="btn btn-danger"
+                                            style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">删除</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分类管理容器 -->
+            <div id="categories" class="content-container">
+                <div class="page-header">
+                    <h1 class="page-title">分类管理</h1>
+                    <p class="page-description">组织和管理知识库的分类结构</p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem;">
+                    <div class="card">
+                        <h3 class="card-title">
+                            <span class="card-icon">🌳</span>
+                            分类树
+                        </h3>
+                        <div class="tree-container">
+                            <div class="tree-item selected">📁 根目录</div>
+                            <div class="tree-item tree-indent">📁 技术文档</div>
+                            <div class="tree-item tree-indent tree-indent">📄 API文档</div>
+                            <div class="tree-item tree-indent tree-indent">📄 开发指南</div>
+                            <div class="tree-item tree-indent">📁 用户指南</div>
+                            <div class="tree-item tree-indent tree-indent">📄 快速入门</div>
+                            <div class="tree-item tree-indent tree-indent">📄 常见问题</div>
+                            <div class="tree-item tree-indent">📁 产品文档</div>
+                        </div>
+                        <button class="btn btn-primary" style="margin-top: 1rem; width: 100%;">+ 新建分类</button>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title">
+                            <span class="card-icon">⚙️</span>
+                            分类详情
+                        </h3>
+                        <form>
+                            <div class="form-group">
+                                <label class="form-label">分类名称</label>
+                                <input type="text" class="form-input" value="技术文档" placeholder="输入分类名称">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">父级分类</label>
+                                <select class="form-select">
+                                    <option>根目录</option>
+                                    <option>技术文档</option>
+                                    <option>用户指南</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">描述</label>
+                                <textarea class="form-textarea" rows="3" placeholder="分类描述...">包含所有技术相关的文档和资料</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">排序权重</label>
+                                <input type="number" class="form-input" value="1" min="0">
+                            </div>
+                            <div style="display: flex; gap: 1rem;">
+                                <button type="submit" class="btn btn-primary">保存更改</button>
+                                <button type="button" class="btn btn-danger">删除分类</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 搜索索引容器 -->
+            <div id="search" class="content-container">
+                <div class="page-header">
+                    <h1 class="page-title">搜索索引</h1>
+                    <p class="page-description">管理搜索引擎和索引优化</p>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">
+                        <span class="card-icon">🔍</span>
+                        索引状态
+                    </h3>
+                    <div
+                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                        <div style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                            <div style="font-size: 2rem; font-weight: bold; color: #2ecc71;">1,247</div>
+                            <div>已索引文档</div>
+                        </div>
+                        <div style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                            <div style="font-size: 2rem; font-weight: bold; color: #f39c12;">23</div>
+                            <div>待索引文档</div>
+                        </div>
+                        <div style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                            <div style="font-size: 2rem; font-weight: bold; color: #e74c3c;">5</div>
+                            <div>索引失败</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 2rem;">
+                        <h4>索引进度</h4>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 85%"></div>
+                        </div>
+                        <p style="color: #7f8c8d; margin-top: 0.5rem;">85% 完成 (1,247/1,470 文档)</p>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+                        <button class="btn btn-primary">重建索引</button>
+                        <button class="btn btn-secondary">增量更新</button>
+                        <button class="btn btn-warning">清理索引</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">
+                        <span class="card-icon">📊</span>
+                        搜索统计
+                    </h3>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>搜索关键词</th>
+                                    <th>搜索次数</th>
+                                    <th>成功率</th>
+                                    <th>平均响应时间</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>API文档</td>
+                                    <td>156</td>
+                                    <td><span class="tag success">95%</span></td>
+                                    <td>0.2s</td>
+                                </tr>
+                                <tr>
+                                    <td>用户手册</td>
+                                    <td>89</td>
+                                    <td><span class="tag success">92%</span></td>
+                                    <td>0.3s</td>
+                                </tr>
+                                <tr>
+                                    <td>安装指南</td>
+                                    <td>67</td>
+                                    <td><span class="tag warning">78%</span></td>
+                                    <td>0.5s</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 权限管理容器 -->
+            <div id="permissions" class="content-container">
+                <div class="page-header">
+                    <h1 class="page-title">权限管理</h1>
+                    <p class="page-description">管理用户访问权限和角色分配</p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                    <div class="card">
+                        <h3 class="card-title">
+                            <span class="card-icon">👥</span>
+                            用户权限
+                        </h3>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>用户</th>
+                                        <th>角色</th>
+                                        <th>状态</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>张三</td>
+                                        <td><span class="tag danger">管理员</span></td>
+                                        <td><span class="tag success">活跃</span></td>
+                                        <td><button class="btn btn-primary"
+                                                style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">编辑</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td>李四</td>
+                                        <td><span class="tag warning">编辑者</span></td>
+                                        <td><span class="tag success">活跃</span></td>
+                                        <td><button class="btn btn-primary"
+                                                style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">编辑</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td>王五</td>
+                                        <td><span class="tag">查看者</span></td>
+                                        <td><span class="tag">离线</span></td>
+                                        <td><button class="btn btn-primary"
+                                                style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">编辑</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <button class="btn btn-primary" style="margin-top: 1rem; width: 100%;">+ 添加用户</button>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title">
+                            <span class="card-icon">🔐</span>
+                            角色权限
+                        </h3>
+                        <div style="margin-bottom: 1rem;">
+                            <select class="form-select">
+                                <option>管理员</option>
+                                <option>编辑者</option>
+                                <option>查看者</option>
+                            </select>
+                        </div>
+                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px;">
+                            <h4 style="margin-bottom: 1rem;">权限列表</h4>
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                <label style="display: flex; align-items: center;">
+                                    <input type="checkbox" checked style="margin-right: 0.5rem;">
+                                    查看文档
+                                </label>
+                                <label style="display: flex; align-items: center;">
+                                    <input type="checkbox" checked style="margin-right: 0.5rem;">
+                                    创建文档
+                                </label>
+                                <label style="display: flex; align-items: center;">
+                                    <input type="checkbox" checked style="margin-right: 0.5rem;">
+                                    编辑文档
+                                </label>
+                                <label style="display: flex; align-items: center;">
+                                    <input type="checkbox" checked style="margin-right: 0.5rem;">
+                                    删除文档
+                                </label>
+                                <label style="display: flex; align-items: center;">
+                                    <input type="checkbox" checked style="margin-right: 0.5rem;">
+                                    管理分类
+                                </label>
+                                <label style="display: flex; align-items: center;">
+                                    <input type="checkbox" checked style="margin-right: 0.5rem;">
+                                    用户管理
+                                </label>
+                                <label style="display: flex; align-items: center;">
+                                    <input type="checkbox" checked style="margin-right: 0.5rem;">
+                                    系统设置
+                                </label>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" style="margin-top: 1rem; width: 100%;">保存权限</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 导入导出容器 -->
+            <div id="import-export" class="content-container">
+                <div class="page-header">
+                    <h1 class="page-title">导入导出</h1>
+                    <p class="page-description">批量导入导出知识库内容</p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                    <div class="card">
+                        <h3 class="card-title">
+                            <span class="card-icon">📥</span>
+                            数据导入
+                        </h3>
+                        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">📁</div>
+                            <h4>拖拽文件到此处或点击上传</h4>
+                            <p style="color: #7f8c8d; margin-top: 0.5rem;">支持 .docx, .pdf, .md, .txt, .zip 格式</p>
+                            <input type="file" id="fileInput" style="display: none;" multiple
+                                accept=".docx,.pdf,.md,.txt,.zip">
+                        </div>
+
+                        <div style="margin-top: 2rem;">
+                            <h4>导入选项</h4>
+                            <div class="form-group">
+                                <label class="form-label">目标分类</label>
+                                <select class="form-select">
+                                    <option>技术文档</option>
+                                    <option>用户指南</option>
+                                    <option>产品文档</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label style="display: flex; align-items: center;">
+                                    <input type="checkbox" style="margin-right: 0.5rem;">
+                                    自动创建分类
+                                </label>
+                                <label style="display: flex; align-items: center;">
+                                    <input type="checkbox" checked style="margin-right: 0.5rem;">
+                                    覆盖同名文档
+                                </label>
+                                <label style="display: flex; align-items: center;">
+                                    <input type="checkbox" checked style="margin-right: 0.5rem;">
+                                    自动生成索引
+                                </label>
+                            </div>
+                            <button class="btn btn-primary" style="width: 100%;">开始导入</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title">
+                            <span class="card-icon">📤</span>
+                            数据导出
+                        </h3>
+                        <div class="form-group">
+                            <label class="form-label">导出范围</label>
+                            <select class="form-select">
+                                <option>全部文档</option>
+                                <option>指定分类</option>
+                                <option>指定时间范围</option>
+                                <option>自定义选择</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">导出格式</label>
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                <label style="display: flex; align-items: center;">
+                                    <input type="radio" name="exportFormat" value="pdf" style="margin-right: 0.5rem;">
+                                    PDF 格式
+                                </label>
+                                <label style="display: flex; align-items: center;">
+                                    <input type="radio" name="exportFormat" value="docx" checked
+                                        style="margin-right: 0.5rem;">
+                                    Word 文档
+                                </label>
+                                <label style="display: flex; align-items: center;">
+                                    <input type="radio" name="exportFormat" value="md" style="margin-right: 0.5rem;">
+                                    Markdown
+                                </label>
+                                <label style="display: flex; align-items: center;">
+                                    <input type="radio" name="exportFormat" value="html" style="margin-right: 0.5rem;">
+                                    HTML 网页
+                                </label>
+                                <label style="display: flex; align-items: center;">
+                                    <input type="radio" name="exportFormat" value="json" style="margin-right: 0.5rem;">
+                                    JSON 数据
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">导出选项</label>
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                <label style="display: flex; align-items: center;">
+                                    <input type="checkbox" checked style="margin-right: 0.5rem;">
+                                    包含元数据
+                                </label>
+                                <label style="display: flex; align-items: center;">
+                                    <input type="checkbox" style="margin-right: 0.5rem;">
+                                    包含附件
+                                </label>
+                                <label style="display: flex; align-items: center;">
+                                    <input type="checkbox" checked style="margin-right: 0.5rem;">
+                                    保持目录结构
+                                </label>
+                            </div>
+                        </div>
+                        <button class="btn btn-success" style="width: 100%;">开始导出</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">
+                        <span class="card-icon">📋</span>
+                        操作历史
+                    </h3>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>时间</th>
+                                    <th>操作类型</th>
+                                    <th>文件数量</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>2024-01-15 15:30</td>
+                                    <td>批量导入</td>
+                                    <td>25 个文件</td>
+                                    <td><span class="tag success">完成</span></td>
+                                    <td><button class="btn btn-primary"
+                                            style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">查看详情</button></td>
+                                </tr>
+                                <tr>
+                                    <td>2024-01-15 14:15</td>
+                                    <td>导出PDF</td>
+                                    <td>156 个文档</td>
+                                    <td><span class="tag success">完成</span></td>
+                                    <td><button class="btn btn-primary"
+                                            style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">下载</button></td>
+                                </tr>
+                                <tr>
+                                    <td>2024-01-15 13:45</td>
+                                    <td>批量导入</td>
+                                    <td>8 个文件</td>
+                                    <td><span class="tag danger">失败</span></td>
+                                    <td><button class="btn btn-primary"
+                                            style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">重试</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据分析容器 -->
+            <div id="analytics" class="content-container">
+                <div class="page-header">
+                    <h1 class="page-title">数据分析</h1>
+                    <p class="page-description">深入了解知识库的使用情况和性能指标</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">2,847</div>
+                        <div class="stat-label">本月访问量</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">156</div>
+                        <div class="stat-label">活跃用户</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">4.2</div>
+                        <div class="stat-label">平均评分</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">89%</div>
+                        <div class="stat-label">用户满意度</div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+                    <div class="card">
+                        <h3 class="card-title">
+                            <span class="card-icon">📊</span>
+                            访问趋势
+                        </h3>
+                        <div
+                            style="height: 300px; background: #f8f9fa; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #7f8c8d;">
+                            [图表占位符 - 访问量趋势图]
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title">
+                            <span class="card-icon">🏆</span>
+                            热门文档
+                        </h3>
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: #f8f9fa; border-radius: 4px;">
+                                <span>API接口文档</span>
+                                <span class="tag">456 次</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: #f8f9fa; border-radius: 4px;">
+                                <span>快速入门指南</span>
+                                <span class="tag">342 次</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: #f8f9fa; border-radius: 4px;">
+                                <span>常见问题解答</span>
+                                <span class="tag">289 次</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: #f8f9fa; border-radius: 4px;">
+                                <span>用户操作手册</span>
+                                <span class="tag">234 次</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">
+                        <span class="card-icon">🔍</span>
+                        搜索分析
+                    </h3>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>搜索词</th>
+                                    <th>搜索次数</th>
+                                    <th>点击率</th>
+                                    <th>平均停留时间</th>
+                                    <th>趋势</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>API文档</td>
+                                    <td>456</td>
+                                    <td>85%</td>
+                                    <td>3分42秒</td>
+                                    <td><span style="color: #2ecc71;">↗ +12%</span></td>
+                                </tr>
+                                <tr>
+                                    <td>安装教程</td>
+                                    <td>342</td>
+                                    <td>78%</td>
+                                    <td>2分18秒</td>
+                                    <td><span style="color: #2ecc71;">↗ +8%</span></td>
+                                </tr>
+                                <tr>
+                                    <td>故障排除</td>
+                                    <td>289</td>
+                                    <td>92%</td>
+                                    <td>4分56秒</td>
+                                    <td><span style="color: #e74c3c;">↘ -3%</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 系统设置容器 -->
+            <div id="settings" class="content-container">
+                <div class="page-header">
+                    <h1 class="page-title">系统设置</h1>
+                    <p class="page-description">配置知识库系统的各项参数和选项</p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                    <div class="card">
+                        <h3 class="card-title">
+                            <span class="card-icon">⚙️</span>
+                            基本设置
+                        </h3>
+                        <form>
+                            <div class="form-group">
+                                <label class="form-label">系统名称</label>
+                                <input type="text" class="form-input" value="企业知识库系统" placeholder="输入系统名称">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">系统描述</label>
+                                <textarea class="form-textarea" rows="3"
+                                    placeholder="系统描述...">为企业提供全面的知识管理解决方案</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">默认语言</label>
+                                <select class="form-select">
+                                    <option>中文简体</option>
+                                    <option>中文繁体</option>
+                                    <option>English</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">时区设置</label>
+                                <select class="form-select">
+                                    <option>Asia/Shanghai (UTC+8)</option>
+                                    <option>Asia/Tokyo (UTC+9)</option>
+                                    <option>UTC (UTC+0)</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">保存设置</button>
+                        </form>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title">
+                            <span class="card-icon">🔒</span>
+                            安全设置
+                        </h3>
+                        <form>
+                            <div class="form-group">
+                                <label style="display: flex; align-items: center;">
+                                    <input type="checkbox" checked style="margin-right: 0.5rem;">
+                                    启用用户注册
+                                </label>
+                                <label style="display: flex; align-items: center;">
+                                    <input type="checkbox" checked style="margin-right: 0.5rem;">
+                                    需要邮箱验证
+                                </label>
+                                <label style="display: flex; align-items: center;">
+                                    <input type="checkbox" style="margin-right: 0.5rem;">
+                                    启用双因素认证
+                                </label>
+                                <label style="display: flex; align-items: center;">
+                                    <input type="checkbox" checked style="margin-right: 0.5rem;">
+                                    记录操作日志
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">密码最小长度</label>
+                                <input type="number" class="form-input" value="8" min="6" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">会话超时时间（分钟）</label>
+                                <input type="number" class="form-input" value="30" min="5" max="1440">
+                            </div>
+                            <button type="submit" class="btn btn-primary">保存设置</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
+                    <div class="card">
+                        <h3 class="card-title">
+                            <span class="card-icon">📧</span>
+                            邮件设置
+                        </h3>
+                        <form>
+                            <div class="form-group">
+                                <label class="form-label">SMTP服务器</label>
+                                <input type="text" class="form-input" placeholder="smtp.example.com">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">端口</label>
+                                <input type="number" class="form-input" value="587">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">用户名</label>
+                                <input type="text" class="form-input" placeholder="your-email@example.com">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">密码</label>
+                                <input type="password" class="form-input" placeholder="••••••••">
+                            </div>
+                            <div class="form-group">
+                                <label style="display: flex; align-items: center;">
+                                    <input type="checkbox" checked style="margin-right: 0.5rem;">
+                                    启用SSL/TLS
+                                </label>
+                            </div>
+                            <div style="display: flex; gap: 1rem;">
+                                <button type="submit" class="btn btn-primary">保存设置</button>
+                                <button type="button" class="btn btn-secondary">测试连接</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title">
+                            <span class="card-icon">💾</span>
+                            存储设置
+                        </h3>
+                        <form>
+                            <div class="form-group">
+                                <label class="form-label">存储类型</label>
+                                <select class="form-select">
+                                    <option>本地存储</option>
+                                    <option>阿里云OSS</option>
+                                    <option>腾讯云COS</option>
+                                    <option>AWS S3</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">最大文件大小（MB）</label>
+                                <input type="number" class="form-input" value="50" min="1" max="1000">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">允许的文件类型</label>
+                                <input type="text" class="form-input" value="pdf,docx,txt,md,jpg,png"
+                                    placeholder="用逗号分隔">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">存储路径</label>
+                                <input type="text" class="form-input" value="/data/uploads" placeholder="存储路径">
+                            </div>
+                            <button type="submit" class="btn btn-primary">保存设置</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">
+                        <span class="card-icon">🔧</span>
+                        系统维护
+                    </h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        <button class="btn btn-warning">清理缓存</button>
+                        <button class="btn btn-secondary">重建索引</button>
+                        <button class="btn btn-primary">数据备份</button>
+                        <button class="btn btn-success">系统检查</button>
+                        <button class="btn btn-danger">重启服务</button>
+                        <button class="btn btn-secondary">查看日志</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 显示内容容器
+        function showContent(contentId) {
+            // 隐藏所有内容容器
+            const containers = document.querySelectorAll('.content-container');
+            containers.forEach(container => {
+                container.classList.remove('active');
+            });
+
+            // 显示指定的内容容器
+            const targetContainer = document.getElementById(contentId);
+            if (targetContainer) {
+                targetContainer.classList.add('active');
+            }
+
+            // 更新导航链接状态
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+            });
+
+            // 添加活跃状态到当前链接
+            event.target.classList.add('active');
+
+            // 在移动设备上关闭侧边栏
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('mobile-open');
+            }
+        }
+
+        // 切换移动端菜单
+        function toggleMobileMenu() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('mobile-open');
+        }
+
+        // 显示上传模态框（占位符函数）
+        function showUploadModal() {
+            alert('上传功能将在此处实现');
+        }
+
+        // 文件拖拽上传功能
+        const uploadArea = document.querySelector('.upload-area');
+        if (uploadArea) {
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                console.log('上传的文件:', files);
+                // 这里可以添加文件上传逻辑
+            });
+        }
+
+        // 响应式处理
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                document.getElementById('sidebar').classList.remove('mobile-open');
+            }
+        });
+
+        // API集成示例函数（占位符）
+        async function apiRequest(endpoint, data) {
+            const formData = new FormData();
+            formData.append('user_id', 'current_user_id');
+
+            // 添加其他数据
+            for (const key in data) {
+                formData.append(key, data[key]);
+            }
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    body: formData
+                });
+                return await response.json();
+            } catch (error) {
+                console.error('API请求失败:', error);
+                return null;
+            }
+        }
+
+        // 示例：获取文档列表
+        async function loadDocuments() {
+            const result = await apiRequest('/api/documents/list', {
+                page: 1,
+                limit: 20
+            });
+            if (result) {
+                console.log('文档列表:', result);
+                // 更新UI
+            }
+        }
+
+        // 示例：创建新文档
+        async function createDocument(title, content, category) {
+            const result = await apiRequest('/api/documents/create', {
+                title: title,
+                content: content,
+                category: category
+            });
+            if (result) {
+                console.log('文档创建成功:', result);
+                // 刷新文档列表
+                loadDocuments();
+            }
+        }
+
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('知识库管理系统已加载');
+            // 可以在这里添加初始化逻辑
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Interface - 知识库详情</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <link href="styles.css" rel="stylesheet" />
+</head>
+<body class="bg-gray-50 h-screen">
+<!-- 第一容器：固定侧边栏 -->
+<div id="container-sidebar" class="container-sidebar">
+    <div class="sidebar-content">
+        <div class="sidebar-nav-top">
+            <button class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">menu</span>
+            </button>
+            <a href="index.html" class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">chat_bubble_outline</span>
+            </a>
+            <a href="knowledgebase.html" class="sidebar-nav-item sidebar-nav-active">
+                <span class="material-icons">storage</span>
+            </a>
+            <button class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">videocam</span>
+            </button>
+            <button class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">mic</span>
+            </button>
+            <button class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">explore</span>
+            </button>
+            <button class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">bookmark_border</span>
+            </button>
+            <button class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">more_horiz</span>
+            </button>
+        </div>
+        <div class="sidebar-nav-bottom">
+            <a href="help.html" class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">help_outline</span>
+            </a>
+            <a href="settings.html" class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">settings</span>
+            </a>
+            <a href="home.html" class="sidebar-user-avatar">
+                M
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- 第二容器：顶部容器 -->
+<div id="container-header" class="container-header">
+    <div class="header-content">
+        <div class="header-left">
+            <a href="knowledgebase.html" class="header-back-btn">
+                <span class="material-icons">arrow_back</span>
+            </a>
+            <div class="header-title-section">
+                <h1 class="header-title">金融知识库</h1>
+                <p class="header-subtitle">学习金融过程中的知识库 • 4个文档</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="header-action-btn header-action-secondary">
+                <span class="material-icons">upload</span>
+                <span>上传文档</span>
+            </button>
+            <button class="header-action-btn header-action-primary">
+                <span class="material-icons">add</span>
+                <span>新建文档</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 主内容布局容器 -->
+<div id="container-main-layout" class="container-main-layout">
+    <!-- 第三容器：左侧文件列表容器 -->
+    <div id="container-file-list" class="container-file-list">
+        <!-- 文件列表头部 -->
+        <div class="file-list-header">
+            <div class="file-list-title-section">
+                <h2 class="file-list-title">文档列表</h2>
+                <span class="file-list-count">4个文档</span>
+            </div>
+            <!-- 搜索框 -->
+            <div class="file-list-search">
+                <input type="text" placeholder="搜索文档..." class="search-input">
+                <span class="material-icons search-icon">search</span>
+            </div>
+        </div>
+
+        <!-- 文件列表内容 -->
+        <div class="file-list-content">
+            <!-- 文档项目 -->
+            <div class="file-item file-item-active">
+                <div class="file-item-icon">
+                    <span class="material-icons">picture_as_pdf</span>
+                </div>
+                <div class="file-item-info">
+                    <h3 class="file-item-title">金融市场基础知识.pdf</h3>
+                    <p class="file-item-meta">2.3 MB • 2024-01-15</p>
+                    <p class="file-item-desc">股票、债券、基金等金融工具的基础介绍</p>
+                </div>
+            </div>
+
+            <div class="file-item">
+                <div class="file-item-icon">
+                    <span class="material-icons">picture_as_pdf</span>
+                </div>
+                <div class="file-item-info">
+                    <h3 class="file-item-title">投资策略分析报告.pdf</h3>
+                    <p class="file-item-meta">1.8 MB • 2024-01-12</p>
+                    <p class="file-item-desc">价值投资与成长投资策略对比分析</p>
+                </div>
+            </div>
+
+            <div class="file-item">
+                <div class="file-item-icon">
+                    <span class="material-icons">picture_as_pdf</span>
+                </div>
+                <div class="file-item-info">
+                    <h3 class="file-item-title">风险管理手册.pdf</h3>
+                    <p class="file-item-meta">3.1 MB • 2024-01-10</p>
+                    <p class="file-item-desc">金融风险识别、评估与控制方法</p>
+                </div>
+            </div>
+
+            <div class="file-item">
+                <div class="file-item-icon">
+                    <span class="material-icons">picture_as_pdf</span>
+                </div>
+                <div class="file-item-info">
+                    <h3 class="file-item-title">财务报表分析指南.pdf</h3>
+                    <p class="file-item-meta">2.7 MB • 2024-01-08</p>
+                    <p class="file-item-desc">如何阅读和分析企业财务报表</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 可调节分隔条 -->
+    <div id="resize-handle" class="resize-handle">
+        <div class="resize-handle-line"></div>
+    </div>
+
+    <!-- 第四容器：右侧内容预览容器 -->
+    <div id="container-content-preview" class="container-content-preview">
+        <!-- 预览头部 -->
+        <div class="preview-header">
+            <div class="preview-file-info">
+                <div class="preview-file-icon">
+                    <span class="material-icons">picture_as_pdf</span>
+                </div>
+                <div class="preview-file-details">
+                    <h3 class="preview-file-title">金融市场基础知识.pdf</h3>
+                    <p class="preview-file-meta">2.3 MB • 共 45 页</p>
+                </div>
+            </div>
+            <div class="preview-actions">
+                <button class="preview-action-btn">
+                    <span class="material-icons">download</span>
+                </button>
+                <button class="preview-action-btn">
+                    <span class="material-icons">share</span>
+                </button>
+                <button class="preview-action-btn">
+                    <span class="material-icons">more_vert</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 预览内容区域 -->
+        <div class="preview-content">
+            <div class="preview-placeholder">
+                <div class="placeholder-icon">
+                    <span class="material-icons">description</span>
+                </div>
+                <h3 class="placeholder-title">PDF文档查看器</h3>
+                <p class="placeholder-desc">点击左侧文档列表中的文档来查看内容</p>
+                <div class="placeholder-features">
+                    <p class="features-title">支持的功能：</p>
+                    <ul class="features-list">
+                        <li>• PDF文档在线预览</li>
+                        <li>• 页面缩放和导航</li>
+                        <li>• 文档下载和分享</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 简单的拖拽调整宽度功能
+document.addEventListener('DOMContentLoaded', function() {
+    const resizeHandle = document.getElementById('resize-handle');
+    const fileListContainer = document.getElementById('container-file-list');
+    let isResizing = false;
+
+    resizeHandle.addEventListener('mousedown', function(e) {
+        isResizing = true;
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        if (!isResizing) return;
+
+        const containerRect = document.getElementById('container-main-layout').getBoundingClientRect();
+        const newWidth = e.clientX - containerRect.left;
+
+        // 限制宽度范围
+        if (newWidth >= 300 && newWidth <= 600) {
+            fileListContainer.style.width = newWidth + 'px';
+        }
+    });
+
+    document.addEventListener('mouseup', function() {
+        if (isResizing) {
+            isResizing = false;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        }
+    });
+
+    // 文件项点击切换激活状态
+    const fileItems = document.querySelectorAll('.file-item');
+    fileItems.forEach(item => {
+        item.addEventListener('click', function() {
+            // 移除所有激活状态
+            fileItems.forEach(i => i.classList.remove('file-item-active'));
+            // 添加当前项的激活状态
+            this.classList.add('file-item-active');
+
+            // 更新预览区域的文件信息
+            const title = this.querySelector('.file-item-title').textContent;
+            const meta = this.querySelector('.file-item-meta').textContent;
+
+            document.querySelector('.preview-file-title').textContent = title;
+            document.querySelector('.preview-file-meta').textContent = meta + ' • 共 45 页';
+        });
+    });
+});
+</script>
+
+</body>
+</html>

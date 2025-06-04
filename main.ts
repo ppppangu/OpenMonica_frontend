@@ -1,9 +1,9 @@
-import { createApp } from 'vue';
-import { createPinia } from 'pinia';
-import App from './App.vue';
-import router from './router';
-
-const app = createApp(App);
-app.use(createPinia()); // 使用 Pinia来管理全局状态
-app.use(router); // 使用路由
-app.mount('#app');
+import { createApp } from 'vue'
+import './styles.css'
+import ChatFrame from './ChatFrame.vue'
+// import { createPinia } from 'pinia'
+// import { Plugin } from 'vue'
+const chatframeApp = createApp(ChatFrame);
+// const pinia = createPinia()
+// chatframeApp.use(pinia as Plugin)
+chatframeApp.mount('#chatframe')

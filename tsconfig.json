@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "jsx": "preserve",
+    "jsxImportSource": "vue",
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    },
+    "types": ["node", "vite/client", "pinia"],
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true
+  },
+  "include": [
+    "components/**/*",
+    "router/**/*",
+    "store/**/*",
+    "basedetail/**/*",
+    "*.vue",
+    "*.ts"
+  ],
+  "exclude": ["node_modules", "dist"]
+}

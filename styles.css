@@ -698,6 +698,41 @@ body {
     transition: left 0.3s ease-in-out;
 }
 
+/* 聚焦示例组件样式 */
+.focus-demo-container {
+    margin-bottom: 1rem;
+}
+
+.focus-demo-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+    .focus-demo-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 768px) {
+    .focus-demo-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .focus-demo-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (min-width: 1280px) {
+    .focus-demo-grid {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+
 /* 根据第二容器状态调整第四容器位置 */
 #chat-panel-toggle:checked ~ .container-chat-input {
     left: 380px; /* 80px第一容器 + 300px第二容器 */
@@ -1784,4 +1819,39 @@ body {
 
 .knowledge-action-btn .material-icons {
     font-size: 0.875rem;
+}
+
+/* 聚焦示例组件样式 */
+.focus-demo-container {
+    margin-bottom: 1rem;
+}
+
+.focus-demo-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+    .focus-demo-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 768px) {
+    .focus-demo-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .focus-demo-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (min-width: 1280px) {
+    .focus-demo-grid {
+        grid-template-columns: repeat(5, 1fr);
+    }
 }

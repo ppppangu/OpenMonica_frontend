@@ -6,6 +6,7 @@ const PORT = process.env.PORT || 3000;
 
 // 静态文件服务 - 托管所有HTML、CSS、JS文件
 app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // 解析JSON和表单数据
 app.use(express.json());

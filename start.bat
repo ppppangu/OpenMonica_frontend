@@ -30,4 +30,6 @@ echo.
 echo 💡 按 Ctrl+C 停止服务器
 echo.
 
-npm start
+echo 构建前端资源...
+call npm run build
+call npm start

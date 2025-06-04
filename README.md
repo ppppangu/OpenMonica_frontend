@@ -36,7 +36,7 @@
 - **统一样式** - 所有CSS整合到单个styles.css文件
 - **保留样式** - 保持所有CSS样式和视觉效果
 
-## 📄 页面说明
+## 📄 页面说明 
 
 ### 1. index.html - 主聊天界面
 
@@ -62,6 +62,7 @@
 - 新建知识库功能
 
 ### 5. basedetail.html - 知识库详情
+
 - 知识库详情页面，显示具体知识库内容
 - 左侧文档列表，右侧PDF文档查看器
 - 支持文档搜索、上传和管理功能
@@ -113,6 +114,7 @@ npx serve .
 ## 🖥️ 服务器特性
 
 ### Express服务器功能
+
 - **静态文件托管** - 自动托管所有HTML、CSS文件
 - **路由支持** - 支持干净的URL路径（如 `/settings` 而不是 `/settings.html`）
 - **表单处理** - 基本的API端点用于表单提交
@@ -120,6 +122,7 @@ npx serve .
 - **404处理** - 自动重定向到登录页面
 
 ### 可访问的页面
+
 - `http://localhost:3000/` - 登录页面（login.html）
 - `http://localhost:3000/index` - 主聊天界面（index.html）
 - `http://localhost:3000/settings` - 设置页面

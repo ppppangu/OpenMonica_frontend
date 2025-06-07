@@ -51,7 +51,63 @@ email=邮箱地址
 password=密码
 ```
 
-#### 2.2 用户删除
+#### 2.2 用户登录验证
+
+```
+
+POST /user/account
+
+Content-Type: application/x-www-form-urlencoded
+
+
+mode=check
+
+email=邮箱地址
+
+password=密码
+
+```
+
+**成功响应示例：**
+
+```json
+
+{
+
+    "success": true,
+
+    "message": "登录成功",
+
+    "user_info": {
+
+        "user_id": "用户UUID",
+
+        "username": "用户名",
+
+        "email": "邮箱地址"
+
+    }
+
+}
+
+```
+
+**失败响应示例：**
+
+```json
+
+{
+
+    "success": false,
+
+    "message": "邮箱或密码错误"
+
+}
+
+```
+
+
+#### 2.3 用户删除
 
 ```
 POST /user/account
@@ -61,7 +117,7 @@ mode=delete
 user_id=用户ID
 ```
 
-#### 2.3 查询用户信息
+#### 2.4 查询用户信息
 
 ```
 POST /user/account
@@ -72,7 +128,7 @@ user_id=用户ID
 target=username|email|password
 ```
 
-#### 2.4 更新用户信息
+#### 2.5 更新用户信息
 
 ```
 POST /user/account

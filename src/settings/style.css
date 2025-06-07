@@ -1,0 +1,389 @@
+/* Settings Page Styles */
+
+/* 基础样式 */
+body {
+    font-family: 'Roboto', sans-serif;
+}
+
+/* 通用按钮样式 */
+.btn-primary {
+    background-color: #8b5cf6;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+    background-color: #7c3aed;
+}
+
+.btn-secondary {
+    background-color: #f3f4f6;
+    color: #374151;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-secondary:hover {
+    background-color: #e5e7eb;
+}
+
+/* 加载动画 */
+.loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #8b5cf6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 第一容器：固定侧边栏 */
+.container-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 80px;
+    height: 100vh;
+    background: white;
+    border-right: 1px solid #e5e7eb;
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    padding: 1rem;
+}
+
+.sidebar-nav-top,
+.sidebar-nav-bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.sidebar-nav-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.5rem;
+    color: #6b7280;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    transition: all 0.2s ease;
+}
+
+.sidebar-nav-item:hover {
+    background: #f3f4f6;
+}
+
+.sidebar-nav-item.sidebar-nav-active {
+    background: #f3e8ff;
+    color: #7c3aed;
+}
+
+.sidebar-user-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background: #7c3aed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.125rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.sidebar-user-avatar:hover {
+    background: #6d28d9;
+}
+
+/* ========================================
+   settings.html 页面专用样式
+   ======================================== */
+
+/* 第二容器：设置页面顶部容器 */
+.container-settings-header {
+    position: fixed;
+    top: 0;
+    left: 80px; /* 第一容器宽度 */
+    right: 0;
+    height: 80px;
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+}
+
+.settings-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 0 2rem;
+}
+
+.settings-header-left {
+    display: flex;
+    align-items: center;
+}
+
+.settings-page-title {
+    font-size: 2.25rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+}
+
+.settings-header-right {
+    display: flex;
+    align-items: center;
+}
+
+.settings-auto-save-info {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.settings-auto-save-info .material-icons {
+    font-size: 0.875rem;
+}
+
+/* 设置内容布局容器 */
+.container-settings-layout {
+    position: fixed;
+    top: 80px; /* 第二容器高度 */
+    left: 80px; /* 第一容器宽度 */
+    right: 0;
+    bottom: 0;
+    padding: 2rem;
+    background: #f3f4f6;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 2rem;
+    overflow: hidden;
+}
+
+@media (max-width: 1024px) {
+    .container-settings-layout {
+        grid-template-columns: 1fr;
+        overflow-y: auto;
+    }
+}
+
+/* 设置容器通用样式 */
+.container-user-prompt,
+.container-model-memory,
+.container-general-settings {
+    background: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.settings-section-header {
+    padding: 2rem 2rem 0 2rem;
+    flex-shrink: 0;
+}
+
+.settings-section-title-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.settings-section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+}
+
+.auto-save-indicator {
+    font-size: 0.875rem;
+    color: #6b7280;
+    display: none;
+}
+
+.auto-save-indicator.show {
+    display: block;
+}
+
+.settings-section-content {
+    padding: 0 2rem 2rem 2rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.settings-section-description {
+    color: #6b7280;
+    margin: 0 0 1.5rem 0;
+    line-height: 1.6;
+}
+
+.settings-form {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 文本区域样式 */
+.settings-textarea {
+    width: 100%;
+    flex: 1;
+    padding: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    resize: none;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    overflow-y: auto;
+    transition: all 0.2s ease;
+}
+
+.settings-textarea:focus {
+    outline: none;
+    border-color: transparent;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+.settings-textarea-purple:focus {
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+.settings-textarea-blue:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* 通用设置表单样式 */
+.settings-form-general {
+    gap: 1.5rem;
+    overflow-y: auto;
+}
+
+.settings-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.settings-group-title {
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: #374151;
+    margin: 0;
+}
+
+/* 单选按钮组样式 */
+.settings-radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.settings-radio-item {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 0.5rem 0;
+}
+
+.settings-radio {
+    margin-right: 0.75rem;
+    color: #7c3aed;
+    accent-color: #7c3aed;
+}
+
+.settings-radio-label {
+    color: #374151;
+    font-size: 0.875rem;
+}
+
+/* 复选框组样式 */
+.settings-checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.settings-checkbox-item {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 0.5rem 0;
+}
+
+.settings-checkbox {
+    margin-right: 0.75rem;
+    color: #7c3aed;
+    accent-color: #7c3aed;
+}
+
+.settings-checkbox-label {
+    color: #374151;
+    font-size: 0.875rem;
+}
+
+/* 选择框样式 */
+.settings-select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    background: white;
+    transition: all 0.2s ease;
+}
+
+.settings-select:focus {
+    outline: none;
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+/* 通用工具类 */
+.transition-all {
+    transition: all 0.2s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-2px);
+}
+
+.shadow-hover:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}

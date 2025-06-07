@@ -1,0 +1,579 @@
+/* Chat Page Styles */
+
+/* 基础样式 */
+body {
+    font-family: 'Roboto', sans-serif;
+}
+
+/* 通用按钮样式 */
+.btn-primary {
+    background-color: #8b5cf6;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+    background-color: #7c3aed;
+}
+
+.btn-secondary {
+    background-color: #f3f4f6;
+    color: #374151;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-secondary:hover {
+    background-color: #e5e7eb;
+}
+
+/* 加载动画 */
+.loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #8b5cf6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 模型选择器样式 */
+#modelDropdown {
+    max-height: 300px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e0 #f7fafc;
+}
+
+#modelDropdown::-webkit-scrollbar {
+    width: 6px;
+}
+
+#modelDropdown::-webkit-scrollbar-track {
+    background: #f7fafc;
+    border-radius: 3px;
+}
+
+#modelDropdown::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 3px;
+}
+
+#modelDropdown::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
+}
+
+.model-option {
+    transition: all 0.2s ease;
+}
+
+.model-option:hover {
+    transform: translateX(2px);
+}
+
+/* 聊天区域样式 */
+#chatSection {
+    min-height: 400px;
+}
+
+.ant-sender-input {
+    height: 80px !important;
+    max-height: 300px !important;
+
+}
+
+#senderApp {
+    background-color: white;
+    min-height: 80px;
+
+}
+
+.ant-bubble-content-wrapper {
+    background-color: white;
+    flex-direction: column;
+    height: auto;
+    height: 100%;
+    padding: 1rem;
+    /*保证占满父容器*/
+    height: 100%;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+
+}
+
+.ant-bubble-list {
+    max-height: 100% !important;
+}
+
+#chatBubbleApp {
+    background-color: #f3f4f6;
+}
+
+
+/* 聊天会话列表样式 */
+.chat-conversations {
+    width: 256px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.conversations-container {
+    position: fixed;
+    top: 80px;
+    left: 100px;
+    z-index: 1000;
+    display: none;
+}
+
+.conversations-container.show {
+    display: block;
+}
+
+/* ========================================
+   四大容器模块样式
+   ======================================== */
+
+/* 第一容器：固定侧边栏 */
+.container-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 80px;
+    height: 100vh;
+    background: white;
+    border-right: 1px solid #e5e7eb;
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    padding: 1rem;
+}
+
+.sidebar-nav-top,
+.sidebar-nav-bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.sidebar-nav-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.5rem;
+    color: #6b7280;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    transition: all 0.2s ease;
+}
+
+.sidebar-nav-item:hover {
+    background: #f3f4f6;
+}
+
+.sidebar-nav-item.sidebar-nav-active {
+    background: #f3e8ff;
+    color: #7c3aed;
+}
+
+.sidebar-user-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background: #7c3aed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.125rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.sidebar-user-avatar:hover {
+    background: #6d28d9;
+}
+
+/* 第二容器：聊天记录面板 */
+.container-chat-history {
+    position: fixed;
+    top: 0;
+    left: 80px;
+    width: 300px;
+    height: 100vh;
+    background: white;
+    border-right: 1px solid #e5e7eb;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    transform: translateX(0);
+    transition: transform 0.3s ease-in-out;
+    overflow-y: auto;
+    padding: 1.5rem;
+}
+
+/* 当 checkbox 未选中时隐藏面板 */
+#chat-panel-toggle:not(:checked) ~ .container-chat-history {
+    transform: translateX(-100%);
+}
+
+.chat-history-header {
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+
+.chat-history-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+}
+
+.chat-history-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.chat-session-item {
+    position: relative;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid #f3f4f6;
+    background: #fafafa;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.chat-session-item:hover {
+    background: #f3f4f6;
+    border-color: #e5e7eb;
+    transform: translateX(2px);
+}
+
+.chat-session-title {
+    font-weight: 500;
+    color: #374151;
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+    padding-right: 2rem;
+}
+
+.chat-session-time {
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+.chat-session-delete {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    opacity: 0;
+}
+
+.chat-session-item:hover .chat-session-delete {
+    opacity: 1;
+}
+
+.chat-session-delete:hover {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.chat-session-delete .material-icons {
+    font-size: 1rem;
+}
+
+/* 第三容器：主内容区域 */
+.container-main-content {
+    position: relative;
+    padding: 2rem;
+    overflow-y: auto;
+    height: 100vh;
+    transition: margin-left 0.3s ease-in-out;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 根据第二容器状态调整第三容器位置 */
+#chat-panel-toggle:checked ~ .container-main-content {
+    margin-left: 380px; /* 80px第一容器 + 300px第二容器 */
+}
+
+/* 根据第二容器状态调整第三容器位置 */
+
+#chat-panel-toggle:not(:checked) ~ .container-main-content {
+    margin-left: 80px; /* 仅第一容器宽度 */
+}
+
+.main-content-wrapper {
+    max-width: none;
+    max-height: none;
+    height: 100%;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.main-content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    /* 添加flex-shrink: 0，确保它不会被压缩。 */
+    flex-shrink: 0;
+}
+
+.main-content-title {
+    font-size: 2.25rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.main-content-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    /* 修改为flex-grow: 1，让其占据所有剩余空间 */
+    flex: 1 1 auto;
+    /* 保证最小高度 */
+    min-height: 0;
+    /* 允许内容溢出时滚动 */
+    overflow-y: auto;
+}
+
+/* 给#chatbox添加适当的样式，确保它在main-content-grid内部显示正常 */
+#chatbox {
+    width: 100%;
+    height: 100%;
+    flex: 1 1 auto;
+    /* 保证最小高度 */
+    min-height: 0;
+    /* 允许内容溢出时滚动 */
+    overflow-y: auto;
+}
+
+/* 内容模块通用样式 */
+.content-module {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.module-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.module-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #374151;
+    margin: 0;
+}
+
+.module-link {
+    font-size: 0.875rem;
+    color: #7c3aed;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    transition: color 0.2s ease;
+}
+
+.module-link:hover {
+    color: #6d28d9;
+}
+
+.module-link .material-icons {
+    font-size: 0.875rem;
+}
+
+/* 工具模块样式 */
+.content-module-tools {
+    grid-column: span 2;
+}
+
+@media (min-width: 768px) {
+    .content-module-tools {
+        grid-column: span 1;
+    }
+}
+
+.tools-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    text-align: center;
+}
+
+@media (min-width: 640px) {
+    .tools-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 768px) {
+    .tools-grid {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+
+.tool-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.tool-item:hover {
+    background: #f9fafb;
+}
+
+.tool-item .material-icons {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+}
+
+.tool-label {
+    font-size: 0.875rem;
+    color: #4b5563;
+}
+
+/* 聊天显示模块样式 */
+.chat-display-area {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    height: 16rem;
+    overflow-y: auto;
+    background: #f9fafb;
+}
+
+.chat-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #9ca3af;
+    text-align: center;
+}
+
+/* 第四容器：聊天输入框 */
+.container-chat-input {
+    height: auto;
+    min-height: 0px;
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 200px;
+    overflow-y: auto;
+
+}
+
+/* 聚焦示例组件样式 */
+.focus-demo-container {
+    margin-bottom: 1rem;
+}
+
+.focus-demo-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+    .focus-demo-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 768px) {
+    .focus-demo-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .focus-demo-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (min-width: 1280px) {
+    .focus-demo-grid {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+
+/* 根据第二容器状态调整第四容器位置 */
+#chat-panel-toggle:checked ~ .container-chat-input {
+    left: 380px; /* 80px第一容器 + 300px第二容器 */
+}
+
+#chat-panel-toggle:not(:checked) ~ .container-chat-input {
+    left: 80px; /* 仅第一容器宽度 */
+}
+
+.chat-input-form {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* 通用工具类 */
+.transition-all {
+    transition: all 0.2s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-2px);
+}
+
+.shadow-hover:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}

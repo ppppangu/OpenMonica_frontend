@@ -73,10 +73,15 @@
 - 密码管理表单
 - 偏好设置表单
 
-### 6. login.html - 登录页面
+### 6. signin.html - 登录页面
 
 - 登录表单
+- 导航到注册页面
+
+### 7. signup.html - 注册页面
+
 - 注册表单
+- 导航到登录页面
 
 ## 🚀 使用方法
 
@@ -123,14 +128,16 @@ npx serve .
 
 ### 可访问的页面
 
-- `http://localhost:3000/` - 登录页面（login.html）
+- `http://localhost:3000/` - 登录页面（signin.html）
+- `http://localhost:3000/signin` - 登录页面
+- `http://localhost:3000/signup` - 注册页面
 - `http://localhost:3000/index` - 主聊天界面（index.html）
 - `http://localhost:3000/settings` - 设置页面
 - `http://localhost:3000/help` - 帮助页面
 - `http://localhost:3000/knowledgebase` - 知识库管理
 - `http://localhost:3000/basedetail` - 知识库详情
 - `http://localhost:3000/home` - 用户账户
-- `http://localhost:3000/login` - 登录页面
+- `http://localhost:3000/login` - 登录页面（重定向到signin）
 
 ## 📋 表单端点
 

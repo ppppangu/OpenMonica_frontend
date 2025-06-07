@@ -26,10 +26,11 @@ from global_function.check_database_setup import check_all_database_setup
 
 # 用户账户的增删改查
 from account_manage.overall import (
-    create_account, 
+    create_account,
     delete_account,
     get_user_info,
-    update_user_info
+    update_user_info,
+    check_account
 )
 
 # 聊天记录的增删改查
@@ -136,6 +137,19 @@ async def account_function(request: Request) -> JSONResponse:
             return JSONResponse({
                 "success": False,
                 "message": f"更新用户信息失败: {str(e)}"
+            }, status_code=500)
+    elif mode == "check":
+        try:
+            email = str(form_data.get("email", "")).strip()
+            password = str(form_data.get("password", "")).strip()
+            logger.info(f"收到登录验证请求，来自IP: {client_ip}, 邮箱: {email}")
+            result = await check_account(email, password)
+            return JSONResponse(result)
+        except Exception as e:
+            logger.error(f"用户登录验证失败: {str(e)}")
+            return JSONResponse({
+                "success": False,
+                "message": "登录验证失败，请稍后重试"
             }, status_code=500)
     else:
         return JSONResponse({"status": "error", "message": "mode is not valid"})

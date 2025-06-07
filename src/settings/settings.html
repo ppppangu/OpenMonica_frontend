@@ -6,7 +6,7 @@
     <title>设置</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link href="styles.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100 h-screen">
 <!-- 第一容器：固定侧边栏 -->
@@ -16,10 +16,10 @@
             <button class="sidebar-nav-item">
                 <span class="material-icons text-gray-600">menu</span>
             </button>
-            <a href="index.html" class="sidebar-nav-item">
+            <a href="/src/chat/chat.html" class="sidebar-nav-item">
                 <span class="material-icons text-gray-600">chat_bubble_outline</span>
             </a>
-            <a href="knowledgebase.html" class="sidebar-nav-item">
+            <a href="/src/knowledgebase/knowledgebase.html" class="sidebar-nav-item">
                 <span class="material-icons text-gray-600">storage</span>
             </a>
             <button class="sidebar-nav-item">
@@ -39,13 +39,13 @@
             </button>
         </div>
         <div class="sidebar-nav-bottom">
-            <a href="help.html" class="sidebar-nav-item">
+            <a href="/src/help/help.html" class="sidebar-nav-item">
                 <span class="material-icons text-gray-600">help_outline</span>
             </a>
             <button class="sidebar-nav-item sidebar-nav-active">
                 <span class="material-icons">settings</span>
             </button>
-            <a href="home.html" class="sidebar-user-avatar">
+            <a href="/src/home/home.html" class="sidebar-user-avatar">
                 M
             </a>
         </div>
@@ -171,5 +171,6 @@
     </div>
 </div>
 
+<script type="module" src="main.ts"></script>
 </body>
 </html>

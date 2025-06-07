@@ -1,18 +1,39 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
-import VueMacros from 'unplugin-vue-macros/vite'
 
 export default defineConfig({
   plugins: [
-    VueMacros({
-      plugins: {
-        vue: vue(),
-        vueJsx: vueJsx(),
-      },
-    }),
+    vue(),
+    vueJsx(),
   ],
   build: {
     outDir: 'dist',
+    rollupOptions: {
+      input: {
+        index: './index.html',
+        login: './src/login/signin.html',
+        signup: './src/login/signup.html',
+        chat: './src/chat/chat.html',
+        knowledge: './src/knowledgebase/knowledgebase.html',
+        basedetail: './src/basedetail/basedetail.html',
+        settings: './src/settings/settings.html',
+        help: './src/help/help.html',
+      },
+    },
+  },
+  server: {
+    port: 5173,
+    host: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true
+      },
+      '/user': {
+        target: 'http://localhost:3001',
+        changeOrigin: true
+      }
+    }
   }
-}) 
+})

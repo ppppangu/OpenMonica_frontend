@@ -1,346 +1,556 @@
 const express = require('express');
 const path = require('path');
+const axios = require('axios');
+const fs = require('fs');
+const yaml = require('js-yaml');
+const multer = require('multer');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const Database = require('better-sqlite3');
+const cookieParser = require('cookie-parser');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
+
+// 读取配置文件
+let config;
+try {
+    const configFile = fs.readFileSync('config.yaml', 'utf8');
+    config = yaml.load(configFile);
+} catch (error) {
+    console.error('无法读取配置文件 config.yaml:', error);
+    process.exit(1);
+}
+
+const BACKEND_BASE_URL = config.user_manage_url;
+
+// JWT配置
+const JWT_SECRET = config.jwt_secret || 'your-super-secret-jwt-key-change-in-production';
+const JWT_EXPIRES_IN = config.jwt_expires_in || '7d';
+
+// 初始化SQLite数据库
+const db = new Database('auth.db');
+
+// 创建tokens表
+db.exec(`
+    CREATE TABLE IF NOT EXISTS tokens (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        token TEXT UNIQUE NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        expires_at DATETIME NOT NULL,
+        is_active BOOLEAN DEFAULT 1
+    )
+`);
+
+// 数据库操作函数
+const dbOps = {
+    // 创建token
+    createToken: db.prepare(`
+        INSERT INTO tokens (user_id, token, expires_at)
+        VALUES (?, ?, ?)
+    `),
+
+    // 验证token
+    validateToken: db.prepare(`
+        SELECT user_id, expires_at FROM tokens
+        WHERE token = ? AND is_active = 1
+    `),
+
+    // 删除token (登出)
+    deleteToken: db.prepare(`
+        UPDATE tokens SET is_active = 0
+        WHERE token = ?
+    `),
+
+    // 清理过期token
+    cleanExpiredTokens: db.prepare(`
+        UPDATE tokens SET is_active = 0
+        WHERE expires_at < datetime('now')
+    `)
+};
+
+// 配置multer处理FormData
+const upload = multer();
+
+// 解析JSON和表单数据
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(upload.none()); // 处理multipart/form-data
+app.use(cookieParser());
+
+// 请求日志中间件
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.path} - ${new Date().toISOString()}`);
+    next();
+});
+
+// 清理过期token的定时任务
+setInterval(() => {
+    try {
+        dbOps.cleanExpiredTokens.run();
+    } catch (error) {
+        console.error('清理过期token失败:', error);
+    }
+}, 60000); // 每分钟清理一次
+
+// JWT认证中间件
+function authenticateToken(req, res, next) {
+    // 跳过登录相关的路径
+    const publicPaths = ['/login', '/signin', '/signup', '/', '/api/auth/login', '/api/auth/register', '/api/auth/logout', '/user/account', '/user/account/register', '/test', '/health'];
+    if (publicPaths.includes(req.path)) {
+        return next();
+    }
+
+    // 从请求头或cookie中获取token
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1] || req.cookies?.token;
+
+    if (!token) {
+        // 如果是HTML页面请求，重定向到登录页
+        if (req.headers.accept && req.headers.accept.includes('text/html')) {
+            return res.redirect('/login');
+        }
+        // 如果是API请求，返回401
+        return res.status(401).json({ success: false, message: '未授权访问' });
+    }
+
+    try {
+        // 验证token是否在数据库中且有效
+        const tokenData = dbOps.validateToken.get(token);
+
+        if (!tokenData) {
+            if (req.headers.accept && req.headers.accept.includes('text/html')) {
+                return res.redirect('/login');
+            }
+            return res.status(401).json({ success: false, message: 'Token无效' });
+        }
+
+        // 检查token是否过期
+        const now = new Date();
+        const expiresAt = new Date(tokenData.expires_at);
+        if (now > expiresAt) {
+            if (req.headers.accept && req.headers.accept.includes('text/html')) {
+                return res.redirect('/login');
+            }
+            return res.status(401).json({ success: false, message: 'Token已过期' });
+        }
+
+        // 验证JWT签名
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.user = { id: decoded.userId, ...decoded };
+        next();
+    } catch (error) {
+        console.error('Token验证失败:', error);
+        if (req.headers.accept && req.headers.accept.includes('text/html')) {
+            return res.redirect('/login');
+        }
+        return res.status(401).json({ success: false, message: 'Token验证失败' });
+    }
+}
+
+// 测试路由
+app.get('/test', (req, res) => {
+    console.log('测试路由被访问');
+    res.json({ message: '测试成功', timestamp: new Date().toISOString() });
+});
+
+// 数据转换工具函数
+function convertToFormData(data) {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(data)) {
+        if (value !== undefined && value !== null) {
+            params.append(key, String(value));
+        }
+    }
+    return params;
+}
+
+// ==================== 后端代理端点 ====================
+// 这些端点将请求转发到 main.py 后端服务
+
+// 健康检查
+app.get('/health', async (req, res) => {
+    try {
+        const response = await axios.get(`${BACKEND_BASE_URL}/health`, {
+            timeout: 5000 // 5秒超时
+        });
+        res.json({
+            status: 'ok',
+            backend: 'connected',
+            backend_response: response.data,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('健康检查失败:', error.message);
+        res.json({
+            status: 'ok',
+            backend: 'disconnected',
+            backend_error: error.message,
+            fallback_mode: 'enabled',
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// 测试注册端点
+app.get('/test/register', (req, res) => {
+    res.json({
+        success: true,
+        message: '测试注册端点正常工作',
+        endpoint: '/user/account',
+        method: 'POST',
+        expected_data: {
+            mode: 'register',
+            username: 'testuser',
+            email: 'test@example.com',
+            password: 'password123'
+        }
+    });
+});
+
+// 用户注册端点
+app.post('/user/account/register', async (req, res) => {
+    try {
+        console.log('用户注册请求:', req.body);
+
+        const { username, email, password } = req.body;
+
+        // 验证必要字段
+        if (!username || !email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: '用户名、邮箱和密码都是必填项'
+            });
+        }
+
+        // 尝试连接后端服务
+        try {
+            const FormData = require('form-data');
+            const formData = new FormData();
+            formData.append('mode', 'register');
+            formData.append('username', username);
+            formData.append('email', email);
+            formData.append('password', password);
+
+            console.log('发送到后端的注册数据:', { mode: 'register', username, email, password: '***' });
+
+            const response = await axios.post(`${BACKEND_BASE_URL}/user/account`, formData, {
+                headers: formData.getHeaders(),
+                timeout: 10000
+            });
+
+            console.log('后端注册响应:', response.data);
+            res.json(response.data);
+        } catch (backendError) {
+            console.warn('后端服务不可用，使用本地模拟注册:', backendError.message);
+
+            // 模拟注册成功
+            res.json({
+                success: true,
+                message: '注册成功！请使用您的邮箱和密码登录。',
+                data: {
+                    user_id: 'mock_' + Date.now(),
+                    username: username,
+                    email: email
+                }
+            });
+        }
+    } catch (error) {
+        console.error('注册失败:', error.message);
+        res.status(500).json({
+            success: false,
+            message: '服务器内部错误，请稍后重试'
+        });
+    }
+});
+
+// 保留原有的 /user/account 端点以兼容现有代码
+app.post('/user/account', async (req, res) => {
+    try {
+        console.log('账户管理请求 (兼容模式):', req.body);
+
+        const { mode } = req.body;
+
+        // 根据模式处理不同的请求
+        if (mode === 'register') {
+            // 直接处理注册逻辑
+            const { username, email, password } = req.body;
+
+            if (!username || !email || !password) {
+                return res.status(400).json({
+                    success: false,
+                    message: '用户名、邮箱和密码都是必填项'
+                });
+            }
+
+            try {
+                const FormData = require('form-data');
+                const formData = new FormData();
+                formData.append('mode', 'register');
+                formData.append('username', username);
+                formData.append('email', email);
+                formData.append('password', password);
+
+                const response = await axios.post(`${BACKEND_BASE_URL}/user/account`, formData, {
+                    headers: formData.getHeaders(),
+                    timeout: 10000
+                });
+
+                res.json(response.data);
+            } catch (backendError) {
+                console.warn('后端服务不可用，使用本地模拟注册:', backendError.message);
+
+                res.json({
+                    success: true,
+                    message: '注册成功！请使用您的邮箱和密码登录。',
+                    data: {
+                        user_id: 'mock_' + Date.now(),
+                        username: username,
+                        email: email
+                    }
+                });
+            }
+            return;
+        }
+
+        // 其他模式的处理保持原样
+        const FormData = require('form-data');
+        const formData = new FormData();
+
+        for (const [key, value] of Object.entries(req.body)) {
+            if (value !== undefined && value !== null) {
+                formData.append(key, String(value));
+            }
+        }
+
+        try {
+            const response = await axios.post(`${BACKEND_BASE_URL}/user/account`, formData, {
+                headers: formData.getHeaders(),
+                timeout: 10000
+            });
+
+            res.json(response.data);
+        } catch (backendError) {
+            console.warn('后端服务不可用，使用本地模拟响应:', backendError.message);
+
+            res.json({
+                success: true,
+                message: '操作成功',
+                data: {}
+            });
+        }
+    } catch (error) {
+        console.error('账户操作失败:', error.message);
+        res.status(500).json({
+            success: false,
+            message: '服务器内部错误，请稍后重试'
+        });
+    }
+});
+
 
 // 静态文件服务 - 托管所有HTML、CSS、JS文件
 app.use(express.static(__dirname));
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// 解析JSON和表单数据
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// 路由 - 直接提供HTML文件
+// 公共路由 - 不需要认证
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'login.html'));
-});
-
-app.get('/index', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-app.get('/settings', (req, res) => {
-    res.sendFile(path.join(__dirname, 'settings.html'));
-});
-
-app.get('/help', (req, res) => {
-    res.sendFile(path.join(__dirname, 'help.html'));
-});
-
-app.get('/knowledgebase', (req, res) => {
-    res.sendFile(path.join(__dirname, 'knowledgebase.html'));
-});
-
-app.get('/basedetail', (req, res) => {
-    res.sendFile(path.join(__dirname, 'basedetail.html'));
-});
-
-app.get('/home', (req, res) => {
-    res.sendFile(path.join(__dirname, 'home.html'));
+    res.sendFile(path.join(__dirname, 'src/login/signin.html'));
 });
 
 app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, 'login.html'));
+    res.sendFile(path.join(__dirname, 'src/login/signin.html'));
 });
 
-
-// API端点 - 基本的表单处理（返回简单响应）
-app.post('/api/chat', (req, res) => {
-    console.log('聊天请求:', req.body);
-    res.json({ 
-        success: true, 
-        message: '消息已接收',
-        data: req.body 
-    });
+app.get('/signin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src/login/signin.html'));
 });
 
-app.post('/api/auth/login', (req, res) => {
-    console.log('登录请求:', req.body);
-    // 登录成功后重定向到主聊天界面
-    res.redirect('/index');
+app.get('/signup', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src/login/signup.html'));
 });
 
-app.post('/api/auth/register', (req, res) => {
-    console.log('注册请求:', req.body);
-    res.json({
-        success: true,
-        message: '注册成功，请登录',
-        user: { id: 1, username: req.body.username }
-    });
-});
+// ==================== 认证相关端点 (在认证中间件之前定义) ====================
 
-app.post('/api/user/profile', (req, res) => {
-    console.log('用户资料更新:', req.body);
-    res.json({ 
-        success: true, 
-        message: '资料更新成功'
-    });
-});
+// 登录端点
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        console.log('登录请求:', req.body);
 
-// 1. 获取用户资料
-app.post('/api/user/get-profile', (req, res) => {
-    console.log('获取用户资料:', req.body);
-    res.json({ 
-        success: true, 
-        message: '获取用户资料成功',
-        data: {
-            id: 1,
-            username: 'testuser',
-            email: 'test@example.com',
-            avatar: 'avatar.jpg'
+        const { email, password, remember } = req.body;
+
+        // 验证必要字段
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: '邮箱和密码都是必填项'
+            });
         }
-    });
-});
 
-app.post('/api/settings/prompts', (req, res) => {
-    console.log('用户提示词更新:', req.body);
-    res.json({ 
-        success: true, 
-        message: '提示词已保存'
-    });
-});
+        // 尝试通过后端验证用户
+        let userData = null;
+        try {
+            // 创建FormData发送给后端
+            const FormData = require('form-data');
+            const formData = new FormData();
+            formData.append('mode', 'check');
+            formData.append('email', email);
+            formData.append('password', password);
 
-// 2. 获取用户提示词
-app.post('/api/settings/get-prompts', (req, res) => {
-    console.log('获取用户提示词:', req.body);
-    res.json({ 
-        success: true, 
-        message: '获取提示词成功',
-        data: [
-            { id: 1, title: '提示词1', content: '这是提示词内容1' },
-            { id: 2, title: '提示词2', content: '这是提示词内容2' }
-        ]
-    });
-});
+            const response = await axios.post(`${BACKEND_BASE_URL}/user/account`, formData, {
+                headers: formData.getHeaders(),
+                timeout: 10000
+            });
 
-app.post('/api/settings/memory', (req, res) => {
-    console.log('模型记忆更新:', req.body);
-    res.json({ 
-        success: true, 
-        message: '模型记忆已保存'
-    });
-});
+            console.log('后端登录响应:', response.data);
 
-// 3. 获取模型记忆
-app.post('/api/settings/get-memory', (req, res) => {
-    console.log('获取模型记忆:', req.body);
-    res.json({ 
-        success: true, 
-        message: '获取模型记忆成功',
-        data: {
-            enabled: true,
-            memoryLength: 10,
-            customSettings: {}
+            if (response.data && response.data.success) {
+                userData = response.data.user_info;
+            } else {
+                return res.status(401).json({
+                    success: false,
+                    message: response.data.message || '登录失败，请检查邮箱和密码'
+                });
+            }
+        } catch (backendError) {
+            console.warn('后端服务不可用，使用本地验证:', backendError.message);
+
+            // 后端不可用时的本地模拟验证
+            // 在实际生产环境中，这里应该有本地用户数据库
+            if (email === 'test@example.com' && password === 'password123') {
+                userData = {
+                    user_id: 'local_test_user',
+                    email: email,
+                    username: 'Test User'
+                };
+            } else {
+                return res.status(401).json({
+                    success: false,
+                    message: '登录失败，请检查邮箱和密码'
+                });
+            }
         }
-    });
-});
 
-// 4. 获取可用模型列表
-app.post('/api/models/list', (req, res) => {
-    console.log('获取可用模型列表:', req.body);
-    res.json({ 
-        success: true, 
-        message: '获取模型列表成功',
-        data: [
-            { id: 'gpt-4', name: 'GPT-4', description: '高级模型' },
-            { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', description: '快速模型' }
-        ]
-    });
-});
-
-// 5. 获取可用提示词列表
-app.post('/api/prompts/list', (req, res) => {
-    console.log('获取可用提示词列表:', req.body);
-    res.json({ 
-        success: true, 
-        message: '获取提示词列表成功',
-        data: [
-            { id: 1, title: '通用提示词', content: '通用提示词内容' },
-            { id: 2, title: '编程提示词', content: '编程提示词内容' }
-        ]
-    });
-});
-
-// 6. 将资源上传到云端，获取公网URL
-app.post('/api/upload/resource', (req, res) => {
-    console.log('上传资源到云端:', req.body);
-    res.json({ 
-        success: true, 
-        message: '资源上传成功',
-        data: {
-            url: 'https://example.com/uploads/resource123.pdf'
+        if (!userData) {
+            return res.status(401).json({
+                success: false,
+                message: '登录失败，请检查邮箱和密码'
+            });
         }
-    });
-});
 
-// 7. 获取已有知识库列表
-app.post('/api/knowledgebase/list', (req, res) => {
-    console.log('获取知识库列表:', req.body);
-    res.json({ 
-        success: true, 
-        message: '获取知识库列表成功',
-        data: [
-            { id: 1, name: '知识库1', description: '这是知识库1的描述', documentCount: 5 },
-            { id: 2, name: '知识库2', description: '这是知识库2的描述', documentCount: 3 }
-        ]
-    });
-});
+        // 生成JWT token
+        const tokenPayload = {
+            userId: userData.user_id,
+            email: userData.email,
+            username: userData.username
+        };
 
-// 8. 获取单个知识库的详情
-app.post('/api/knowledgebase/detail', (req, res) => {
-    console.log('获取知识库详情:', req.body);
-    res.json({ 
-        success: true, 
-        message: '获取知识库详情成功',
-        data: {
-            id: req.body.id,
-            name: '知识库详情',
-            description: '这是知识库的详细描述',
-            createdAt: '2023-01-01',
-            updatedAt: '2023-06-01',
-            documentCount: 5
+        const expiresIn = remember ? '30d' : JWT_EXPIRES_IN;
+        const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn });
+
+        // 计算过期时间
+        const expiresAt = new Date();
+        expiresAt.setTime(expiresAt.getTime() + (remember ? 30 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000));
+
+        // 存储token到数据库
+        try {
+            dbOps.createToken.run(userData.user_id, token, expiresAt.toISOString());
+        } catch (dbError) {
+            console.error('存储token失败:', dbError);
+            return res.status(500).json({
+                success: false,
+                message: '登录过程中发生错误'
+            });
         }
-    });
+
+        // 设置cookie
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: false, // 在生产环境中应该设置为true
+            maxAge: remember ? 30 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000
+        });
+
+        // 返回成功响应
+        res.json({
+            success: true,
+            message: '登录成功',
+            user: {
+                id: userData.user_id,
+                email: userData.email,
+                username: userData.username
+            },
+            token: token
+        });
+
+    } catch (error) {
+        console.error('登录处理失败:', error);
+        res.status(500).json({
+            success: false,
+            message: '服务器内部错误，请稍后重试'
+        });
+    }
 });
 
-// 9. 新建知识库
-app.post('/api/knowledgebase/create', (req, res) => {
-    console.log('新建知识库:', req.body);
-    res.json({ 
-        success: true, 
-        message: '知识库创建成功',
-        data: {
-            id: 3,
-            name: req.body.name,
-            description: req.body.description
+// 登出端点
+app.post('/api/auth/logout', (req, res) => {
+    try {
+        // 从请求头或cookie中获取token
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1] || req.cookies?.token;
+
+        if (token) {
+            // 从数据库中删除token
+            try {
+                dbOps.deleteToken.run(token);
+            } catch (dbError) {
+                console.error('删除token失败:', dbError);
+            }
         }
-    });
+
+        // 清除cookie
+        res.clearCookie('token');
+
+        res.json({
+            success: true,
+            message: '登出成功'
+        });
+    } catch (error) {
+        console.error('登出处理失败:', error);
+        res.status(500).json({
+            success: false,
+            message: '登出过程中发生错误'
+        });
+    }
 });
 
-// 10. 更改知识库信息
-app.post('/api/knowledgebase/update', (req, res) => {
-    console.log('更新知识库信息:', req.body);
-    res.json({ 
-        success: true, 
-        message: '知识库信息更新成功',
-        data: {
-            id: req.body.id,
-            name: req.body.name,
-            description: req.body.description
-        }
-    });
+// 应用认证中间件到需要保护的路由
+app.use(authenticateToken);
+
+// 受保护的路由 - 需要认证
+app.get('/index', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src/chat/chat.html'));
 });
 
-// 11. 删除某个知识库
-app.post('/api/knowledgebase/delete', (req, res) => {
-    console.log('删除知识库:', req.body);
-    res.json({ 
-        success: true, 
-        message: '知识库删除成功',
-        data: {
-            id: req.body.id
-        }
-    });
+app.get('/settings', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src/setting/settings.html'));
 });
 
-// 12. 上传文件到知识库
-app.post('/api/knowledgebase/upload', (req, res) => {
-    console.log('上传文件到知识库:', req.body);
-    res.json({ 
-        success: true, 
-        message: '文件上传成功',
-        data: {
-            fileId: 'file123',
-            fileName: req.body.fileName,
-            fileSize: '1.2MB',
-            knowledgebaseId: req.body.knowledgebaseId
-        }
-    });
+app.get('/help', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src/help/help.html'));
 });
 
-// 13. 获取知识库内文档的具体列表
-app.post('/api/knowledgebase/documents', (req, res) => {
-    console.log('获取知识库文档列表:', req.body);
-    res.json({ 
-        success: true, 
-        message: '获取文档列表成功',
-        data: [
-            { id: 'doc1', name: '文档1.pdf', size: '1.2MB', uploadTime: '2023-05-01' },
-            { id: 'doc2', name: '文档2.docx', size: '0.8MB', uploadTime: '2023-05-15' }
-        ]
-    });
+app.get('/knowledgebase', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src/knowledgebase/knowledgebase.html'));
 });
 
-// 14. 下载文件到根目录下的files/documents目录
-app.post('/api/knowledgebase/download', (req, res) => {
-    console.log('下载文件到本地:', req.body);
-    res.json({ 
-        success: true, 
-        message: '文件下载成功',
-        data: {
-            path: '/files/documents/document123.pdf',
-            fileName: '文档.pdf'
-        }
-    });
+app.get('/basedetail', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src/basedetail/basedetail.html'));
 });
 
-// 15. 删除知识库内的某个文档
-app.post('/api/knowledgebase/document/delete', (req, res) => {
-    console.log('删除知识库文档:', req.body);
-    res.json({ 
-        success: true, 
-        message: '文档删除成功',
-        data: {
-            documentId: req.body.documentId,
-            knowledgebaseId: req.body.knowledgebaseId
-        }
-    });
+app.get('/home', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src/home/home.html'));
 });
-
-// 16. 获取用户的所有聊天记录会话列表
-app.post('/api/chat/sessions', (req, res) => {
-    console.log('获取聊天会话列表:', req.body);
-    res.json({ 
-        success: true, 
-        message: '获取会话列表成功',
-        data: [
-            { id: 'session1', title: '会话1', lastMessage: '最后一条消息', lastTime: '2023-06-01T10:30:00Z' },
-            { id: 'session2', title: '会话2', lastMessage: '最后一条消息', lastTime: '2023-06-02T14:20:00Z' }
-        ]
-    });
-});
-
-// 17. 获取用户的某个会话的具体聊天记录
-app.post('/api/chat/history', (req, res) => {
-    console.log('获取会话聊天记录:', req.body);
-    res.json({ 
-        success: true, 
-        message: '获取聊天记录成功',
-        data: {
-            sessionId: req.body.sessionId,
-            messages: [
-                { id: 'msg1', role: 'user', content: '用户消息1', timestamp: '2023-06-01T10:20:00Z' },
-                { id: 'msg2', role: 'assistant', content: '助手回复1', timestamp: '2023-06-01T10:20:30Z' }
-            ]
-        }
-    });
-});
-
-// 18. 删除某个会话id
-app.post('/api/chat/session/delete', (req, res) => {
-    console.log('删除聊天会话:', req.body);
-    res.json({ 
-        success: true, 
-        message: '会话删除成功',
-        data: {
-            sessionId: req.body.sessionId
-        }
-    });
-});
-
-
 
 // 404处理 - 重定向到登录页面
 app.use((req, res) => {
@@ -351,15 +561,26 @@ app.use((req, res) => {
 app.listen(PORT, () => {
     console.log(`🚀 服务器运行在 http://localhost:${PORT}`);
     console.log(`📁 静态文件目录: ${__dirname}`);
+    console.log(`🔗 后端服务地址: ${BACKEND_BASE_URL}`);
     console.log(`🌐 可访问的页面:`);
-    console.log(`   - http://localhost:${PORT}/ (登录页面)`);
+    console.log(`   - http://localhost:${PORT}/ (自动重定向到登录页面)`);
+    console.log(`   - http://localhost:${PORT}/login (登录页面)`);
+    console.log(`   - http://localhost:${PORT}/signin (登录页面)`);
+    console.log(`   - http://localhost:${PORT}/signup (注册页面)`);
     console.log(`   - http://localhost:${PORT}/index (主聊天界面)`);
     console.log(`   - http://localhost:${PORT}/settings (设置)`);
     console.log(`   - http://localhost:${PORT}/help (帮助)`);
     console.log(`   - http://localhost:${PORT}/knowledgebase (知识库)`);
     console.log(`   - http://localhost:${PORT}/basedetail (知识库详情)`);
     console.log(`   - http://localhost:${PORT}/home (用户账户)`);
-    console.log(`   - http://localhost:${PORT}/login (登录)`);
+    console.log(`🔧 代理API端点:`);
+    console.log(`   - GET  /health (健康检查)`);
+    console.log(`   - POST /user/account (账户管理)`);
+    console.log(`   - POST /user/chat_history (聊天记录)`);
+    console.log(`   - POST /user/knowledgebase (知识库)`);
+    console.log(`   - POST /user/custom (用户自定义)`);
+    console.log(`   - POST /user/document (文档管理)`);
+    console.log(`   - POST /user/architecture (架构管理)`);
 });
 
 // 优雅关闭

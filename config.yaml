@@ -1,3 +1,2 @@
 user_manage_url: "http://192.168.132.149:8006"
-jwt_secret: "your-super-secret-jwt-key-change-in-production-2024"
-jwt_expires_in: "7d"
+file_manage_url: "http://192.168.132.149:8007"

@@ -1,13 +1,21 @@
-// 知识库卡片菜单功能
-document.addEventListener('DOMContentLoaded', () => {
-    const cardMenuButtons = document.querySelectorAll('.knowledge-card-menu');
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+import KnowledgeCardsGrid from './KnowledgeCardsGrid.vue'
 
-    cardMenuButtons.forEach(button => {
-        button.addEventListener('click', (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            // 这里可以添加菜单显示逻辑
-            console.log('知识库菜单点击');
-        });
-    });
+// 创建Pinia实例
+const pinia = createPinia()
+
+// 知识库页面功能
+document.addEventListener('DOMContentLoaded', () => {
+    // 挂载知识库卡片网格组件
+    const knowledgeGridElement = document.getElementById('knowledge-cards-grid-container');
+
+    if (knowledgeGridElement) {
+        const knowledgeApp = createApp(KnowledgeCardsGrid)
+        knowledgeApp.use(pinia)
+        knowledgeApp.mount('#knowledge-cards-grid-container')
+        console.log('Knowledge base cards grid component mounted')
+    } else {
+        console.warn('Knowledge base cards grid container not found')
+    }
 });

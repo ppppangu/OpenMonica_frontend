@@ -2,11 +2,29 @@
 import { useUserStore } from '../store/user_info'
 import { computed } from 'vue'
 const userStore = useUserStore()
-const userName = computed(() => userStore.userName)
+
+const time_hello = computed(() => {
+    const now = new Date();
+
+    // 转换为东八区时间
+    const utcHour = now.getUTCHours(); // 获取 UTC 时间的小时
+    const localHour = (utcHour + 8) % 24; // 转换为东八区时间
+
+    // 根据时间段返回问候语
+    if (localHour >= 6 && localHour < 12) {
+        return "早上好";
+    } else if (localHour >= 12 && localHour < 18) {
+        return "下午好";
+    } else {
+        return "晚上好";
+    }
+})
+
+const userName = computed(() => time_hello.value + ' ' + userStore.user?.username + ' 👋')
 </script>
 
 <template>
     <header class="main-content-header">
-        <h1 class="main-content-title">欢迎 {{ userName }} 👋</h1>
+        <h1 class="main-content-title">{{ userName }}</h1>
     </header>
 </template>

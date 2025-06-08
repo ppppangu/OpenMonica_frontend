@@ -188,15 +188,71 @@ body {
     padding: 2rem;
     background: #f3f4f6;
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr;
     gap: 2rem;
     overflow: hidden;
+    height: calc(100vh - 80px); /* 明确设置高度 */
+    z-index: 10; /* 确保在其他元素之上 */
+}
+
+/* Vue组件容器样式 */
+#user-prompt-container,
+#model-memory-container {
+    min-height: 200px;
+    position: relative;
+}
+
+/* 当Vue组件加载后移除调试样式 */
+#user-prompt-container:has(.container-user-prompt),
+#model-memory-container:has(.container-model-memory) {
+    border: none;
+    background: transparent;
+}
+
+/* 加载占位符样式 */
+.loading-placeholder,
+.error-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 200px;
+    background: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+.error-placeholder {
+    color: #dc2626;
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+}
+
+/* 当Vue组件加载后隐藏占位符 */
+#user-prompt-container:has(.container-user-prompt) .loading-placeholder,
+#model-memory-container:has(.container-model-memory) .loading-placeholder {
+    display: none;
 }
 
 @media (max-width: 1024px) {
     .container-settings-layout {
         grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
         overflow-y: auto;
+        height: auto; /* 在小屏幕上允许自动高度 */
+    }
+
+    .container-user-prompt,
+    .container-model-memory {
+        min-height: 400px; /* 在小屏幕上设置最小高度 */
+        height: auto;
+    }
+
+    .settings-textarea {
+        min-height: 300px; /* 在小屏幕上确保足够的高度 */
     }
 }
 
@@ -210,6 +266,8 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    height: 100%; /* 确保容器占满网格单元格的高度 */
+    min-height: 0; /* 允许flex子元素收缩 */
 }
 
 .settings-section-header {
@@ -247,6 +305,7 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    min-height: 0; /* 允许flex子元素收缩 */
 }
 
 .settings-section-description {
@@ -259,12 +318,15 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
+    min-height: 0; /* 允许flex子元素收缩 */
 }
 
 /* 文本区域样式 */
 .settings-textarea {
     width: 100%;
     flex: 1;
+    min-height: 200px; /* 设置最小高度 */
+    height: 100%; /* 占满可用高度 */
     padding: 1rem;
     border: 1px solid #e5e7eb;
     border-radius: 0.5rem;
@@ -273,6 +335,7 @@ body {
     line-height: 1.6;
     overflow-y: auto;
     transition: all 0.2s ease;
+    box-sizing: border-box; /* 确保padding包含在高度计算中 */
 }
 
 .settings-textarea:focus {
@@ -287,6 +350,14 @@ body {
 
 .settings-textarea-blue:focus {
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* 确保用户提示和模型记忆的textarea占满可用空间 */
+.container-user-prompt .settings-textarea,
+.container-model-memory .settings-textarea {
+    flex: 1;
+    min-height: 300px;
+    height: 0; /* 重置高度，让flex控制 */
 }
 
 /* 通用设置表单样式 */
@@ -373,6 +444,44 @@ body {
     outline: none;
     border-color: #7c3aed;
     box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+/* 通用设置区域包装器 */
+.container-general-settings-wrapper {
+    position: fixed;
+    top: 80px;
+    left: 80px;
+    right: 0;
+    bottom: 0;
+    padding: 2rem;
+    background: #f3f4f6;
+    z-index: 1; /* 确保可见性 */
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-start;
+    pointer-events: none; /* 允许点击穿透到下层元素 */
+}
+
+.container-general-settings-wrapper .container-general-settings {
+    width: calc(33.333% - 1.333rem); /* 占据原来三分之一的宽度 */
+    max-width: 400px;
+    height: fit-content;
+    max-height: calc(100vh - 160px);
+    pointer-events: auto; /* 恢复此元素的点击事件 */
+}
+
+@media (max-width: 1024px) {
+    .container-general-settings-wrapper {
+        position: static;
+        padding: 0 2rem 2rem 2rem;
+        z-index: auto;
+        justify-content: stretch;
+    }
+
+    .container-general-settings-wrapper .container-general-settings {
+        width: 100%;
+        max-width: none;
+    }
 }
 
 /* 通用工具类 */

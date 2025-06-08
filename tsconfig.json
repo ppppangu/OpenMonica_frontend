@@ -15,18 +15,6 @@
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true
   },
-  "include": [
-    "store/**/*",
-    "*.vue",
-    "*.ts",
-    "login/signup.vue",
-    "login/login.vue",
-    "login/index.vue",
-    "vue/**/*",
-    "chat/xStream.vue",
-    "chat/ChatList.vue",
-    "chat/ChatFrame.vue",
-    "chat/ChatBox.vue"
-  ],
+  "include": ["src/**/*", "*.vue", "*.ts", "*.d.ts"],
   "exclude": ["node_modules", "dist"]
 }

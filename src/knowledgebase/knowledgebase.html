@@ -100,86 +100,8 @@
             <h1 class="knowledge-main-title">知识库管理</h1>
         </header>
 
-        <!-- 知识库网格区域 -->
-        <div class="knowledge-grid-container">
-            <div class="knowledge-grid-header">
-                <h2 class="knowledge-grid-title">我的知识库</h2>
-                <button class="knowledge-create-btn">
-                    <span class="material-icons">add</span>
-                    新建知识库
-                </button>
-            </div>
-
-            <!-- 知识库卡片网格 -->
-            <div class="knowledge-cards-grid">
-                <!-- 示例知识库卡片 -->
-                <a href="/src/basedetail/basedetail.html" class="knowledge-card knowledge-card-blue">
-                    <div class="knowledge-card-header">
-                        <div class="knowledge-card-icon">📝</div>
-                        <button class="knowledge-card-menu">
-                            <span class="material-icons">more_vert</span>
-                        </button>
-                    </div>
-                    <h3 class="knowledge-card-title">金融知识库</h3>
-                    <p class="knowledge-card-desc">学习金融过程中的知识库</p>
-                    <div class="knowledge-card-count">4 个文档</div>
-                </a>
-
-                <div class="knowledge-card knowledge-card-green">
-                    <div class="knowledge-card-header">
-                        <div class="knowledge-card-icon">📚</div>
-                        <button class="knowledge-card-menu">
-                            <span class="material-icons">more_vert</span>
-                        </button>
-                    </div>
-                    <h3 class="knowledge-card-title">法律知识库</h3>
-                    <p class="knowledge-card-desc">法律相关资料</p>
-                    <div class="knowledge-card-count">3 个文档</div>
-                </div>
-
-                <div class="knowledge-card knowledge-card-purple">
-                    <div class="knowledge-card-header">
-                        <div class="knowledge-card-icon">🎨</div>
-                        <button class="knowledge-card-menu">
-                            <span class="material-icons">more_vert</span>
-                        </button>
-                    </div>
-                    <h3 class="knowledge-card-title">设计知识库</h3>
-                    <p class="knowledge-card-desc">设计相关的资料和灵感</p>
-                    <div class="knowledge-card-count">7 个文档</div>
-                </div>
-
-                <!-- 新建知识库卡片 -->
-                <div class="knowledge-card knowledge-card-create">
-                    <div class="knowledge-card-create-content">
-                        <div class="knowledge-card-create-icon">
-                            <span class="material-icons">add_circle_outline</span>
-                        </div>
-                        <h3 class="knowledge-card-create-title">新建知识库</h3>
-                        <p class="knowledge-card-create-desc">点击创建新的知识库</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 知识库操作区域 -->
-            <div class="knowledge-actions-section">
-                <div class="knowledge-actions-content">
-                    <div class="knowledge-stats">
-                        共 3 个知识库
-                    </div>
-                    <div class="knowledge-actions">
-                        <button class="knowledge-action-btn">
-                            <span class="material-icons">import_export</span>
-                            导入知识库
-                        </button>
-                        <button class="knowledge-action-btn">
-                            <span class="material-icons">settings</span>
-                            管理设置
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!-- 知识库网格区域 - Vue组件容器 -->
+        <div id="knowledge-cards-grid-container"></div>
     </div>
 </div>
 

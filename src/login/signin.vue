@@ -64,6 +64,7 @@
 import { ref, reactive } from 'vue'
 import { useUserStore } from '../store/user_info'
 
+
 defineOptions({ name: 'Login' })
 
 // Pinia store
@@ -119,6 +120,11 @@ const validateForm = (): boolean => {
     return false
   }
 
+  if (!formData.remember) {
+    showError('请勾选用户协议和隐私政策')
+    return false
+  }
+
   return true
 }
 
@@ -133,15 +139,18 @@ const handleSubmit = async () => {
   isLoading.value = true
 
   try {
-    // 创建 FormData 对象
-    const loginFormData = new FormData()
-    loginFormData.append('email', formData.email.trim())
-    loginFormData.append('password', formData.password)
-    loginFormData.append('remember', formData.remember ? 'true' : 'false')
-
+    // 发送JSON格式的登录请求
     const response = await fetch('/api/auth/login', {
       method: 'POST',
-      body: loginFormData
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: formData.email.trim(),
+        password: formData.password,
+        remember: formData.remember
+      }),
+      credentials: 'include' // Include cookies for authentication
     })
 
     const result = await response.json()
@@ -149,12 +158,13 @@ const handleSubmit = async () => {
     if (response.ok && result.success) {
       // 登录成功，存储用户信息到 Pinia
       userStore.login({
-        id: result.user.id,
-        email: result.user.email,
-        username: result.user.username || result.user.email.split('@')[0]
+        token: result.token,
+        id: result.user_id,
+        email: result.user_email,
+        username: result.user_username
       })
 
-      // 重定向到主界面
+      // 重定向到聊天界面
       window.location.href = '/src/chat/chat.html'
     } else {
       showError(result.message || '登录失败，请检查邮箱和密码')

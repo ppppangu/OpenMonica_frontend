@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Sender Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .description {
+            background-color: #e7f3ff;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #007bff;
+        }
+        .description h3 {
+            margin-top: 0;
+            color: #0056b3;
+        }
+        .description ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .description li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chat Sender Test Page</h1>
+        
+        <div class="description">
+            <h3>Chat Sending Functionality</h3>
+            <p>This page demonstrates the new chat sending functionality implemented in the user input store.</p>
+            
+            <h4>Features:</h4>
+            <ul>
+                <li><strong>Multiple Model Support:</strong> Select multiple models to send asynchronous requests</li>
+                <li><strong>Single Model Support:</strong> Select one model for normal streaming response</li>
+                <li><strong>Authentication:</strong> Uses user_id and token from global state</li>
+                <li><strong>FormData Format:</strong> Sends data in the expected FormData format to /user/chat</li>
+                <li><strong>Error Handling:</strong> Proper error handling and status reporting</li>
+            </ul>
+            
+            <h4>Current Implementation:</h4>
+            <ul>
+                <li>Uses <code>full_input_messages: []</code> (empty array as requested)</li>
+                <li>Converts model_ids to model names for backend</li>
+                <li>Includes extra_request_list from user input store</li>
+                <li>Handles both success and error responses</li>
+            </ul>
+        </div>
+
+        <!-- Vue component will be mounted here -->
+        <div id="chat-sender"></div>
+    </div>
+
+    <!-- Vue 3 and dependencies -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/pinia@2/dist/pinia.iife.js"></script>
+    
+    <!-- Import the chat sender component -->
+    <script type="module">
+        import { createApp } from 'vue'
+        import { createPinia } from 'pinia'
+        import ChatSender from './src/chat/ChatSender.vue'
+
+        const pinia = createPinia()
+        const app = createApp(ChatSender)
+        app.use(pinia)
+        app.mount('#chat-sender')
+    </script>
+</body>
+</html>

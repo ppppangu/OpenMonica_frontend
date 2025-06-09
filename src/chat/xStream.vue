@@ -3,10 +3,39 @@ import { TagsOutlined } from '@ant-design/icons-vue';
 import { Button, Flex } from 'ant-design-vue';
 import { Bubble, ThoughtChain, XStream } from 'ant-design-x-vue';
 import { computed, ref, h } from 'vue';
+import { useUserStore } from '../store/user_info'
+import { useModelListStore } from '../store/model_list'
 
 defineOptions({ name: 'StreamDefaultSetup' });
 
 const contentChunks = ['He', 'llo', ', w', 'or', 'ld!'];
+
+async function receiveLLMStream() {
+  const userStore = useUserStore()
+  const userId = userStore.user.id
+  const modelStore = useModelListStore()
+  const modelId = modelStore.current_model?.model_id
+  const user_message_list = [
+    {
+      role: 'user',
+      content: 'Hello, world!'
+    }
+  ]
+  console.log('user', userId, 'model', modelId, 'send request to llm server', user_message_list)
+  const response = await fetch('/user/chat', {
+    method: 'POST',
+    body: JSON.stringify({
+      token: userStore.user.token,
+      user_id: userId,
+      model_id: modelId,
+      user_message_list: user_message_list,
+      extra_request_list: [],
+    }),
+  })
+  const data = await response.json()
+  console.log('llm server response', data)
+
+}
 
 function mockReadableStream() {
   const sseChunks: string[] = [];
@@ -41,6 +70,7 @@ async function readStream() {
     lines.value = [...lines.value, chunk];
   }
 }
+
 </script>
 <template>
   <Flex :gap="8">

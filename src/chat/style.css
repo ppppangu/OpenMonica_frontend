@@ -104,20 +104,40 @@ body {
 .ant-bubble-content-wrapper {
     background-color: white;
     flex-direction: column;
-    height: auto;
     height: 100%;
     padding: 1rem;
-    /*保证占满父容器*/
-    height: 100%;
     margin: 0;
     display: flex;
     flex-direction: column;
     flex: 1;
-
+    overflow: hidden; /* 确保不会超出容器 */
 }
 
 .ant-bubble-list {
+    height: 100% !important;
     max-height: 100% !important;
+    overflow-y: auto !important; /* 只有这里可以滚动 */
+    flex: 1;
+    padding-right: 8px; /* 为滚动条留出空间 */
+}
+
+/* 美化滚动条样式 */
+.ant-bubble-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.ant-bubble-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.ant-bubble-list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.ant-bubble-list::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
 }
 
 #chatBubbleApp {
@@ -322,43 +342,45 @@ body {
 
 /* 第三容器：主内容区域 */
 .container-main-content {
-    position: relative;
-    padding: 2rem;
-    overflow-y: auto;
-    height: 100vh;
-    transition: margin-left 0.3s ease-in-out;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    overflow: hidden;
+    transition: all 0.3s ease-in-out;
     display: flex;
     flex-direction: column;
+    /* CSS变量用于动态调整底部间距 */
+    --chat-input-height: 180px;
 }
 
-/* 根据第二容器状态调整第三容器位置 */
+/* 根据第二容器状态调整第三容器位置和宽度 */
 #chat-panel-toggle:checked ~ .container-main-content {
-    margin-left: 380px; /* 80px第一容器 + 300px第二容器 */
+    left: 385px; /* 80px第一容器 + 300px第二容器 + 5px间距 */
+    right: 5px; /* 最小右边距离 */
 }
-
-/* 根据第二容器状态调整第三容器位置 */
 
 #chat-panel-toggle:not(:checked) ~ .container-main-content {
-    margin-left: 80px; /* 仅第一容器宽度 */
+    left: 85px; /* 80px第一容器宽度 + 5px间距 */
+    right: 5px; /* 最小右边距离 */
 }
 
 .main-content-wrapper {
-    max-width: none;
-    max-height: none;
     height: 100%;
     margin: 0;
     display: flex;
     flex-direction: column;
     flex: 1;
+    /* 使用CSS变量动态计算底部padding */
+    padding: 0.75rem 0.25rem calc(var(--chat-input-height) + 40px) 0.25rem;
 }
 
 .main-content-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    /* 添加flex-shrink: 0，确保它不会被压缩。 */
-    flex-shrink: 0;
+    justify-content: flex-start; /* 保持左对齐 */
+    align-items: center; /* 垂直居中 */
+    flex-shrink: 0; /* 确保头部不会被压缩 */
+    height: 60px; /* 减少高度 */
+    margin-bottom: 1rem; /* 底部边距 */
 }
 
 .main-content-title {
@@ -367,38 +389,39 @@ body {
     color: #1f2937;
 }
 
-.main-content-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr;
-    gap: 2rem;
-    margin-bottom: 2rem;
-    /* 修改为flex-grow: 1，让其占据所有剩余空间 */
-    flex: 1 1 auto;
-    /* 保证最小高度 */
-    min-height: 0;
-    /* 允许内容溢出时滚动 */
-    overflow-y: auto;
+/* 聊天区域容器 - 使用flexbox布局 */
+.chat-area-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0; /* 重要：允许flex子元素收缩 */
+    gap: 0.5rem; /* 最小化间距让布局最紧密 */
+    max-width: 100%; /* 确保不会超出容器 */
+    position: relative; /* 为resize handle定位 */
 }
 
-/* 给#chatbox添加适当的样式，确保它在main-content-grid内部显示正常 */
-#chatbox {
-    width: 100%;
-    height: 100%;
-    flex: 1 1 auto;
-    /* 保证最小高度 */
-    min-height: 0;
-    /* 允许内容溢出时滚动 */
-    overflow-y: auto;
-}
-
-/* 内容模块通用样式 */
-.content-module {
+/* 聊天消息容器 */
+.chat-messages-container {
     background: white;
-    padding: 1.5rem;
     border-radius: 0.75rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 1rem; /* 减少padding让内容更紧密 */
+    flex: 1; /* 占据剩余空间 */
+    min-height: 200px; /* 最小高度确保可用性 */
+    max-height: 100%; /* 不超出父容器 */
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    /* 确保与输入框保持适当间距 */
+    margin-bottom: 0.5rem;
 }
+
+/* 流式内容容器 */
+.stream-container {
+    flex-shrink: 0; /* 不收缩 */
+}
+
+/* 内容模块通用样式 - 已移至具体组件 */
 
 .module-header {
     display: flex;
@@ -505,15 +528,56 @@ body {
     text-align: center;
 }
 
-/* 第四容器：聊天输入框 */
+/* 第四容器：聊天输入框 - 独立的固定定位容器 */
 .container-chat-input {
-    height: auto;
-    min-height: 0px;
+    position: fixed;
+    bottom: 20px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 12px; /* 适当的padding确保内容不贴边 */
+    min-height: 180px; /* 增加最小高度确保按钮完全可见 */
+    max-height: 450px; /* 增加最大高度限制 */
+    height: 180px; /* 增加默认高度确保按钮可见 */
     display: flex;
     flex-direction: column;
-    flex: 0 0 200px;
-    overflow-y: auto;
+    overflow: hidden; /* 隐藏溢出，让内部组件处理滚动 */
+    transition: height 0.3s ease; /* 平滑过渡动画 */
+    z-index: 100; /* 确保在其他元素之上 */
+    cursor: ns-resize; /* 在整个容器上显示调整大小光标 */
+}
 
+/* 根据第二容器状态调整第四容器位置和宽度 */
+#chat-panel-toggle:checked ~ .container-chat-input {
+    left: 395px; /* 80px第一容器 + 300px第二容器 + 15px间距 */
+    right: 20px; /* 右边距 */
+}
+
+#chat-panel-toggle:not(:checked) ~ .container-chat-input {
+    left: 95px; /* 80px第一容器宽度 + 15px间距 */
+    right: 20px; /* 右边距 */
+}
+
+/* 确保聊天输入框内容填满容器 */
+.container-chat-input #chatframe {
+    flex: 1; /* 占据所有可用空间 */
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* 允许flex子元素收缩 */
+}
+
+/* 确保Ant Design组件正确填充 */
+.container-chat-input .ant-sender {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.container-chat-input .ant-sender-wrapper {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
 }
 
 /* 聚焦示例组件样式 */
@@ -551,13 +615,27 @@ body {
     }
 }
 
-/* 根据第二容器状态调整第四容器位置 */
-#chat-panel-toggle:checked ~ .container-chat-input {
-    left: 380px; /* 80px第一容器 + 300px第二容器 */
+/* 确保聊天输入框内容不会溢出 */
+.container-chat-input .ant-sender {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
-#chat-panel-toggle:not(:checked) ~ .container-chat-input {
-    left: 80px; /* 仅第一容器宽度 */
+.container-chat-input .ant-sender-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 确保聊天消息容器内的组件正确布局 */
+.chat-messages-container > * {
+    flex-shrink: 0;
+}
+
+.chat-messages-container .ant-bubble-list {
+    flex: 1 !important;
+    min-height: 0 !important;
 }
 
 .chat-input-form {
@@ -576,4 +654,26 @@ body {
 
 .shadow-hover:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 容器顶部边缘拖拽区域 */
+.container-chat-input::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: 0;
+    right: 0;
+    height: 10px;
+    cursor: ns-resize;
+    z-index: 10;
+}
+
+/* 悬停时显示拖拽提示 */
+.container-chat-input:hover {
+    border-top: 2px solid #7c3aed;
+}
+
+/* 为拖拽功能添加JavaScript控制的高度变化 */
+.container-chat-input.resizing {
+    transition: none; /* 拖拽时禁用过渡动画 */
 }

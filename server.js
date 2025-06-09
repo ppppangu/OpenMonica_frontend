@@ -21,13 +21,14 @@ try {
 
 // 后端服务URL，注意！！！！涉及到该后端的请求，发送时需要使用form-data格式，禁止使用json格式，否则必然会报错
 const BACKEND_BASE_URL = config.user_manage_url;
+const MODEL_CHAT_BASE_URL = config.model_chat_url;
 
 // 配置multer处理FormData
 const upload = multer();
 
 // CORS配置 - 允许Vite开发服务器访问
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins for development
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
@@ -60,7 +61,7 @@ app.get('/test', (req, res) => {
 app.get('/health', async (req, res) => {
     try {
         const response = await axios.get(`${BACKEND_BASE_URL}/health`, {
-            timeout: 5000 // 5秒超时
+            timeout: 10000 // 5秒超时
         });
         res.json({
             status: 'ok',
@@ -96,7 +97,7 @@ async function check_token_valid(token) {
 
         const response = await axios.post(`${BACKEND_BASE_URL}/user/token`, formData, {
             headers: formData.getHeaders(),
-            timeout: 5000
+            timeout: 10000
         });
 
         console.log('Token验证响应:', response.data);
@@ -121,7 +122,7 @@ async function get_user_token(user_uuid) {
     formData.append('user_uuid', user_uuid);
     const response = await axios.post(`${BACKEND_BASE_URL}/user/token`, formData, {
         headers: formData.getHeaders(),
-        timeout: 5000
+        timeout: 10000
     });
 
     if (response.data.status == 'success') {
@@ -904,8 +905,116 @@ app.post('/user/setting/update_generate_user_infomation', async (req, res) => {
     res.json(response.data.data);
 });
 
+app.post('/user/model/get_list', async (req, res) => {
+    try {
+        console.log('收到获取模型列表请求:', req.body);
+        const token = req.body.token;
+        const valid = await check_token_valid(token);
+        if (!valid) {
+            console.log('token无效，请重新登录');
+            return res.status(401).json({
+                success: false,
+                message: 'token无效，请重新登录'
+            });
+        }
+
+        console.log('尝试从后端获取模型列表:', `${MODEL_CHAT_BASE_URL}/v1/models`);
+        const response = await axios.get(`${MODEL_CHAT_BASE_URL}/v1/models`, {
+            timeout: 30000, // 30 second timeout
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+        console.log('后端获取模型列表响应:', response.data);
+        res.json(response.data);
+    } catch (error) {
+        console.error('获取模型列表失败:', error.message);
+
+        // Return proper error response instead of mock data
+        let errorMessage = '获取模型列表失败';
+        let statusCode = 500;
+
+        if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+            errorMessage = '连接超时，请稍后重试';
+            statusCode = 408;
+        } else if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+            errorMessage = '无法连接到模型服务，请检查网络连接';
+            statusCode = 503;
+        } else if (error.response) {
+            errorMessage = `服务器错误: ${error.response.status} ${error.response.statusText}`;
+            statusCode = error.response.status;
+        }
+
+        res.status(statusCode).json({
+            success: false,
+            message: errorMessage,
+            error_code: error.code || 'UNKNOWN_ERROR',
+            retry_after: 5 // Suggest retry after 5 seconds
+        });
+    }
+});
 
 
+app.post('/user/chat', async (req, res) => {
+    const token = req.body.token;
+    const valid = await check_token_valid(token);
+    if (!valid) {
+        console.log('token无效，请重新登录');
+        alert('token无效，请重新登录');
+        res.redirect('/');
+        return;
+    }
+    // 获取用户id和相关的消息，以及“额外消息”
+    const user_id = req.body.user_id;
+    const model_id = req.body.model_id;
+
+    // Parse JSON strings from FormData
+    let user_message_list = [];
+    let extra_request_list = [];
+
+    try {
+        user_message_list = JSON.parse(req.body.user_message_list || '[]');
+    } catch (e) {
+        console.error('Error parsing user_message_list:', e);
+        user_message_list = [];
+    }
+
+    try {
+        extra_request_list = JSON.parse(req.body.extra_request_list || '[]');
+    } catch (e) {
+        console.error('Error parsing extra_request_list:', e);
+        extra_request_list = [];
+    }
+
+    console.log('Parsed user_message_list:', user_message_list);
+    console.log('Parsed extra_request_list:', extra_request_list);
+
+    // 将user_message和extra_request_list合并成一个列表
+    const messages_list = [
+        ...user_message_list,
+        ...extra_request_list
+    ]
+
+    // extra_request_list是一个数组，数组中每个元素是一个字典，字典中包含两个键值对，两个键分别是name和parameters，name对应的键是字符串，parameters对应的键是一个列表字典，列表字典中是所需参数的名字和对应的值
+    const formData = new FormData();
+    formData.append('user_id', user_id);
+    formData.append('model', model_id);
+    formData.append('messages', JSON.stringify(messages_list));
+
+    console.log('Sending to backend:', {
+        user_id: user_id,
+        model: model_id,
+        messages: messages_list
+    });
+
+    const response = await axios.post(`${BACKEND_BASE_URL}/user/chat`, formData, {
+        headers: formData.getHeaders(),
+        timeout: 10000
+    });
+    console.log('后端聊天响应:', response.data);
+    res.json(response.data.data);
+});
 
 // Favicon处理
 app.get('/favicon.ico', (req, res) => {

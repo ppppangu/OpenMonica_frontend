@@ -72,20 +72,21 @@
 <div id="container-main-content" class="container-main-content">
     <div class="main-content-wrapper">
         <!-- 主内容头部 -->
-        <div id="hello"></div>
+        <div id="hello" class="main-content-header"></div>
 
-        <!-- 主内容网格布局 -->
-        <div class="main-content-grid">
-
-        <!-- AI 聊天显示区域模块 -->
-        <div id="chatbox" class="content-module"></div>
-        <div id="stream"></div>
+        <!-- 聊天区域容器 - 使用flexbox布局 -->
+        <div class="chat-area-container">
+            <!-- AI 聊天显示区域模块 -->
+            <div id="chatbox" class="chat-messages-container"></div>
+            <div id="stream" class="stream-container"></div>
+        </div>
     </div>
 </div>
 
-<!-- 第四容器：聊天输入框 -->
+<!-- 第四容器：聊天输入框 - 独立的可调整大小容器 -->
 <div id="container-chat-input" class="container-chat-input">
     <div id="chatframe"></div>
+</div>
 </div>
 <script type="module" src="main.ts"></script>
 </body></html>

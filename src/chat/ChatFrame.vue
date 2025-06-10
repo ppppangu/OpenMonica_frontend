@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ApiOutlined, LinkOutlined, SearchOutlined, CloudUploadOutlined } from '@ant-design/icons-vue';
-import { Button, Divider, Flex, Switch, theme } from 'ant-design-vue';
-import { Sender } from 'ant-design-x-vue';
-import { ref, watch, h } from 'vue';
+import { ApiOutlined, SearchOutlined, CloudUploadOutlined, PaperClipOutlined } from '@ant-design/icons-vue';
+import { Button, Divider, Flex, Switch, theme, message } from 'ant-design-vue';
+import { Sender, Attachments } from 'ant-design-x-vue';
+import { ref, watch, h, computed } from 'vue';
 import ModelList from './model_list.vue';
 import { useUserInputStore } from '../store/user_input'
 import { useModelListStore } from '../store/model_list'
 import { useUserStore } from '../store/user_info'
+import { useFileAttachmentsStore } from '../store/file_attachments'
 
 defineOptions({ name: 'ChatFrame' });
 
@@ -16,31 +17,61 @@ const value = ref<string>('');
 const userInputStore = useUserInputStore()
 const modelListStore = useModelListStore()
 const userStore = useUserStore()
+const fileAttachmentsStore = useFileAttachmentsStore()
 
 const open = ref(false);
 const attachmentsRef = ref(null);
-const fileRawList = ref([])
 
-const placeholder = (type) =>
+// Convert file attachments to Ant Design X format
+const attachmentItems = computed(() => {
+  return fileAttachmentsStore.attachments.map(attachment => ({
+    uid: attachment.file_id,
+    name: attachment.filename,
+    status: attachment.upload_status,
+    size: attachment.file_size,
+    url: attachment.public_url,
+    thumbUrl: attachment.file_type === 'image' ? attachment.public_url : undefined,
+    percent: attachment.upload_progress,
+    response: attachment.error_message
+  }))
+})
+
+const placeholder = (type: 'inline' | 'drop') =>
   type === 'drop'
     ? {
       title: 'Drop file here',
     }
     : {
       icon: h(CloudUploadOutlined),
-      title: 'Upload files',
-      description: 'Click or drag files to this area to upload',
+      title: 'Click or drag files to upload',
+      description: 'Support file type: image, video, audio, document, etc.',
     }
 
-const pastFile = (_, files) => {
-  console.log("past")
-  for (const file of files) {
-    attachmentsRef.value?.upload(file);
+// Handle custom request for Ant Design Upload
+const handleCustomRequest = async (options: any) => {
+  try {
+    await fileAttachmentsStore.uploadFile(options.file)
+    message.success(`${options.file.name} uploaded successfully`)
+    options.onSuccess?.(options.file)
+  } catch (error) {
+    console.error('File upload error:', error)
+    message.error(`Failed to upload ${options.file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    options.onError?.(error)
   }
-  open.value = true;
 }
 
-const fileChange = ({ fileList }) => fileRawList.value = fileList
+// Handle file removal
+const handleFileRemove = (file: any) => {
+  fileAttachmentsStore.removeFileFromStore(file.uid)
+  message.success(`${file.name} removed`)
+  return false // Prevent default removal behavior
+}
+
+// Handle file change events
+const handleFileChange = ({ fileList }: { fileList: any[] }) => {
+  // This is handled by our custom upload logic
+  console.log('File list changed:', fileList)
+}
 
 const iconStyle = {
   fontSize: 18,
@@ -53,15 +84,58 @@ watch(value, (newVal) => {
   console.log('userInputStore.user_input.text', userInputStore.user_input.text)
 })
 
+// 监听文件附件变化，同步到用户输入store
+watch(() => fileAttachmentsStore.images_url, (newImages) => {
+  userInputStore.update_user_input('images', newImages)
+}, { deep: true })
+
+watch(() => fileAttachmentsStore.files_url, (newFiles) => {
+  userInputStore.update_user_input('file_list', [...fileAttachmentsStore.documents_url, ...newFiles])
+}, { deep: true })
+
+watch(() => fileAttachmentsStore.documents_url, (newDocs) => {
+  userInputStore.update_user_input('file_list', [...newDocs, ...fileAttachmentsStore.files_url])
+}, { deep: true })
+
 function handleSendChat() {
   userInputStore.sendChat()
+  // Clear attachments after sending
+  fileAttachmentsStore.clearAllAttachments()
+  // Close attachments panel
+  open.value = false
 }
 
 function handleCancel() {
   // Reset the text input
   userInputStore.update_user_input('text', '')
   value.value = ''
+  // Clear attachments
+  fileAttachmentsStore.clearAllAttachments()
+  // Close attachments panel
+  open.value = false
 }
+
+const rewrite = () => {
+  console.log('rewrite')
+};
+
+const dataAnalysis = () => {
+  console.log('dataAnalysis')
+};
+
+const translate = () => {
+  console.log('translate')
+};
+
+const mindMap = () => {
+  console.log('mindMap')
+};
+
+const email = () => {
+  // 调用邮箱接口
+  userInputStore.update_user_input('email', true)
+  console.log('email')
+};
 
 watch(loading, () => {
   if (loading.value) {
@@ -78,7 +152,7 @@ watch(loading, () => {
 });
 </script>
 <template>
-  <InputApp>
+  <div>
   <Sender
     :value="value"
     :on-change="(v) => {
@@ -89,6 +163,25 @@ watch(loading, () => {
     :on-cancel="handleCancel"
     :actions="false"
   >
+    <template #header>
+      <Flex wrap="wrap" :gap="30" align="center">
+      <Button @click="translate" type="text" size="small">
+      翻译
+      </Button>
+      <Button @click="mindMap" type="text">
+      思维导图
+      </Button>
+      <Button @click="dataAnalysis" type="text">
+      数据分析
+      </Button>
+      <Button @click="rewrite" type="text">
+      改写
+      </Button>
+      <Button @click="email" type="text">
+      邮件
+      </Button>
+      </Flex>
+    </template>
     <template #footer="{ info: { components: { SendButton, LoadingButton, SpeechButton } } }">
       <Flex
         justify="space-between"
@@ -111,8 +204,9 @@ watch(loading, () => {
           <Button
             :style="iconStyle"
             type="text"
-            :icon="h(LinkOutlined)"
+            :icon="h(PaperClipOutlined)"
             @click="open = !open"
+            title="Attach files"
           />
           <Divider type="vertical" />
           <component
@@ -134,6 +228,19 @@ watch(loading, () => {
         </Flex>
       </Flex>
     </template>
-  </Sender>    
-  </InputApp>
+  </Sender>
+
+  <!-- File Attachments Component -->
+  <Attachments
+    v-if="open"
+    ref="attachmentsRef"
+    :items="attachmentItems"
+    :placeholder="placeholder"
+    :beforeUpload="() => false"
+    :customRequest="handleCustomRequest"
+    :onRemove="handleFileRemove"
+    :onChange="handleFileChange"
+    style="margin-top: 8px; border-radius: 8px; background: #fafafa;"
+  />
+  </div>
 </template>

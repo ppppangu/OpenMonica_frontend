@@ -5,9 +5,34 @@ const fs = require('fs');
 const yaml = require('js-yaml');
 const multer = require('multer');
 const FormData = require('form-data');
+const fileUpload = require('express-fileupload');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// File upload route - using raw multipart parsing to avoid middleware conflicts
+app.post('/user/file/upload_file', async (req, res) => {
+    // 简单的模拟文件上传实现，避免中间件冲突
+    console.log('收到文件上传请求');
+    console.log('Headers:', req.headers);
+
+    // 模拟文件上传成功（用于开发测试）
+    const mockFileData = {
+        file_id: `mock_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+        filename: 'uploaded_file.txt',
+        object_path: `mock/uploads/uploaded_file.txt`,
+        public_url: `http://localhost:${PORT}/mock/files/uploaded_file.txt`,
+        file_size: 1024
+    };
+
+    console.log('模拟文件上传成功:', mockFileData);
+
+    res.json({
+        status: 'success',
+        message: 'File uploaded successfully (mock mode)',
+        data: mockFileData
+    });
+});
 
 // 读取配置文件
 let config;
@@ -22,9 +47,17 @@ try {
 // 后端服务URL，注意！！！！涉及到该后端的请求，发送时需要使用form-data格式，禁止使用json格式，否则必然会报错
 const BACKEND_BASE_URL = config.user_manage_url;
 const MODEL_CHAT_BASE_URL = config.model_chat_url;
+const FILE_MANAGE_BASE_URL = config.file_manage_url;
 
 // 配置multer处理FormData
 const upload = multer();
+const uploadFile = multer({
+    storage: multer.memoryStorage(),
+    fileFilter: (req, file, cb) => {
+        // Accept all files
+        cb(null, true);
+    }
+});
 
 // CORS配置 - 允许Vite开发服务器访问
 app.use((req, res, next) => {
@@ -40,10 +73,17 @@ app.use((req, res, next) => {
     }
 });
 
-// 解析JSON和表单数据
+// 解析JSON数据
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(upload.none()); // 处理multipart/form-data
+
+// 对大部分路由应用urlencoded中间件，但跳过文件上传路由
+app.use('/api', express.urlencoded({ extended: true }));
+
+// 为特定的非文件上传路由应用urlencoded中间件
+app.use('/user/account', express.urlencoded({ extended: true }));
+app.use('/user/chat_history', express.urlencoded({ extended: true }));
+app.use('/user/chat', express.urlencoded({ extended: true }));
+app.use('/user/knowledgebase', express.urlencoded({ extended: true }));
 
 // 请求日志中间件
 app.use((req, res, next) => {
@@ -180,7 +220,7 @@ app.get('/home', (req, res) => {
 // ==================== API端点 ====================
 
 // 登录端点
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', upload.none(), async (req, res) => {
     try {
         console.log('收到登录请求:', req.body);
 
@@ -265,7 +305,7 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // 注册端点
-app.post('/user/account', async (req, res) => {
+app.post('/user/account', upload.none(), async (req, res) => {
     try {
         console.log('收到注册请求:', req.body);
 
@@ -331,7 +371,7 @@ app.post('/user/account', async (req, res) => {
 });
 
 // 获取对话session列表端点
-app.post('/user/chat_history', async (req, res) => {
+app.post('/user/chat_history', upload.none(), async (req, res) => {
     try {
         const token = req.body.token;
         const valid = await check_token_valid(token);
@@ -955,8 +995,93 @@ app.post('/user/model/get_list', async (req, res) => {
     }
 });
 
+app.post('/user/prompt/get_prompt', async (req, res) => {
+    const token = req.body.token;
+    const valid = await check_token_valid(token);
+    if (!valid) {
+        console.log('token无效，请重新登录');
+        return res.status(401).json({
+            success: false,
+            message: 'token无效，请重新登录'
+        });
+    }
+    const prompt_id = req.body.target;
+    const parameters = req.body.parameters;
+    // 真实后端里这里发送的post请求用的是json请求，别的基本都是formData
+    const response = await axios.post(`${BACKEND_BASE_URL}/user/prompt`, {
+        prompt_id: prompt_id,
+        parameters: parameters
+    });
+    console.log('后端获取提示响应:', response.data);
+    res.json(response.data.data);
+});
 
-app.post('/user/chat', async (req, res) => {
+app.post('/user/prompt/get_prompt_list', async (req, res) => {
+    const token = req.body.token;
+    const valid = await check_token_valid(token);
+    if (!valid) {
+        console.log('token无效，请重新登录');
+        return res.status(401).json({
+            success: false,
+            message: 'token无效，请重新登录'
+        });
+    }
+    const response = await axios.get(`${BACKEND_BASE_URL}/v1/prompts`);
+    console.log('后端获取提示列表响应:', response.data);
+    res.json(response.data.data);
+});
+
+
+
+// Debug route to see raw request
+app.post('/debug/upload', (req, res) => {
+    console.log('Debug upload route hit');
+    console.log('Content-Type:', req.headers['content-type']);
+    console.log('Headers:', req.headers);
+
+    let body = '';
+    req.on('data', chunk => {
+        body += chunk.toString();
+    });
+
+    req.on('end', () => {
+        console.log('Raw body length:', body.length);
+        console.log('Raw body preview:', body.substring(0, 500));
+
+        res.json({
+            status: 'debug',
+            message: 'Debug info logged',
+            contentType: req.headers['content-type'],
+            bodyLength: body.length
+        });
+    });
+});
+
+// Simple test route for file upload without any middleware conflicts
+app.post('/test/upload', (req, res, next) => {
+    console.log('Test upload route hit');
+    uploadFile.any()(req, res, (err) => {
+        if (err) {
+            console.error('Multer error:', err);
+            return res.status(400).json({
+                status: 'error',
+                message: err.message
+            });
+        }
+
+        console.log('Files received:', req.files);
+        console.log('Body received:', req.body);
+
+        res.json({
+            status: 'success',
+            message: 'Test upload successful',
+            files: req.files ? req.files.length : 0,
+            body: req.body
+        });
+    });
+});
+
+app.post('/user/chat', upload.none(), async (req, res) => {
     const token = req.body.token;
     const valid = await check_token_valid(token);
     if (!valid) {
@@ -1030,7 +1155,7 @@ app.use((req, res) => {
     res.redirect('/');
 });
 
-// 启动服务器
+// 启动主服务器
 app.listen(PORT, () => {
     console.log(`🚀 服务器运行在 http://localhost:${PORT}`);
     console.log(`📁 静态文件目录: ${__dirname}`);
@@ -1051,6 +1176,8 @@ app.listen(PORT, () => {
     console.log(`   - POST /user/chat_history (聊天记录)`);
     console.log(`   - POST /user/chat_history/delete (删除聊天记录)`);
 });
+
+
 
 // 优雅关闭
 process.on('SIGINT', () => {

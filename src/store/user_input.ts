@@ -42,6 +42,7 @@ export const useUserInputStore = defineStore('user_input', () => {
         (user_input.value as any)[name] = value
         console.log('user_input.value', user_input.value)
     }
+    
 
     // 略，将extra_request_list转为extra_request_messages
     async function process_extra_request_list() {}

@@ -76,16 +76,15 @@
 
         <!-- 聊天区域容器 - 使用flexbox布局 -->
         <div class="chat-area-container">
-            <!-- AI 聊天显示区域模块 -->
+            <!-- AI 聊天显示区域模块 - 现在包含实时流式响应 -->
             <div id="chatbox" class="chat-messages-container"></div>
-            <div id="stream" class="stream-container"></div>
+        </div>
+
+        <!-- 聊天输入框 - 现在作为内容流的一部分 -->
+        <div id="container-chat-input" class="container-chat-input">
+            <div id="chatframe"></div>
         </div>
     </div>
-</div>
-
-<!-- 第四容器：聊天输入框 - 独立的可调整大小容器 -->
-<div id="container-chat-input" class="container-chat-input">
-    <div id="chatframe"></div>
 </div>
 </div>
 <script type="module" src="main.ts"></script>

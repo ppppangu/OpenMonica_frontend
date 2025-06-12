@@ -91,8 +91,9 @@ body {
 
 .ant-sender-input {
     height: 80px !important;
-    max-height: 300px !important;
-
+    max-height: 200px !important; /* 减少最大高度以确保footer可见 */
+    min-height: 40px !important; /* 设置最小高度 */
+    overflow-y: auto !important; /* 允许输入区域滚动 */
 }
 
 #senderApp {
@@ -349,8 +350,7 @@ body {
     transition: all 0.3s ease-in-out;
     display: flex;
     flex-direction: column;
-    /* CSS变量用于动态调整底部间距 */
-    --chat-input-height: 180px;
+    /* 移除CSS变量，因为不再需要动态调整底部间距 */
 }
 
 /* 根据第二容器状态调整第三容器位置和宽度 */
@@ -370,8 +370,10 @@ body {
     display: flex;
     flex-direction: column;
     flex: 1;
-    /* 使用CSS变量动态计算底部padding */
-    padding: 0.75rem 0.25rem calc(var(--chat-input-height) + 40px) 0.25rem;
+    /* 移除底部padding，因为聊天输入框现在在文档流中 */
+    padding: 0.75rem 0.25rem 0.75rem 0.25rem;
+    gap: 1rem; /* 添加子元素间距 */
+    overflow: hidden; /* 确保内容不溢出 */
 }
 
 .main-content-header {
@@ -380,7 +382,7 @@ body {
     align-items: center; /* 垂直居中 */
     flex-shrink: 0; /* 确保头部不会被压缩 */
     height: 60px; /* 减少高度 */
-    margin-bottom: 1rem; /* 底部边距 */
+    /* 移除margin-bottom，因为现在使用gap */
 }
 
 .main-content-title {
@@ -393,11 +395,11 @@ body {
 .chat-area-container {
     display: flex;
     flex-direction: column;
-    flex: 1;
+    flex: 1; /* 占据剩余空间 */
     min-height: 0; /* 重要：允许flex子元素收缩 */
-    gap: 0.5rem; /* 最小化间距让布局最紧密 */
     max-width: 100%; /* 确保不会超出容器 */
     position: relative; /* 为resize handle定位 */
+    overflow: hidden; /* 防止内容溢出 */
 }
 
 /* 聊天消息容器 */
@@ -405,15 +407,13 @@ body {
     background: white;
     border-radius: 0.75rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    padding: 1rem; /* 减少padding让内容更紧密 */
+    padding: 1rem;
     flex: 1; /* 占据剩余空间 */
     min-height: 200px; /* 最小高度确保可用性 */
-    max-height: 100%; /* 不超出父容器 */
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    /* 确保与输入框保持适当间距 */
-    margin-bottom: 0.5rem;
+    /* 移除margin-bottom，因为现在使用gap */
 }
 
 /* 流式内容容器 */
@@ -528,36 +528,39 @@ body {
     text-align: center;
 }
 
-/* 第四容器：聊天输入框 - 独立的固定定位容器 */
+/* 聊天输入框容器 - 现在作为文档流的一部分 - 美化版本 */
 .container-chat-input {
-    position: fixed;
-    bottom: 20px;
+    /* 移除固定定位，现在在文档流中 */
     background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.75rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    padding: 12px; /* 适当的padding确保内容不贴边 */
-    min-height: 180px; /* 增加最小高度确保按钮完全可见 */
-    max-height: 450px; /* 增加最大高度限制 */
-    height: 180px; /* 增加默认高度确保按钮可见 */
+    border: 1px solid rgba(229, 231, 235, 0.8); /* 半透明边框，匹配help.html风格 */
+    border-radius: 16px; /* 增加圆角，匹配help.html风格 */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.05); /* 增强阴影效果 */
+    padding: 0; /* 移除padding，让内部组件控制间距 */
+    min-height: 260px; /* 最小高度确保基本可用性 */
+    max-height: 450px; /* 最大高度限制 */
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* 隐藏溢出，让内部组件处理滚动 */
-    transition: height 0.3s ease; /* 平滑过渡动画 */
-    z-index: 100; /* 确保在其他元素之上 */
-    cursor: ns-resize; /* 在整个容器上显示调整大小光标 */
+    overflow: visible; /* 确保所有内容可见 */
+    transition: height 0.3s ease, box-shadow 0.2s ease, border-color 0.2s ease; /* 平滑过渡动画 */
+    flex-shrink: 0; /* 防止被压缩 */
+    backdrop-filter: blur(10px); /* 添加毛玻璃效果 */
+    position: relative; /* 为伪元素定位 */
+    /* 移除cursor和z-index，因为不再需要拖拽功能 */
 }
 
-/* 根据第二容器状态调整第四容器位置和宽度 */
-#chat-panel-toggle:checked ~ .container-chat-input {
-    left: 395px; /* 80px第一容器 + 300px第二容器 + 15px间距 */
-    right: 20px; /* 右边距 */
+/* 容器悬停效果 - 匹配help.html风格 */
+.container-chat-input:hover {
+    border-color: rgba(124, 58, 237, 0.3); /* 紫色边框悬停效果 */
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12), 0 6px 16px rgba(124, 58, 237, 0.1); /* 增强悬停阴影 */
 }
 
-#chat-panel-toggle:not(:checked) ~ .container-chat-input {
-    left: 95px; /* 80px第一容器宽度 + 15px间距 */
-    right: 20px; /* 右边距 */
+/* 容器聚焦状态 */
+.container-chat-input:focus-within {
+    border-color: rgba(124, 58, 237, 0.5); /* 聚焦时的紫色边框 */
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12), 0 6px 16px rgba(124, 58, 237, 0.15); /* 聚焦阴影 */
 }
+
+/* 移除固定定位相关的位置调整规则，因为现在在文档流中 */
 
 /* 确保聊天输入框内容填满容器 */
 .container-chat-input #chatframe {
@@ -565,20 +568,20 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 0; /* 允许flex子元素收缩 */
+    width: 100%; /* 确保宽度填满 */
+    overflow: visible; /* 改为visible确保所有内容可见 */
+    position: relative; /* 为子元素的绝对定位提供参考 */
 }
 
-/* 确保Ant Design组件正确填充 */
-.container-chat-input .ant-sender {
+/* 确保Ant Design组件正确填充 - 更新为新的结构 */
+.container-chat-input .chat-frame-container {
+    width: 100% !important;
     height: 100% !important;
     display: flex !important;
     flex-direction: column !important;
 }
 
-.container-chat-input .ant-sender-wrapper {
-    flex: 1 !important;
-    display: flex !important;
-    flex-direction: column !important;
-}
+/* 移除旧的Ant Design样式，因为现在使用新的结构 */
 
 /* 聚焦示例组件样式 */
 .focus-demo-container {
@@ -615,17 +618,33 @@ body {
     }
 }
 
-/* 确保聊天输入框内容不会溢出 */
-.container-chat-input .ant-sender {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
+/* 新的ChatFrame结构样式 - 替换旧的Ant Design样式 - 美化版本 */
+.container-chat-input .chat-frame-header,
+.container-chat-input .chat-frame-footer {
+    overflow: visible !important; /* 允许下拉菜单显示 */
+    z-index: 200 !important; /* 确保在最上层 */
+    position: relative !important;
 }
 
-.container-chat-input .ant-sender-wrapper {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+.container-chat-input .chat-frame-input {
+    flex: 1 !important; /* 输入区域占据剩余空间 */
+    min-height: 120px !important; /* 最小高度 */
+    overflow: hidden !important; /* 防止溢出 */
+}
+
+/* 增强容器内部组件的视觉层次 */
+.container-chat-input .chat-frame-header {
+    border-bottom: 1px solid rgba(229, 231, 235, 0.6) !important;
+}
+
+.container-chat-input .chat-frame-footer {
+    border-top: 1px solid rgba(229, 231, 235, 0.6) !important;
+}
+
+/* 确保模型选择器容器有足够的z-index */
+.container-chat-input .model-dropdown-container {
+    position: relative;
+    z-index: 300; /* 比footer更高的z-index */
 }
 
 /* 确保聊天消息容器内的组件正确布局 */
@@ -656,7 +675,86 @@ body {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* 容器顶部边缘拖拽区域 */
+/* 移除拖拽相关样式，因为现在在文档流中不需要拖拽调整大小 */
+
+/* 模型选择器下拉菜单样式增强 */
+.model-dropdown-container {
+    position: relative !important;
+    z-index: 1000 !important;
+}
+
+/* 确保下拉菜单在所有情况下都可见 */
+.model-dropdown-container > div[class*="absolute"] {
+    position: fixed !important;
+    z-index: 9999 !important;
+    max-height: 300px;
+    overflow-y: auto;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* 当聊天输入框在底部时，确保下拉菜单向上展开且完全可见 */
+.container-chat-input .model-dropdown-container > div[class*="absolute"] {
+    bottom: 100% !important;
+    top: auto !important;
+    margin-bottom: 8px !important;
+}
+
+/* 确保主内容区域不会遮挡下拉菜单 */
+.container-main-content {
+    z-index: 50 !important;
+}
+
+/* 确保聊天输入框的z-index低于下拉菜单 */
+.container-chat-input {
+    z-index: 100 !important;
+}
+
+/* 模型下拉菜单的最高优先级 */
+.model-dropdown-container,
+.model-dropdown-container > div {
+    z-index: 9999 !important;
+}
+
+/* 特殊处理：允许模型下拉菜单突破容器边界 */
+.container-chat-input .model-dropdown-container > div {
+    position: fixed !important; /* 使用fixed定位突破容器限制 */
+    z-index: 9999 !important;
+}
+
+/* 确保Ant Design Sender的header也不会溢出 */
+.container-chat-input .ant-sender-header {
+    flex-shrink: 0 !important; /* header不收缩 */
+    overflow: hidden !important; /* 防止header内容溢出 */
+    max-height: 80px !important; /* 限制header最大高度 */
+}
+
+/* 确保整个Sender组件的布局正确 */
+.container-chat-input .ant-sender {
+    box-sizing: border-box !important;
+    padding: 0 !important; /* 移除内边距避免额外空间 */
+}
+
+.container-chat-input .ant-sender-wrapper {
+    box-sizing: border-box !important;
+    padding: 0 !important; /* 移除内边距避免额外空间 */
+}
+
+/* 确保输入区域和footer之间的间距合理 */
+.container-chat-input .ant-sender-input + .ant-sender-footer {
+    margin-top: 4px !important; /* 减少间距从8px到4px */
+}
+
+/* 重要：确保容器内容高度计算正确 - 美化版本 */
+.container-chat-input {
+    box-sizing: border-box !important; /* 包含padding和border在内的总高度 */
+}
+
+.container-chat-input #chatframe {
+    height: calc(100% - 0px) !important; /* 减去容器的内边距 */
+    box-sizing: border-box !important;
+}
+
+/* 增强的拖拽区域样式（如果需要恢复拖拽功能） */
 .container-chat-input::before {
     content: '';
     position: absolute;
@@ -666,14 +764,17 @@ body {
     height: 10px;
     cursor: ns-resize;
     z-index: 10;
+    background: transparent;
+    border-radius: 16px 16px 0 0;
 }
 
-/* 悬停时显示拖拽提示 */
-.container-chat-input:hover {
-    border-top: 2px solid #7c3aed;
+/* 拖拽悬停提示 - 美化版本 */
+.container-chat-input:hover::before {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
 }
 
-/* 为拖拽功能添加JavaScript控制的高度变化 */
+/* 拖拽时的样式 */
 .container-chat-input.resizing {
     transition: none; /* 拖拽时禁用过渡动画 */
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15), 0 8px 20px rgba(124, 58, 237, 0.2) !important;
 }

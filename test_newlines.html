@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>换行符处理测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .response {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            min-height: 200px;
+            font-family: monospace;
+            border: 2px solid #007bff;
+        }
+        .expected {
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            min-height: 200px;
+            font-family: monospace;
+            border: 2px solid #28a745;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .log {
+            background: #000;
+            color: #0f0;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .comparison {
+            display: flex;
+            gap: 20px;
+        }
+        .comparison > div {
+            flex: 1;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <h1>换行符处理测试页面</h1>
+    
+    <div class="container">
+        <h2>SSE换行符解析测试</h2>
+        <button onclick="testNewlineHandling()">测试换行符处理</button>
+        <button onclick="clearAll()">清空所有</button>
+        
+        <div id="status" class="status" style="display: none;"></div>
+        
+        <div class="comparison">
+            <div>
+                <h3>实际接收内容:</h3>
+                <div id="actual" class="response"></div>
+            </div>
+            <div>
+                <h3>期望内容:</h3>
+                <div id="expected" class="expected"></div>
+            </div>
+        </div>
+        
+        <h3>详细日志:</h3>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        const expectedContent = `你好！我是AI助手，很高兴为您服务。
+
+这是一个模拟的流式响应，用于演示实时聊天功能。
+
+包含多行文本：
+- 第一行
+- 第二行
+- 第三行
+
+测试完成！
+
+这里有更多换行符测试：
+
+双换行符测试
+
+
+三换行符测试
+
+
+
+四换行符测试`;
+
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toISOString();
+            logDiv.innerHTML += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearAll() {
+            document.getElementById('actual').innerHTML = '';
+            document.getElementById('log').innerHTML = '';
+            document.getElementById('status').style.display = 'none';
+        }
+
+        function showStatus(success, message) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${success ? 'success' : 'error'}`;
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+        }
+
+        function compareContent(actual, expected) {
+            const actualNormalized = actual.replace(/\r\n/g, '\n');
+            const expectedNormalized = expected.replace(/\r\n/g, '\n');
+            
+            log(`实际内容长度: ${actualNormalized.length}`);
+            log(`期望内容长度: ${expectedNormalized.length}`);
+            log(`实际换行符数量: ${(actualNormalized.match(/\n/g) || []).length}`);
+            log(`期望换行符数量: ${(expectedNormalized.match(/\n/g) || []).length}`);
+            
+            if (actualNormalized === expectedNormalized) {
+                showStatus(true, '✅ 换行符处理正确！内容完全匹配。');
+                return true;
+            } else {
+                showStatus(false, '❌ 换行符处理有问题！内容不匹配。');
+                
+                // 详细比较
+                const actualLines = actualNormalized.split('\n');
+                const expectedLines = expectedNormalized.split('\n');
+                
+                log('=== 逐行比较 ===');
+                const maxLines = Math.max(actualLines.length, expectedLines.length);
+                for (let i = 0; i < maxLines; i++) {
+                    const actualLine = actualLines[i] || '(缺失)';
+                    const expectedLine = expectedLines[i] || '(缺失)';
+                    
+                    if (actualLine !== expectedLine) {
+                        log(`行 ${i + 1} 不匹配:`);
+                        log(`  实际: ${JSON.stringify(actualLine)}`);
+                        log(`  期望: ${JSON.stringify(expectedLine)}`);
+                    }
+                }
+                
+                return false;
+            }
+        }
+
+        async function testNewlineHandling() {
+            log('开始测试换行符处理...');
+            clearAll();
+            
+            // 显示期望内容
+            document.getElementById('expected').textContent = expectedContent;
+            
+            const actualDiv = document.getElementById('actual');
+            let receivedContent = '';
+            
+            try {
+                const formData = new FormData();
+                formData.append('token', 'test_token');
+                formData.append('user_id', 'test_user');
+                formData.append('session_id', 'test_session');
+                formData.append('model_id', 'test_model');
+                formData.append('user_message_list', JSON.stringify([{
+                    role: 'user',
+                    content: '请测试换行符处理'
+                }]));
+                formData.append('extra_request_list', JSON.stringify([]));
+
+                log('发送请求到 /user/chat...');
+                
+                const response = await fetch('/user/chat', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('text/event-stream')) {
+                    log('开始处理SSE流...');
+                    
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let buffer = '';
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) {
+                            log('流式读取完成');
+                            break;
+                        }
+
+                        const chunk = decoder.decode(value);
+                        log(`接收原始块: ${JSON.stringify(chunk)}`);
+                        
+                        buffer += chunk;
+
+                        // 使用与前端相同的解析逻辑
+                        let processedLength = 0;
+                        let searchStart = 0;
+
+                        while (searchStart < buffer.length) {
+                            const dataStart = buffer.indexOf('data: ', searchStart);
+                            if (dataStart === -1) break;
+
+                            const contentStart = dataStart + 6;
+                            const messageEnd = buffer.indexOf('\n\n', contentStart);
+                            if (messageEnd === -1) break;
+
+                            const content = buffer.substring(contentStart, messageEnd);
+                            log(`解析到内容: ${JSON.stringify(content)}`);
+                            
+                            if (content === '[DONE]') {
+                                log('收到结束标记');
+                                break;
+                            }
+                            
+                            receivedContent += content;
+                            actualDiv.textContent = receivedContent;
+                            
+                            processedLength = messageEnd + 2;
+                            searchStart = processedLength;
+                        }
+
+                        buffer = buffer.substring(processedLength);
+                    }
+                    
+                    log('=== 最终比较 ===');
+                    compareContent(receivedContent, expectedContent);
+                    
+                } else {
+                    throw new Error('响应不是SSE格式');
+                }
+                
+            } catch (error) {
+                log(`错误: ${error.message}`);
+                showStatus(false, `测试失败: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>

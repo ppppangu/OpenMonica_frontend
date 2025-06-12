@@ -1,16 +1,194 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useUserStore } from './user_info'
+import { useKnowledgeBaseStore } from './knowledgebase_list'
 
-interface KnowledgeBaseDetail {
-  id: string
-  doucment_name: string
-  document_description: string
+interface DocumentDetail {
+  document_id: string
+  document_name: string
   document_url: string
   document_markdown_url: string
-  document_type: string
-  document_size: number
+  // Mock fields for missing backend data
+  file_size?: string
+  upload_time?: string
+  file_type?: string
 }
 
 export const useKnowledgeBaseDetailStore = defineStore('knowledgeBaseDetail', () => {
-  
+  // State
+  const documentDetailList = ref<DocumentDetail[]>([])
+  const activeDocumentDetail = ref<DocumentDetail | null>(null)
+  const isLoading = ref(false)
+  const error = ref<string | null>(null)
+
+  // Actions
+  async function fetchKnowledgeBaseDetail(knowledgebaseId?: string) {
+    const userStore = useUserStore()
+    const knowledgeBaseStore = useKnowledgeBaseStore()
+
+    const userId = userStore.user?.id
+    const token = userStore.user?.token
+
+    // 如果没有传入 knowledgebaseId，尝试从 activeKnowledgeBaseItem 获取
+    const targetKnowledgebaseId = knowledgebaseId || knowledgeBaseStore.activeKnowledgeBaseItem?.id
+
+    if (!userId || !token) {
+      console.warn('No user ID or token available for fetching knowledge base detail')
+      error.value = '用户未登录或认证信息无效'
+      return
+    }
+
+    if (!targetKnowledgebaseId) {
+      console.warn('No knowledge base ID available for fetching detail')
+      error.value = '未指定知识库ID'
+      return
+    }
+
+    isLoading.value = true
+    error.value = null
+
+    try {
+      // 创建 FormData 对象，按照后端期望的格式
+      const formData = new FormData()
+      formData.append('user_id', userId)
+      formData.append('token', token)
+      formData.append('knowledgebase_id', targetKnowledgebaseId)
+
+      console.log('发送知识库详情请求:', {
+        userId,
+        token: token.substring(0, 10) + '...',
+        knowledgebaseId: targetKnowledgebaseId,
+        endpoint: '/user/knowledgebase/get_detail'
+      })
+
+      const response = await fetch('/user/knowledgebase/get_detail', {
+        method: 'POST',
+        body: formData
+      })
+
+      console.log('知识库详情响应状态:', response.status, response.statusText)
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      // 处理响应数据，根据新的API结构
+      if (data && data.data && Array.isArray(data.data)) {
+        // 从第一个知识库对象中提取文档列表
+        const knowledgeBase = data.data.find((kb: any) => kb.id === targetKnowledgebaseId)
+        if (knowledgeBase && Array.isArray(knowledgeBase.documents)) {
+          documentDetailList.value = knowledgeBase.documents.map((doc: any, index: number) => {
+            // 生成模拟数据
+            const mockFileTypes = ['PDF', 'DOCX', 'TXT', 'MD']
+            const mockFileSizes = ['2.3 MB', '1.8 MB', '456 KB', '3.1 MB', '892 KB']
+            const mockUploadTimes = [
+              '2024-01-15 14:30',
+              '2024-01-14 09:15',
+              '2024-01-13 16:45',
+              '2024-01-12 11:20',
+              '2024-01-11 13:55'
+            ]
+
+            // 生成测试用的文档URL
+            const mockDocumentUrls = [
+              'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+              'https://httpbin.org/json',
+              'https://www.baidu.com',
+              'https://github.com',
+              'https://picsum.photos/800/600'
+            ]
+
+            return {
+              document_id: doc.document_id || doc.id || `doc_${index}`,
+              document_name: doc.document_name || doc.name || `文档 ${index + 1}`,
+              document_url: doc.document_url || mockDocumentUrls[index % mockDocumentUrls.length],
+              document_markdown_url: doc.document_markdown_url || '',
+              file_size: mockFileSizes[index % mockFileSizes.length],
+              upload_time: mockUploadTimes[index % mockUploadTimes.length],
+              file_type: mockFileTypes[index % mockFileTypes.length]
+            }
+          })
+        } else {
+          documentDetailList.value = []
+        }
+      } else if (Array.isArray(data)) {
+        // 兼容旧的API响应格式
+        documentDetailList.value = data.map((item: any, index: number) => {
+          const mockFileTypes = ['PDF', 'DOCX', 'TXT', 'MD']
+          const mockFileSizes = ['2.3 MB', '1.8 MB', '456 KB', '3.1 MB', '892 KB']
+          const mockUploadTimes = [
+            '2024-01-15 14:30',
+            '2024-01-14 09:15',
+            '2024-01-13 16:45',
+            '2024-01-12 11:20',
+            '2024-01-11 13:55'
+          ]
+
+          // 生成测试用的文档URL
+          const mockDocumentUrls = [
+            'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+            'https://httpbin.org/json',
+            'https://www.baidu.com',
+            'https://github.com',
+            'https://picsum.photos/800/600'
+          ]
+
+          return {
+            document_id: item.document_id || item.id || `doc_${index}`,
+            document_name: item.document_name || item.name || `文档 ${index + 1}`,
+            document_url: item.document_url || mockDocumentUrls[index % mockDocumentUrls.length],
+            document_markdown_url: item.document_markdown_url || '',
+            file_size: mockFileSizes[index % mockFileSizes.length],
+            upload_time: mockUploadTimes[index % mockUploadTimes.length],
+            file_type: mockFileTypes[index % mockFileTypes.length]
+          }
+        })
+      } else {
+        documentDetailList.value = []
+      }
+
+      console.log('Knowledge base detail updated:', documentDetailList.value)
+    } catch (err) {
+      console.error('Failed to fetch knowledge base detail:', err)
+      error.value = '获取知识库详情失败，请稍后重试'
+      documentDetailList.value = []
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  function clearError() {
+    error.value = null
+  }
+
+  function clearDocuments() {
+    documentDetailList.value = []
+    activeDocumentDetail.value = null
+  }
+
+  function setActiveDocumentDetail(document: DocumentDetail) {
+    activeDocumentDetail.value = document
+    console.log('Active document detail set:', activeDocumentDetail.value)
+  }
+
+  function clearActiveDocumentDetail() {
+    activeDocumentDetail.value = null
+  }
+
+  return {
+    // State
+    documentDetailList,
+    activeDocumentDetail,
+    isLoading,
+    error,
+
+    // Actions
+    fetchKnowledgeBaseDetail,
+    setActiveDocumentDetail,
+    clearActiveDocumentDetail,
+    clearError,
+    clearDocuments
+  }
+})

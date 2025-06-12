@@ -3,7 +3,6 @@ import { ref, computed } from 'vue'
 import { useUserStore } from './user_info'
 import { useModelListStore } from './model_list'
 
-// 这个结构禁止变动
 interface UserRawInput {
     user_id: string
     text: string
@@ -18,9 +17,19 @@ interface UserRawInput {
         }[]
     }[]
     extra_request_messages: {}[]
+    user_input_messages: {
+        role: "user"
+        content: {
+            type: "text"
+            text: string
+        }[]
+    }[]
     full_input_messages: {
         role: "user"
-        content: string
+        content: {
+            type: "text"
+            text: string
+        }[] | string
     }[]
     model_ids: string[]
 }
@@ -34,6 +43,7 @@ export const useUserInputStore = defineStore('user_input', () => {
         predict_text: '',
         extra_request_list: [],
         extra_request_messages: [],
+        user_input_messages: [],
         full_input_messages: [],
         model_ids: []
     })
@@ -42,7 +52,6 @@ export const useUserInputStore = defineStore('user_input', () => {
         (user_input.value as any)[name] = value
         console.log('user_input.value', user_input.value)
     }
-    
 
     // 略，将extra_request_list转为extra_request_messages
     async function process_extra_request_list() {}
@@ -71,12 +80,24 @@ export const useUserInputStore = defineStore('user_input', () => {
 
         await process_extra_request_list()
 
-        // Clear previous messages and add current text
-        user_input.value.full_input_messages = []
-        user_input.value.full_input_messages.push({
-            role: "user",
-            content: user_input.value.text
-        })
+        // Create formatted user message in the new structure
+        const formattedUserMessage = {
+            role: "user" as const,
+            content: [{
+                type: "text" as const,
+                text: user_input.value.text
+            }]
+        }
+
+        // Store the formatted user message
+        user_input.value.user_input_messages = [formattedUserMessage]
+
+        // Combine extra_request_messages with user_input_messages
+        // User message should always be the last element
+        user_input.value.full_input_messages = [
+            ...user_input.value.extra_request_messages as any[],
+            formattedUserMessage
+        ]
 
         // Convert model_ids to model names using the model list store
         const models: string[] = []

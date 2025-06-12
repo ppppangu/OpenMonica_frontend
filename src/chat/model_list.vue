@@ -1,13 +1,116 @@
 <script setup lang="ts">
-import { RobotOutlined, DownOutlined, ReloadOutlined, ExclamationCircleOutlined } from '@ant-design/icons-vue';
-import { Button, Dropdown, theme, message } from 'ant-design-vue';
-import { h, onMounted, computed } from 'vue';
+import { theme, message } from 'ant-design-vue';
+import { onMounted, computed, ref, onUnmounted } from 'vue';
 import { useModelListStore } from '../store/model_list';
 
 defineOptions({ name: 'ModelList' });
 
 const { token } = theme.useToken();
 const modelListStore = useModelListStore();
+
+// 控制下拉菜单显示状态
+const modelDropdownVisible = ref(false);
+// 下拉菜单位置样式
+const dropdownStyle = ref({});
+
+// 点击外部区域关闭下拉菜单
+const handleClickOutside = (event: Event) => {
+  const target = event.target as HTMLElement;
+  const dropdown = document.querySelector('.model-dropdown-container');
+  if (dropdown && !dropdown.contains(target)) {
+    modelDropdownVisible.value = false;
+  }
+};
+
+// 计算下拉菜单位置
+const calculateDropdownPosition = () => {
+  const button = document.querySelector('.model-dropdown-container button');
+  if (button) {
+    const rect = button.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    const dropdownHeight = 300; // 估计的下拉菜单高度
+    const dropdownWidth = 192; // 12rem = 192px
+
+    // 检查是否有足够空间向上展开
+    const spaceAbove = rect.top;
+    const spaceBelow = viewportHeight - rect.bottom;
+
+    // 确保下拉菜单不会超出视口右边界
+    let leftPosition = rect.left;
+    if (leftPosition + dropdownWidth > viewportWidth) {
+      leftPosition = viewportWidth - dropdownWidth - 16; // 16px margin from edge
+    }
+
+    // 确保下拉菜单不会超出视口左边界
+    if (leftPosition < 16) {
+      leftPosition = 16; // 16px margin from edge
+    }
+
+    if (spaceAbove >= dropdownHeight || spaceAbove > spaceBelow) {
+      // 向上展开
+      dropdownStyle.value = {
+        position: 'fixed',
+        left: `${leftPosition}px`,
+        bottom: `${viewportHeight - rect.top + 4}px`, // 减少间距从8px到4px
+        width: '12rem',
+        zIndex: 9999,
+        maxHeight: '300px',
+        overflowY: 'auto',
+        transformOrigin: 'bottom left' // 设置变换原点
+      };
+    } else {
+      // 向下展开
+      dropdownStyle.value = {
+        position: 'fixed',
+        left: `${leftPosition}px`,
+        top: `${rect.bottom + 4}px`, // 减少间距从8px到4px
+        width: '12rem',
+        zIndex: 9999,
+        maxHeight: '300px',
+        overflowY: 'auto',
+        transformOrigin: 'top left' // 设置变换原点
+      };
+    }
+  } else {
+    // 如果无法找到按钮，使用默认样式
+    dropdownStyle.value = {
+      position: 'absolute',
+      bottom: '100%',
+      left: '0',
+      marginBottom: '4px', // 减少间距
+      width: '12rem',
+      zIndex: 9999,
+      maxHeight: '300px',
+      overflowY: 'auto',
+      transformOrigin: 'bottom left'
+    };
+  }
+};
+
+const handleResize = () => {
+  if (modelDropdownVisible.value) {
+    calculateDropdownPosition();
+  }
+};
+
+const handleScroll = () => {
+  if (modelDropdownVisible.value) {
+    calculateDropdownPosition();
+  }
+};
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside);
+  window.addEventListener('resize', handleResize);
+  window.addEventListener('scroll', handleScroll);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside);
+  window.removeEventListener('resize', handleResize);
+  window.removeEventListener('scroll', handleScroll);
+});
 
 // 组件挂载时获取模型列表
 onMounted(async () => {
@@ -17,7 +120,34 @@ onMounted(async () => {
   console.log('当前模型显示名称:', modelListStore.currentModelName);
 });
 
-// 处理模型选择
+// 切换下拉菜单显示状态
+const toggleModelDropdown = () => {
+  if (!modelDropdownVisible.value) {
+    // 打开下拉菜单时计算位置
+    calculateDropdownPosition();
+  }
+  modelDropdownVisible.value = !modelDropdownVisible.value;
+};
+
+// 选择模型
+const selectModel = (modelId: string, modelName: string) => {
+  console.log('选择模型:', modelId, modelName);
+
+  const selectedModel = modelListStore.model_list.find(model => model?.model_id === modelId);
+  console.log('找到的模型:', selectedModel);
+
+  if (selectedModel) {
+    modelListStore.setCurrentModel(selectedModel);
+    console.log('模型切换成功:', selectedModel.model_exhibit_name);
+  } else {
+    console.log('未找到对应的模型，modelId:', modelId);
+  }
+
+  // 关闭下拉菜单
+  modelDropdownVisible.value = false;
+};
+
+// 处理模型选择（保留原有逻辑作为备用）
 const handleModelSelect = (menuInfo: any) => {
   console.log('点击模型选择，完整事件对象:', menuInfo);
   console.log('menuInfo 的所有属性:', Object.keys(menuInfo));
@@ -162,116 +292,216 @@ const currentDisplayName = computed(() => {
 </script>
 
 <template>
-  <Dropdown
-    placement="topLeft"
-    :trigger="['click']"
-  >
-    <Button
-      type="text"
-      :style="buttonStyle"
-      :loading="modelListStore.loading"
+  <div class="relative model-dropdown-container">
+    <button
+      @click.stop="toggleModelDropdown"
+      class="model-selector-button flex items-center px-2.5 py-1 text-xs bg-purple-50 text-purple-700 rounded-md hover:bg-purple-100 transition-all duration-200"
     >
-      <template #icon>
-        <RobotOutlined v-if="!modelListStore.error" />
-        <ExclamationCircleOutlined v-else :style="{ color: '#ff4d4f' }" />
-      </template>
-      {{ currentDisplayName }}
-      <DownOutlined :style="{ fontSize: '12px', marginLeft: '4px' }" />
-    </Button>
+      <span class="material-icons text-xs mr-1">flare</span>
+      <span class="truncate max-w-24">{{ currentDisplayName }}</span>
+      <span class="material-icons text-xs ml-1">{{ modelDropdownVisible ? 'expand_more' : 'expand_less' }}</span>
+    </button>
 
-    <template #overlay>
-      <a-menu
-        @click="handleModelSelect"
-        :selectedKeys="modelListStore.current_model ? [modelListStore.current_model.model_id] : []"
+    <Transition
+      name="dropdown"
+      appear
+    >
+      <div
+        v-show="modelDropdownVisible"
+        @click.stop
+        :style="dropdownStyle"
+        class="model-dropdown-menu bg-white border border-gray-200 rounded-lg shadow-lg"
       >
-        <!-- 显示错误状态和重试选项 -->
-        <a-menu-item v-if="modelListStore.error" key="error-item" disabled>
-          <div style="padding: 8px 0; text-align: center;">
-            <div style="color: #ff4d4f; margin-bottom: 8px; font-size: 12px;">
-              {{ modelListStore.error }}
-            </div>
-            <div style="font-size: 11px; color: #8c8c8c; margin-bottom: 8px;">
+      <div class="p-3">
+        <div class="text-xs text-gray-600 mb-3 font-medium">选择模型</div>
+        <div class="space-y-1">
+          <!-- 加载状态 -->
+          <div v-if="modelListStore.loading" class="flex items-center justify-center py-4">
+            <span class="text-sm text-gray-400">加载中...</span>
+          </div>
+
+          <!-- 错误状态 -->
+          <div v-else-if="modelListStore.error" class="p-3 bg-red-50 border border-red-200 rounded-md">
+            <div class="text-xs text-red-600 mb-2">{{ modelListStore.error }}</div>
+            <div class="text-xs text-gray-500 mb-2">
               已重试 {{ modelListStore.retryCount }}/{{ modelListStore.maxRetries }} 次
             </div>
-            <Button
-              size="small"
-              type="primary"
-              :loading="modelListStore.loading"
-              @click.stop="handleRetry"
-              style="font-size: 11px; height: 24px;"
+            <button
+              @click="handleRetry"
+              :disabled="modelListStore.loading"
+              class="text-xs px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
             >
-              <template #icon>
-                <ReloadOutlined />
-              </template>
               重试
-            </Button>
+            </button>
           </div>
-        </a-menu-item>
 
-        <!-- 分隔线 -->
-        <a-menu-divider v-if="modelListStore.error && menuItems.length > 0" />
+          <!-- 模型列表 -->
+          <div v-else-if="menuItems.length === 0" class="flex items-center justify-center py-4">
+            <span class="text-sm text-gray-400">暂无可用模型</span>
+          </div>
 
-        <!-- 模型列表 -->
-        <a-menu-item
-          v-for="item in menuItems"
-          :key="item.key"
-          :data-model-id="item.key"
-          :style="{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            minWidth: '200px'
-          }"
-          @click="() => handleDirectModelSelect(item.key)"
-        >
-          <span>{{ item.label }}</span>
-          <span>{{ item.extra }}</span>
-        </a-menu-item>
-
-        <!-- 无模型时的提示 -->
-        <a-menu-item v-if="menuItems.length === 0 && !modelListStore.error" key="no-models" disabled>
-          <span>暂无可用模型</span>
-        </a-menu-item>
-      </a-menu>
-    </template>
-  </Dropdown>
+          <div
+            v-else
+            v-for="item in menuItems"
+            :key="item.key"
+            @click="selectModel(item.key, item.label)"
+            :class="[
+              'px-3 py-2 rounded-md cursor-pointer hover:bg-purple-50 flex items-center justify-between transition-all duration-200',
+              modelListStore.current_model?.model_id === item.key ? 'bg-purple-100 border border-purple-200' : 'hover:border hover:border-purple-100'
+            ]"
+          >
+            <span class="text-sm text-gray-700">{{ item.label }}</span>
+            <div class="flex items-center space-x-1">
+              <span class="text-xs">{{ item.extra }}</span>
+              <span
+                v-if="modelListStore.current_model?.model_id === item.key"
+                class="material-icons text-sm text-gray-400"
+              >check</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+    </Transition>
+  </div>
 </template>
 
 <style scoped>
-/* 确保下拉菜单向上展开 */
-:deep(.ant-dropdown) {
-  transform-origin: center bottom;
+/* 模型下拉菜单容器样式 */
+.model-dropdown-container {
+  position: relative;
+  z-index: 1000;
 }
 
-/* 菜单项悬停效果 */
-:deep(.ant-menu-item:hover) {
-  background-color: var(--ant-primary-color-hover);
+/* 模型选择器按钮样式 - 匹配help.html设计 */
+.model-selector-button {
+  height: 28px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  border: 1px solid rgba(124, 58, 237, 0.2) !important;
+  box-shadow: 0 1px 3px rgba(124, 58, 237, 0.1) !important;
+  min-width: 120px !important;
+  max-width: 160px !important;
+  background: #f3e8ff !important;
+  color: #7c3aed !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
 }
 
-/* 选中的菜单项样式 */
-:deep(.ant-menu-item-selected) {
-  background-color: var(--ant-primary-color);
-  color: white;
+.model-selector-button:hover {
+  background: #ede9fe !important;
+  border-color: rgba(124, 58, 237, 0.3) !important;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.15) !important;
+  transform: translateY(-1px) !important;
 }
 
-/* 错误状态菜单项样式 */
-:deep(.ant-menu-item.error-item) {
-  background-color: #fff2f0;
-  border: 1px solid #ffccc7;
-  margin: 4px;
-  border-radius: 4px;
+.model-selector-button:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 1px 3px rgba(124, 58, 237, 0.2) !important;
 }
 
-:deep(.ant-menu-item.error-item:hover) {
-  background-color: #fff2f0;
+/* 确保点击外部区域时关闭下拉菜单 */
+@media (max-width: 768px) {
+  .w-48 {
+    width: 12rem;
+  }
 }
 
-/* 重试按钮样式 */
-:deep(.retry-button) {
-  transition: all 0.3s ease;
+/* 自定义滚动条样式 */
+.space-y-1 {
+  max-height: 300px;
+  overflow-y: auto;
 }
 
-:deep(.retry-button:hover) {
-  transform: scale(1.05);
+.space-y-1::-webkit-scrollbar {
+  width: 4px;
+}
+
+.space-y-1::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 2px;
+}
+
+.space-y-1::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 2px;
+}
+
+.space-y-1::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 下拉菜单样式优化 - 匹配help.html设计 */
+.model-dropdown-menu {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid rgba(124, 58, 237, 0.2) !important;
+  background: white !important;
+  z-index: 9999 !important;
+  backdrop-filter: blur(8px);
+  border-radius: 12px !important;
+}
+
+/* 模型选项样式 - 匹配help.html按钮样式 */
+.model-dropdown-menu .space-y-1 > div {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: #374151 !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+  border: 1px solid transparent !important;
+}
+
+.model-dropdown-menu .space-y-1 > div:hover {
+  background: rgba(124, 58, 237, 0.1) !important;
+  color: #7c3aed !important;
+  border-color: rgba(124, 58, 237, 0.2) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.15) !important;
+}
+
+.model-dropdown-menu .space-y-1 > div.bg-purple-100 {
+  background: linear-gradient(135deg, #f3e8ff 0%, #ede9fe 100%) !important;
+  border-color: #c4b5fd !important;
+  color: #7c3aed !important;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15) !important;
+}
+
+/* 下拉菜单过渡动画 */
+.dropdown-enter-active,
+.dropdown-leave-active {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dropdown-enter-from {
+  opacity: 0;
+  transform: scale(0.95) translateY(-8px);
+}
+
+.dropdown-leave-to {
+  opacity: 0;
+  transform: scale(0.95) translateY(-8px);
+}
+
+.dropdown-enter-to,
+.dropdown-leave-from {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+/* 确保 Material Icons 正确显示 */
+.material-icons {
+  font-family: 'Material Icons';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
 }
 </style>

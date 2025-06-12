@@ -3,7 +3,6 @@ import { createPinia } from 'pinia'
 import ChatBox from './ChatBox.vue'
 import ChatFrame from './ChatFrame.vue'
 import ChatList from './ChatList.vue'
-import XStream from './xStream.vue'
 import Hello from './hello.vue'
 import { useUserStore } from '../store/user_info'
 import { useChatHistoryStore } from '../store/chat_history'
@@ -42,13 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         chatlistApp.mount('#chatlist')
     }
 
-    // 挂载流式组件
-    const streamElement = document.getElementById('stream');
-    if (streamElement) {
-        const streamApp = createApp(XStream)
-        streamApp.use(pinia)
-        streamApp.mount('#stream')
-    }
+    // 流式组件已移除 - 现在使用ChatBox内置的实时流式响应
 
     // 挂载欢迎组件
     const helloElement = document.getElementById('hello');

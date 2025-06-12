@@ -1,61 +1,88 @@
-// 简单的拖拽调整宽度功能
-document.addEventListener('DOMContentLoaded', function() {
-    const resizeHandle = document.getElementById('resize-handle');
-    const fileListContainer = document.getElementById('container-file-list');
-    let isResizing = false;
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+import KnowledgeBaseDetailHeader from './KnowledgeBaseDetailHeader.vue'
+import KnowledgeBaseDetailMain from './KnowledgeBaseDetailMain.vue'
+import { useKnowledgeBaseStore } from '../store/knowledgebase_list'
+import { useKnowledgeBaseDetailStore } from '../store/knowledgebase_detail'
+import { useUserStore } from '../store/user_info'
 
-    if (resizeHandle && fileListContainer) {
-        resizeHandle.addEventListener('mousedown', function() {
-            isResizing = true;
-            document.body.style.cursor = 'col-resize';
-            document.body.style.userSelect = 'none';
-        });
+// 创建Pinia实例
+const pinia = createPinia()
 
-        document.addEventListener('mousemove', function(e) {
-            if (!isResizing) return;
+// 获取URL参数
+function getUrlParameter(name: string): string | null {
+    const urlParams = new URLSearchParams(window.location.search)
+    return urlParams.get(name)
+}
 
-            const containerRect = document.getElementById('container-main-layout')?.getBoundingClientRect();
-            if (!containerRect) return;
-
-            const newWidth = e.clientX - containerRect.left;
-
-            // 限制宽度范围
-            if (newWidth >= 300 && newWidth <= 600) {
-                fileListContainer.style.width = newWidth + 'px';
-            }
-        });
-
-        document.addEventListener('mouseup', function() {
-            if (isResizing) {
-                isResizing = false;
-                document.body.style.cursor = '';
-                document.body.style.userSelect = '';
-            }
-        });
+// 知识库详情页面功能
+document.addEventListener('DOMContentLoaded', async () => {
+    // 挂载头部组件
+    const headerElement = document.getElementById('container-header')
+    if (headerElement) {
+        const headerApp = createApp(KnowledgeBaseDetailHeader)
+        headerApp.use(pinia)
+        headerApp.mount('#container-header')
+        console.log('Knowledge base detail header component mounted')
+    } else {
+        console.warn('Knowledge base detail header container not found')
     }
 
-    // 文件项点击切换激活状态
-    const fileItems = document.querySelectorAll('.file-item');
-    fileItems.forEach(item => {
-        item.addEventListener('click', function() {
-            // 移除所有激活状态
-            fileItems.forEach(i => i.classList.remove('file-item-active'));
-            // 添加当前项的激活状态
-            this.classList.add('file-item-active');
+    // 挂载主内容组件
+    const mainElement = document.getElementById('container-main-layout')
+    if (mainElement) {
+        const mainApp = createApp(KnowledgeBaseDetailMain)
+        mainApp.use(pinia)
+        mainApp.mount('#container-main-layout')
+        console.log('Knowledge base detail main component mounted')
+    } else {
+        console.warn('Knowledge base detail main container not found')
+    }
 
-            // 更新预览区域的文件信息
-            const titleElement = this.querySelector('.file-item-title');
-            const metaElement = this.querySelector('.file-item-meta');
-            const previewTitleElement = document.querySelector('.preview-file-title');
-            const previewMetaElement = document.querySelector('.preview-file-meta');
+    // 初始化数据
+    const userStore = useUserStore()
+    const knowledgeBaseStore = useKnowledgeBaseStore()
+    const knowledgeBaseDetailStore = useKnowledgeBaseDetailStore()
 
-            if (titleElement && metaElement && previewTitleElement && previewMetaElement) {
-                const title = titleElement.textContent;
-                const meta = metaElement.textContent;
+    // 确保用户已登录
+    userStore.initializeFromStorage()
 
-                previewTitleElement.textContent = title;
-                previewMetaElement.textContent = meta + ' • 共 45 页';
-            }
-        });
-    });
+    if (!userStore.isLoggedIn) {
+        console.warn('User not logged in, redirecting to login page')
+        window.location.href = '/src/login/signin.html'
+        return
+    }
+
+    // 获取知识库ID
+    const knowledgebaseId = getUrlParameter('id')
+    if (!knowledgebaseId) {
+        console.warn('No knowledge base ID provided in URL')
+        window.location.href = '/src/knowledgebase/knowledgebase.html'
+        return
+    }
+
+    try {
+        // 首先获取知识库列表以找到对应的知识库信息
+        await knowledgeBaseStore.fetchKnowledgeBaseList()
+
+        // 查找对应的知识库并设置为活跃项
+        const knowledgeBase = knowledgeBaseStore.knowledgeBaseList.find(kb => kb.id === knowledgebaseId)
+        if (knowledgeBase) {
+            knowledgeBaseStore.setActiveKnowledgeBaseItem(knowledgeBase)
+        }
+
+        // 获取知识库详情
+        await knowledgeBaseDetailStore.fetchKnowledgeBaseDetail(knowledgebaseId)
+
+        // 自动选择第一个文档
+        if (knowledgeBaseDetailStore.documentDetailList.length > 0) {
+            const firstDocument = knowledgeBaseDetailStore.documentDetailList[0]
+            knowledgeBaseDetailStore.setActiveDocumentDetail(firstDocument)
+            console.log('Auto-selected first document:', firstDocument.document_name)
+        }
+
+        console.log('Knowledge base detail loaded successfully')
+    } catch (error) {
+        console.error('Failed to load knowledge base detail:', error)
+    }
 });

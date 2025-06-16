@@ -105,10 +105,17 @@ watch(() => chatHistoryStore.activeChatHistoryItem, (newActive) => {
 // 组件挂载时确保数据已加载
 onMounted(async () => {
   console.log('ChatList mounted, current items:', items.value)
+  console.log('ChatList mounted, chatHistoryStore.chatHistoryList:', chatHistoryStore.chatHistoryList)
+
   // 如果没有数据，尝试重新获取
   if (items.value.length === 0) {
     console.log('No chat history items, fetching...')
-    await chatHistoryStore.getChatHistoryList()
+    try {
+      await chatHistoryStore.getChatHistoryList()
+      console.log('After fetching, items:', items.value)
+    } catch (error) {
+      console.error('Failed to fetch chat history:', error)
+    }
   }
 })
 
@@ -160,6 +167,12 @@ const menuConfig: ConversationsProps['menu'] = (conversation) => ({
       </div>
       <h3 class="empty-state-title">暂无聊天记录</h3>
       <p class="empty-state-description">开始新的对话，创建您的第一个聊天记录</p>
+      <div class="debug-info" style="margin: 16px 0; padding: 12px; background: #f5f5f5; border-radius: 6px; font-size: 12px; text-align: left;">
+        <div><strong>调试信息:</strong></div>
+        <div>原始列表长度: {{ chatHistoryStore.chatHistoryList.length }}</div>
+        <div>计算后列表长度: {{ items.length }}</div>
+        <div>用户ID: {{ chatHistoryStore.chatHistoryList.length > 0 ? '有数据' : '无数据' }}</div>
+      </div>
       <div class="empty-state-action">
         <PlusOutlined class="action-icon" />
         <span>点击开始新对话</span>

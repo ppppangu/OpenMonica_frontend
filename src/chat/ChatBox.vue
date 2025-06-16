@@ -1,21 +1,11 @@
 <script setup lang="ts">
 import {
-  CoffeeOutlined,
-  FireOutlined,
-  SmileOutlined,
-  FrownOutlined,
   CopyOutlined,
   SyncOutlined,
   UserOutlined,
-  ToolOutlined,
-  LoadingOutlined,
-  CheckCircleOutlined,
-  ExclamationCircleOutlined,
-  DownOutlined,
-  UpOutlined,
 } from "@ant-design/icons-vue";
 import { BubbleList } from "ant-design-x-vue";
-import { Button, Flex, Space, Spin, Card, Collapse } from "ant-design-vue";
+import { Button, Flex, Space, Spin } from "ant-design-vue";
 
 import { Typography } from "ant-design-vue";
 import { Prompts } from "ant-design-x-vue";
@@ -25,6 +15,8 @@ import { ref, h, onMounted, computed, watch } from "vue";
 import { useChatHistoryContentStore } from "../store/chat_history_content";
 import { useChatHistoryStore } from "../store/chat_history";
 import { useUserStore } from "../store/user_info";
+import { useToolCallsStore } from "../store/tool_calls";
+import ToolCallInterface from "../components/ToolCallInterface.vue";
 
 defineOptions({ name: "ChatBox" });
 
@@ -39,9 +31,158 @@ const activeChatHistoryItem = computed(
   () => chatHistoryStore.activeChatHistoryItem
 );
 const userStore = useUserStore();
+const toolCallsStore = useToolCallsStore();
 
-// 解析markdown（简化版本，移除工具执行检测）
-const renderMarkdown = (content: string) => {
+// Cache to track processed messages and prevent infinite loops
+const processedMessagesCache = ref<Set<string>>(new Set());
+
+// Debounce map to prevent rapid re-processing
+const debounceMap = ref<Map<string, number>>(new Map());
+
+// Non-reactive tool call detection function with debouncing
+const detectAndProcessToolCalls = (content: string, messageKey: string) => {
+  // Prevent re-processing the same message
+  if (processedMessagesCache.value.has(messageKey)) {
+    return;
+  }
+
+  // Debounce rapid calls for the same message
+  const now = Date.now();
+  const lastProcessed = debounceMap.value.get(messageKey);
+  if (lastProcessed && (now - lastProcessed) < 100) { // 100ms debounce
+    return;
+  }
+  debounceMap.value.set(messageKey, now);
+
+  try {
+    console.log('🔍 Processing tool calls for message:', {
+      messageKey,
+      contentLength: content.length,
+      contentPreview: content.substring(0, 200) + '...'
+    });
+
+    // Detect and process tool calls
+    const toolCallData = toolCallsStore.parseToolCallFromContent(content);
+    if (toolCallData) {
+      console.log('🔧 Tool call detected:', {
+        messageKey,
+        toolName: toolCallData.toolName,
+        arguments: toolCallData.arguments
+      });
+
+      // Check if tool call already exists to prevent duplicates
+      const existingCalls = toolCallsStore.getToolCallsByMessageKey(messageKey);
+      const alreadyExists = existingCalls.some((call: any) =>
+        call.toolName === toolCallData.toolName &&
+        call.status === 'invoking'
+      );
+
+      if (!alreadyExists) {
+        // Create tool call in store
+        const callId = toolCallsStore.createToolCall(messageKey, toolCallData.toolName, toolCallData.arguments);
+        console.log('✅ Tool call created:', {
+          callId,
+          messageKey,
+          toolName: toolCallData.toolName
+        });
+      } else {
+        console.log('⚠️ Tool call already exists, skipping creation:', {
+          messageKey,
+          toolName: toolCallData.toolName
+        });
+      }
+    }
+
+    // Check for tool results
+    const toolResultData = toolCallsStore.parseToolResultFromContent(content);
+    if (toolResultData) {
+      console.log('🔍 Tool result detected:', {
+        messageKey,
+        toolName: toolResultData.toolName,
+        isError: toolResultData.isError,
+        resultLength: toolResultData.result?.length || 0
+      });
+
+      // Find existing tool call and update it
+      const existingCalls = toolCallsStore.getToolCallsByMessageKey(messageKey);
+      console.log('🔍 Existing tool calls for message:', {
+        messageKey,
+        existingCallsCount: existingCalls.length,
+        existingCalls: existingCalls.map((call: any) => ({
+          id: call.id,
+          toolName: call.toolName,
+          status: call.status
+        }))
+      });
+
+      // Use enhanced matching to find the best tool call
+      const matchingCall = toolCallsStore.findBestMatchingToolCall(messageKey, toolResultData.toolName, true);
+      if (matchingCall) {
+        console.log('✅ Found matching tool call, updating status:', {
+          callId: matchingCall.id,
+          toolName: matchingCall.toolName,
+          previousStatus: matchingCall.status,
+          newStatus: toolResultData.isError ? 'error' : 'done'
+        });
+
+        toolCallsStore.updateToolCallStatus(
+          matchingCall.id,
+          toolResultData.isError ? 'error' : 'done',
+          toolResultData.result,
+          toolResultData.isError ? toolResultData.result : undefined
+        );
+      } else {
+        console.warn('❌ No matching tool call found for result:', {
+          messageKey,
+          toolName: toolResultData.toolName,
+          availableToolNames: existingCalls.map((call: any) => call.toolName)
+        });
+
+        // Create a new tool call if none exists (fallback for missed tool calls)
+        console.log('🔄 Creating fallback tool call for orphaned result');
+        const fallbackCallId = toolCallsStore.createToolCall(messageKey, toolResultData.toolName, {});
+        toolCallsStore.updateToolCallStatus(
+          fallbackCallId,
+          toolResultData.isError ? 'error' : 'done',
+          toolResultData.result,
+          toolResultData.isError ? toolResultData.result : undefined
+        );
+      }
+    }
+
+    // Mark as processed
+    processedMessagesCache.value.add(messageKey);
+  } catch (error) {
+    console.error('Error in detectAndProcessToolCalls:', error);
+    // Still mark as processed to prevent infinite retries
+    processedMessagesCache.value.add(messageKey);
+  }
+};
+
+// JSON 转义处理函数
+const unescapeJsonContent = (content: string): string => {
+  if (!content) return content;
+
+  try {
+    // 处理常见的 JSON 转义字符
+    return content
+      .replace(/\\n/g, '\n')      // 换行符
+      .replace(/\\r/g, '\r')      // 回车符
+      .replace(/\\t/g, '\t')      // 制表符
+      .replace(/\\"/g, '"')       // 双引号
+      .replace(/\\\\/g, '\\')     // 反斜杠
+      .replace(/\\u([0-9a-fA-F]{4})/g, (_match, code) => {
+        // Unicode 转义
+        return String.fromCharCode(parseInt(code, 16));
+      });
+  } catch (error) {
+    console.warn('JSON unescape error:', error);
+    return content;
+  }
+};
+
+// Pure markdown renderer without side effects
+const renderMarkdownWithToolCalls = (content: string, messageKey: string) => {
   // 确保content不为空
   if (!content) {
     console.warn('renderMarkdown: 收到空内容');
@@ -50,15 +191,57 @@ const renderMarkdown = (content: string) => {
 
   console.log('renderMarkdown: 渲染内容长度=', content.length, '包含换行符=', content.includes('\n'));
 
-  // 正常的markdown渲染
-  const renderedHTML = md.render(content);
+  // Get tool calls for this message (read-only)
+  const toolCalls = toolCallsStore.getToolCallsByMessageKey(messageKey);
+
+  // 处理 JSON 转义字符，然后进行 markdown 渲染
+  const unescapedContent = unescapeJsonContent(content);
+  const renderedHTML = md.render(unescapedContent);
+
+  console.log('renderMarkdown: JSON转义处理', {
+    原始长度: content.length,
+    处理后长度: unescapedContent.length,
+    包含换行符: unescapedContent.includes('\n'),
+    转义前预览: content.substring(0, 100),
+    转义后预览: unescapedContent.substring(0, 100)
+  });
+
+  return h("div", {}, [
+    // Tool calls interface (if any)
+    toolCalls.length > 0 ? h(ToolCallInterface, { messageKey }) : null,
+    // Regular markdown content
+    h(Typography, null, {
+      default: () =>
+        h("div", {
+          innerHTML: renderedHTML,
+          style: {
+            // 为markdown渲染的图片添加样式
+            "--img-max-width": "100%",
+            "--img-max-height": "300px",
+            "--img-border-radius": "8px",
+            "--img-margin": "8px 0",
+          },
+        }),
+    })
+  ]);
+};
+
+// Legacy markdown renderer for backward compatibility
+const renderMarkdown = (content: string) => {
+  if (!content) {
+    console.warn('renderMarkdown: 收到空内容');
+    return h("div", { style: { color: '#999', fontSize: '12px' } }, '(空消息)');
+  }
+
+  // 处理 JSON 转义字符，然后进行 markdown 渲染
+  const unescapedContent = unescapeJsonContent(content);
+  const renderedHTML = md.render(unescapedContent);
 
   return h(Typography, null, {
     default: () =>
       h("div", {
         innerHTML: renderedHTML,
         style: {
-          // 为markdown渲染的图片添加样式
           "--img-max-width": "100%",
           "--img-max-height": "300px",
           "--img-border-radius": "8px",
@@ -71,256 +254,14 @@ const renderMarkdown = (content: string) => {
 // 标记是否正在加载历史消息
 const isLoadingHistory = ref(false);
 
-// Tool execution detection and state management
-const toolExecutionStates = ref<Map<string, {
-  isExecuting: boolean;
-  toolName: string;
-  arguments: any;
-  result?: string;
-  isError?: boolean;
-  isExpanded?: boolean;
-}>>(new Map());
-
-// Tool execution detection patterns
-const TOOL_EXECUTION_PATTERN = /```json\s*\{\s*"tool"\s*:\s*"([^"]+)"\s*,\s*"arguments"\s*:\s*(\{.*?\})\s*\}\s*```/s;
-const TOOL_COMPLETION_PATTERN = /"params"\s*:\s*\{[^}]*"tool"\s*:\s*"([^"]+)"[^}]*\}\s*,\s*"tool_response"\s*:\s*"([^"]+)"\s*,\s*"is_error"\s*:\s*(true|false)/s;
-
-// Detect tool execution in content
-const detectToolExecution = (content: string, messageKey: string) => {
-  if (!content || !messageKey || content.length < 10) {
-    return false;
-  }
-
-  // 避免重复检测同一个消息
-  if (toolExecutionStates.value.has(messageKey)) {
-    return true; // 已经检测过了
-  }
-
-  try {
-    // Check for tool execution start pattern
-    const executionMatch = content.match(TOOL_EXECUTION_PATTERN);
-    if (executionMatch) {
-      const toolName = executionMatch[1];
-      const argumentsStr = executionMatch[2];
-
-      console.log('Tool execution detected:', { toolName, messageKey });
-
-      try {
-        const parsedArgs = JSON.parse(argumentsStr);
-        toolExecutionStates.value.set(messageKey, {
-          isExecuting: true,
-          toolName,
-          arguments: parsedArgs,
-          isExpanded: false
-        });
-        return true;
-      } catch (parseError) {
-        console.error('Failed to parse tool arguments:', parseError);
-        return false; // 如果参数解析失败，不创建状态
-      }
-    }
-
-    // Check for tool completion pattern
-    const completionMatch = content.match(TOOL_COMPLETION_PATTERN);
-    if (completionMatch) {
-      const toolName = completionMatch[1];
-      const toolResponse = completionMatch[2];
-      const isError = completionMatch[3] === 'true';
-
-      console.log('Tool completion detected:', { toolName, messageKey, isError });
-
-      const existingState = toolExecutionStates.value.get(messageKey) || { arguments: {} };
-      toolExecutionStates.value.set(messageKey, {
-        isExecuting: false,
-        toolName,
-        arguments: existingState.arguments || {},
-        result: toolResponse,
-        isError,
-        isExpanded: false
-      });
-
-      return true;
-    }
-
-    // Alternative pattern for tool completion (more flexible JSON parsing)
-    try {
-      const jsonMatch = content.match(/\{[\s\S]*"params"[\s\S]*"tool_response"[\s\S]*\}/);
-      if (jsonMatch) {
-        const jsonStr = jsonMatch[0];
-        const parsed = JSON.parse(jsonStr);
-
-        if (parsed.params && parsed.params.tool && parsed.tool_response !== undefined) {
-          const toolName = parsed.params.tool;
-          const toolResponse = parsed.tool_response;
-          const isError = parsed.is_error === true;
-
-          console.log('Tool completion detected (JSON):', { toolName, messageKey, isError });
-
-          const existingState = toolExecutionStates.value.get(messageKey) || { arguments: {} };
-          toolExecutionStates.value.set(messageKey, {
-            isExecuting: false,
-            toolName,
-            arguments: existingState.arguments || {},
-            result: toolResponse,
-            isError,
-            isExpanded: false
-          });
-
-          return true;
-        }
-      }
-    } catch (jsonError) {
-      // Ignore JSON parsing errors for alternative pattern
-    }
-
-  } catch (error) {
-    console.error('Error in tool execution detection:', error);
-  }
-
-  return false;
-};
-
-// Render tool execution loading banner
-const renderToolLoadingBanner = (toolName: string, args: any) => {
-  return h('div', {
-    class: 'tool-execution-banner loading',
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      padding: '12px 16px',
-      background: 'linear-gradient(135deg, #f3e8ff 0%, #ede9fe 100%)',
-      border: '1px solid #c4b5fd',
-      borderRadius: '8px',
-      margin: '8px 0',
-      gap: '8px'
-    }
-  }, [
-    h(LoadingOutlined, {
-      style: { color: '#7c3aed', fontSize: '16px' }
-    }),
-    h('span', {
-      style: { color: '#7c3aed', fontWeight: '500', fontSize: '14px' }
-    }, `正在执行工具: ${toolName}`),
-    h('div', {
-      style: {
-        marginLeft: 'auto',
-        fontSize: '12px',
-        color: '#8b5cf6',
-        background: 'rgba(124, 58, 237, 0.1)',
-        padding: '2px 8px',
-        borderRadius: '4px'
-      }
-    }, '执行中...')
-  ]);
-};
-
-// Render tool completion card
-const renderToolCompletionCard = (toolName: string, result: string, isError: boolean, isExpanded: boolean, messageKey: string) => {
-  const toggleExpanded = () => {
-    try {
-      const state = toolExecutionStates.value.get(messageKey);
-      if (state) {
-        toolExecutionStates.value.set(messageKey, {
-          ...state,
-          isExpanded: !state.isExpanded
-        });
-      }
-    } catch (error) {
-      console.error('Error toggling tool card expansion:', error);
-    }
-  };
-
-  return h('div', {
-    class: 'tool-completion-card',
-    style: {
-      border: `1px solid ${isError ? '#fecaca' : '#c4b5fd'}`,
-      borderRadius: '8px',
-      margin: '8px 0',
-      overflow: 'hidden',
-      background: isError ? '#fef2f2' : '#f9fafb'
-    }
-  }, [
-    // Header
-    h('div', {
-      class: 'tool-card-header',
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        padding: '12px 16px',
-        background: isError ? '#fee2e2' : 'linear-gradient(135deg, #f3e8ff 0%, #ede9fe 100%)',
-        borderBottom: `1px solid ${isError ? '#fecaca' : '#e5e7eb'}`,
-        cursor: 'pointer'
-      },
-      onClick: toggleExpanded
-    }, [
-      h(isError ? ExclamationCircleOutlined : CheckCircleOutlined, {
-        style: {
-          color: isError ? '#dc2626' : '#16a34a',
-          fontSize: '16px',
-          marginRight: '8px'
-        }
-      }),
-      h('span', {
-        style: {
-          fontWeight: '500',
-          fontSize: '14px',
-          color: isError ? '#dc2626' : '#374151'
-        }
-      }, `工具执行${isError ? '失败' : '完成'}: ${toolName}`),
-      h('div', {
-        style: { marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }
-      }, [
-        h('span', {
-          style: {
-            fontSize: '12px',
-            color: isError ? '#dc2626' : '#16a34a',
-            background: isError ? 'rgba(220, 38, 38, 0.1)' : 'rgba(22, 163, 74, 0.1)',
-            padding: '2px 8px',
-            borderRadius: '4px'
-          }
-        }, isError ? '错误' : '成功'),
-        h(isExpanded ? UpOutlined : DownOutlined, {
-          style: { fontSize: '12px', color: '#6b7280' }
-        })
-      ])
-    ]),
-    // Content (expandable)
-    isExpanded ? h('div', {
-      class: 'tool-card-content',
-      style: {
-        padding: '16px',
-        background: 'white',
-        fontSize: '13px',
-        lineHeight: '1.5',
-        color: '#374151',
-        maxHeight: '200px',
-        overflow: 'auto'
-      }
-    }, [
-      h('div', {
-        style: { marginBottom: '8px', fontWeight: '500' }
-      }, '执行结果:'),
-      h('div', {
-        style: {
-          background: '#f9fafb',
-          padding: '8px',
-          borderRadius: '4px',
-          border: '1px solid #e5e7eb',
-          fontFamily: 'monospace',
-          fontSize: '12px',
-          wordBreak: 'break-all'
-        }
-      }, result)
-    ]) : null
-  ]);
-};
+// Old tool execution rendering functions removed - now using ToolCallInterface component
 
 // 使用更简单的类型定义避免深度类型推断
 const roles = {
   // 历史消息的助手角色（无typing效果）
   assistant_history: {
     variant: "filled" as const,
-    messageRender: renderMarkdown,
+    messageRender: renderMarkdown, // Will be overridden per message
     placement: "start" as const,
     loading: false,
     header: aiheader.value,
@@ -355,7 +296,7 @@ const roles = {
   // 新消息的助手角色（禁用typing效果避免文字旋转）
   assistant: {
     variant: "filled" as const,
-    messageRender: renderMarkdown,
+    messageRender: renderMarkdown, // Will be overridden per message
     placement: "start" as const,
     loading: false,
     header: aiheader.value,
@@ -403,47 +344,6 @@ const roles = {
       }),
     ]),
   },
-  // 工具执行角色 - 专门用于显示工具执行状态
-  tool_execution: {
-    placement: "start" as const,
-    avatar: { icon: h(ToolOutlined), style: { background: "#f3e8ff" } },
-    variant: "borderless" as const,
-    messageRender: (content: string) => {
-      try {
-        // content should be the tool state key
-        const toolState = toolExecutionStates.value.get(content);
-        if (toolState) {
-          if (toolState.isExecuting) {
-            return renderToolLoadingBanner(toolState.toolName, toolState.arguments);
-          } else if (toolState.result !== undefined) {
-            return renderToolCompletionCard(
-              toolState.toolName,
-              toolState.result,
-              toolState.isError || false,
-              toolState.isExpanded || false,
-              content
-            );
-          }
-        }
-        return h('div', {
-          style: {
-            padding: '8px',
-            color: '#6b7280',
-            fontSize: '12px'
-          }
-        }, '工具执行状态未知');
-      } catch (error) {
-        console.error('Error rendering tool execution:', error);
-        return h('div', {
-          style: {
-            padding: '8px',
-            color: '#dc2626',
-            fontSize: '12px'
-          }
-        }, '工具执行渲染错误');
-      }
-    },
-  },
   suggestion: {
     placement: "start" as const,
     avatar: { icon: h(UserOutlined), style: { visibility: "hidden" as const } },
@@ -466,8 +366,18 @@ const roles = {
   },
 } as any;
 
-// 计算属性：合并历史消息和当前实时消息，并处理工具执行
+// Prevent infinite computation loops
+let isComputingMessages = false;
+
+// 计算属性：合并历史消息和当前实时消息，使用新的工具调用接口
 const allMessages = computed(() => {
+  // Prevent recursive computation
+  if (isComputingMessages) {
+    console.warn('Preventing recursive allMessages computation');
+    return [];
+  }
+
+  isComputingMessages = true;
   const processedMessages: any[] = [];
 
   try {
@@ -478,26 +388,24 @@ const allMessages = computed(() => {
       const content = filterDone(item.messages[0].content[0].text);
       const messageKey = `history_${item.timestamp || index}`;
 
-      // 只有在真正检测到工具执行时才添加工具执行气泡
-      const hasToolExecution = detectToolExecution(content, messageKey);
-      if (hasToolExecution) {
-        const toolState = toolExecutionStates.value.get(messageKey);
-        if (toolState) {
-          // 添加工具执行消息作为单独的气泡
-          processedMessages.push({
-            key: `${messageKey}_tool`,
-            role: 'tool_execution',
-            content: messageKey,
-          });
-        }
+      // Process tool calls separately (non-reactive) - use setTimeout to break reactive chain
+      if (role === "assistant_history") {
+        setTimeout(() => detectAndProcessToolCalls(content, messageKey), 0);
       }
 
-      // 添加原始消息
-      processedMessages.push({
+      // Create message with enhanced renderer for assistant messages
+      const messageToAdd: any = {
         key: messageKey,
         role: role,
         content: content,
-      });
+      };
+
+      // Override messageRender for assistant messages to include tool call detection
+      if (role === "assistant_history") {
+        messageToAdd.messageRender = (content: string) => renderMarkdownWithToolCalls(content, messageKey);
+      }
+
+      processedMessages.push(messageToAdd);
     });
 
     // 处理当前消息
@@ -508,26 +416,22 @@ const allMessages = computed(() => {
 
       console.log(`处理当前消息: key=${messageKey}, role=${role}, originalRole=${item.role}, streaming=${item.streaming}, content长度=${item.content?.length || 0}`);
 
-      // 只有在真正检测到工具执行时才添加工具执行气泡
-      const hasToolExecution = detectToolExecution(item.content, messageKey);
-      if (hasToolExecution) {
-        const toolState = toolExecutionStates.value.get(messageKey);
-        if (toolState) {
-          // 添加工具执行消息作为单独的气泡
-          processedMessages.push({
-            key: `${messageKey}_tool`,
-            role: 'tool_execution',
-            content: messageKey,
-          });
-        }
+      // Process tool calls immediately for assistant messages
+      if (role === "assistant" || role === "assistant_history") {
+        detectAndProcessToolCalls(item.content, messageKey);
       }
 
-      // 添加原始消息
-      const messageToAdd = {
+      // Create message with enhanced renderer for assistant messages
+      const messageToAdd: any = {
         key: messageKey,
         role: role,
         content: item.content,
       };
+
+      // Override messageRender for assistant messages to include tool call detection
+      if (role === "assistant" || role === "assistant_history") {
+        messageToAdd.messageRender = (content: string) => renderMarkdownWithToolCalls(content, messageKey);
+      }
 
       console.log(`添加消息到渲染列表: key=${messageKey}, role=${role}, content预览="${item.content?.substring(0, 50)}..."`);
       processedMessages.push(messageToAdd);
@@ -535,6 +439,8 @@ const allMessages = computed(() => {
 
   } catch (error) {
     console.error('Error processing messages:', error);
+  } finally {
+    isComputingMessages = false;
   }
 
   console.log(`allMessages 计算完成: 总消息数=${processedMessages.length}`);
@@ -545,7 +451,12 @@ const allMessages = computed(() => {
   return processedMessages;
 });
 
-watch(activeChatHistoryItem, async (newValue) => {
+watch(activeChatHistoryItem, async (newValue, oldValue) => {
+  // Prevent unnecessary re-processing if the session_id hasn't actually changed
+  if (newValue?.session_id === oldValue?.session_id) {
+    return;
+  }
+
   if (newValue?.session_id) {
     console.log(
       "ChatBox: activeChatHistoryItem changed to:",
@@ -555,8 +466,13 @@ watch(activeChatHistoryItem, async (newValue) => {
     // 标记正在加载历史消息
     isLoadingHistory.value = true;
 
-    // 清空当前聊天消息，加载新的历史消息
+    // 清空当前聊天消息和工具调用状态
     chatContentsStore.clearCurrentChat();
+    toolCallsStore.clearAllToolCalls();
+
+    // Clear processed messages cache and debounce map
+    processedMessagesCache.value.clear();
+    debounceMap.value.clear();
 
     await chatContentsStore.getChatHistoryContent(newValue.session_id);
     console.log(
@@ -569,29 +485,24 @@ watch(activeChatHistoryItem, async (newValue) => {
   }
 });
 
-// 监听当前聊天消息变化，确保实时更新
+// Optimized watcher for current chat messages - only log changes, don't trigger side effects
 watch(
-  () => chatContentsStore.currentChatMessages,
-  (newMessages) => {
-    console.log("ChatBox: currentChatMessages changed:", newMessages);
-
-    // 检查新消息中的工具执行
-    newMessages.forEach((message: any) => {
-      if (message.role === 'assistant') {
-        detectToolExecution(message.content, message.key);
-      }
-    });
-  },
-  { deep: true }
+  () => chatContentsStore.currentChatMessages.length,
+  (newLength, oldLength) => {
+    if (newLength !== oldLength) {
+      console.log(`ChatBox: currentChatMessages count changed from ${oldLength} to ${newLength}`);
+    }
+  }
 );
 
-// 监听工具执行状态变化
+// Optimized watcher for tool calls - only log changes
 watch(
-  toolExecutionStates,
-  (newStates) => {
-    console.log("ChatBox: toolExecutionStates changed:", Array.from(newStates.entries()));
-  },
-  { deep: true }
+  () => toolCallsStore.toolCalls.size,
+  (newSize, oldSize) => {
+    if (newSize !== oldSize) {
+      console.log(`ChatBox: toolCalls count changed from ${oldSize} to ${newSize}`);
+    }
+  }
 );
 
 // 过滤掉content结尾的[DONE],只过滤结尾的，可能有一行[DONE]，也可能有两行[DONE]
@@ -608,75 +519,173 @@ function filterDone(content: string) {
   return content;
 }
 
-// 清理工具执行状态
-const clearToolExecutionStates = () => {
-  toolExecutionStates.value.clear();
-  console.log('Tool execution states cleared');
+// Clear all caches and states
+const clearAllStates = () => {
+  toolCallsStore.clearAllToolCalls();
+  processedMessagesCache.value.clear();
+  debounceMap.value.clear();
+  console.log('All states and caches cleared');
 };
 
-// 强制停止所有动画
-const stopAllAnimations = () => {
-  // 添加CSS规则来停止所有动画
-  const style = document.createElement('style');
-  style.textContent = `
-    * {
-      animation: none !important;
-      animation-duration: 0s !important;
-      animation-delay: 0s !important;
-      animation-iteration-count: 1 !important;
-      transform: none !important;
-      transition: none !important;
+// Test function for debugging tool call parsing
+const testToolCallParsing = () => {
+  console.log('🧪 Testing tool call parsing...');
+
+  // Test tool call creation
+  const toolCallContent = '{"tool": "create_wordcloud_chart", "arguments": {"text": "猫咪 狗勾 兔子 仓鼠 宠物 可爱 毛茸茸"}}';
+  const toolCallResult = toolCallsStore.parseToolCallFromContent(toolCallContent);
+  console.log('Tool call parsing result:', toolCallResult);
+
+  if (toolCallResult) {
+    const testMessageKey = 'test_message_123';
+    const callId = toolCallsStore.createToolCall(testMessageKey, toolCallResult.toolName, toolCallResult.arguments);
+    console.log('Created test tool call:', callId);
+
+    // Test tool result parsing
+    const toolResultContent = JSON.stringify({
+      "params": {"tool": "create_wordcloud_chart", "arguments": {"text": "猫咪 狗勾 兔子 仓鼠 宠物 可爱 毛茸茸"}},
+      "tool_response": "Tool execution result:【create_wordcloud_chart】 http://1.tcp.cpolar.cn:21729/publicfiles/subserver/charts/wordcloud_642510ee-eecb-4d64-9895-1c397d2eb295_artifacts.html",
+      "is_error": false
+    });
+
+    console.log('Testing tool result content:', toolResultContent);
+    const toolResultData = toolCallsStore.parseToolResultFromContent(toolResultContent);
+    console.log('Tool result parsing result:', toolResultData);
+
+    if (toolResultData) {
+      // Test status update
+      toolCallsStore.updateToolCallStatus(callId, 'done', toolResultData.result);
+      console.log('Updated tool call status to done');
+
+      // Check final state
+      const finalCall = toolCallsStore.getToolCallById(callId);
+      console.log('Final tool call state:', finalCall);
     }
-  `;
-  document.head.appendChild(style);
-
-  // 清理工具执行状态
-  clearToolExecutionStates();
-
-  console.log('All animations stopped');
-};
-
-// 手动测试工具执行检测（仅在需要时调用）
-const manualTestToolExecution = () => {
-  try {
-    console.log('Manual tool execution test...');
-
-    // 清理现有状态
-    clearToolExecutionStates();
-
-    // 测试工具执行模式
-    const testExecution = '```json{"tool":"create_wordcloud_chart","arguments":{"text":"test"}}```';
-    const result1 = detectToolExecution(testExecution, 'manual_test_execution');
-    console.log('Test execution result:', result1);
-
-    // 测试工具完成模式
-    const testCompletion = '{"params":{"tool":"create_wordcloud_chart","arguments":{"text":"test"}},"tool_response":"Test result","is_error":false}';
-    const result2 = detectToolExecution(testCompletion, 'manual_test_completion');
-    console.log('Test completion result:', result2);
-
-    console.log('Tool execution states after test:', toolExecutionStates.value.size);
-  } catch (error) {
-    console.error('Error in manual test function:', error);
   }
 };
 
-// 暴露调试函数到全局，方便调试
+// Comprehensive debugging function for tool call issues
+const debugToolCallIssues = () => {
+  console.log('🔍 === TOOL CALL DEBUG REPORT ===');
+
+  // 1. Check current tool calls state
+  const allToolCalls = Array.from(toolCallsStore.toolCalls.values());
+  console.log('📊 Current tool calls count:', allToolCalls.length);
+
+  allToolCalls.forEach((call: any, index: number) => {
+    console.log(`🔧 Tool Call ${index + 1}:`, {
+      id: call.id,
+      toolName: call.toolName,
+      status: call.status,
+      messageKey: call.messageKey,
+      hasResult: !!call.result,
+      resultLength: call.result?.length || 0,
+      timestamp: call.timestamp
+    });
+  });
+
+  // 2. Check current chat messages
+  const currentMessages = chatContentsStore.currentChatMessages;
+  console.log('💬 Current chat messages count:', currentMessages.length);
+
+  currentMessages.forEach((msg: any, index: number) => {
+    console.log(`📝 Message ${index + 1}:`, {
+      key: msg.key,
+      role: msg.role,
+      contentLength: msg.content?.length || 0,
+      streaming: msg.streaming,
+      contentPreview: msg.content?.substring(0, 100) + '...'
+    });
+
+    // Test parsing on each message
+    if (msg.role === 'assistant' && msg.content) {
+      const toolCallData = toolCallsStore.parseToolCallFromContent(msg.content);
+      const toolResultData = toolCallsStore.parseToolResultFromContent(msg.content);
+
+      if (toolCallData) {
+        console.log(`  🔧 Contains tool call:`, toolCallData);
+      }
+      if (toolResultData) {
+        console.log(`  ✅ Contains tool result:`, toolResultData);
+      }
+    }
+  });
+
+  // 3. Check for stuck tool calls
+  const stuckCalls = allToolCalls.filter((call: any) => call.status === 'invoking');
+  if (stuckCalls.length > 0) {
+    console.warn('⚠️ Found stuck tool calls (still invoking):');
+    stuckCalls.forEach((call: any) => {
+      console.warn('  🔄 Stuck call:', {
+        id: call.id,
+        toolName: call.toolName,
+        messageKey: call.messageKey,
+        age: Date.now() - new Date(call.timestamp).getTime() + 'ms'
+      });
+    });
+  }
+
+  console.log('🔍 === END DEBUG REPORT ===');
+};
+
+// Add a function to manually trigger tool call detection for debugging
+const manualToolCallDetection = (messageKey?: string) => {
+  console.log('🔧 Manual tool call detection triggered');
+
+  if (messageKey) {
+    // Process specific message
+    const message = chatContentsStore.currentChatMessages.find((msg: any) => msg.key === messageKey);
+    if (message) {
+      console.log('🔍 Processing specific message:', messageKey);
+      detectAndProcessToolCalls(message.content, messageKey);
+    } else {
+      console.warn('❌ Message not found:', messageKey);
+    }
+  } else {
+    // Process all current messages
+    console.log('🔍 Processing all current messages');
+    chatContentsStore.currentChatMessages.forEach((message: any, index: number) => {
+      if (message.role === 'assistant') {
+        console.log(`🔍 Processing message ${index + 1}:`, message.key);
+        detectAndProcessToolCalls(message.content, message.key);
+      }
+    });
+  }
+};
+
+// Simplified popup management functions
+function showBubbleSettings(): void {
+  console.log('Bubble settings requested');
+  alert('Bubble Settings: This feature allows you to customize chat bubble appearance including themes, animations, and layout options.');
+}
+
+// Debugging functions for tool calls (development only)
 if (import.meta.env.DEV) {
-  (window as any).clearToolStates = clearToolExecutionStates;
-  (window as any).testToolExecution = manualTestToolExecution;
-  (window as any).stopAllAnimations = stopAllAnimations;
+  (window as any).clearToolCalls = () => toolCallsStore.clearAllToolCalls();
+  (window as any).clearAllStates = clearAllStates;
+  (window as any).toolCallsStore = toolCallsStore;
+  (window as any).processedMessagesCache = processedMessagesCache;
+  (window as any).testToolCallParsing = testToolCallParsing;
+  (window as any).debugToolCallIssues = debugToolCallIssues;
+  (window as any).chatContentsStore = chatContentsStore;
+  (window as any).showBubbleSettings = showBubbleSettings;
+  (window as any).manualToolCallDetection = manualToolCallDetection;
 }
 
 onMounted(async () => {
   try {
+    // Clear all states first to prevent any leftover reactive loops
+    clearAllStates();
+
     await chatContentsStore.getChatHistoryContent(
       activeChatHistoryItem.value?.session_id || ""
     );
 
-    // 强制停止所有动画并清理状态
-    stopAllAnimations();
-
-    console.log('ChatBox mounted, all animations stopped and states cleared');
+    console.log('ChatBox mounted, all states cleared');
+    console.log('🔧 Debug functions available:');
+    console.log('  - window.debugToolCalls() - Show debug report');
+    console.log('  - window.testToolCallParsing() - Test parsing functions');
+    console.log('  - window.manualToolCallDetection(messageKey?) - Manually trigger detection');
   } catch (error) {
     console.error('Error in ChatBox onMounted:', error);
   }

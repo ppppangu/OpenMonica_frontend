@@ -1,4 +1,4 @@
-user_manage_url: "http://6.tcp.cpolar.cn:14287"
-file_manage_url: "http://8.tcp.cpolar.cn:11195"
-model_chat_url: "http://2.tcp.cpolar.cn:12682"
+user_manage_url: "http://120.46.208.202:8006"
+file_manage_url: "http://120.46.208.202:8087"
+model_chat_url: "http://120.46.208.202:8030"
 # model_chat_url: "http://127.0.0.1:12356"

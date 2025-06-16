@@ -10,30 +10,6 @@ const fileUpload = require('express-fileupload');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// File upload route - using raw multipart parsing to avoid middleware conflicts
-app.post('/user/file/upload_file', async (req, res) => {
-    // 简单的模拟文件上传实现，避免中间件冲突
-    console.log('收到文件上传请求');
-    console.log('Headers:', req.headers);
-
-    // 模拟文件上传成功（用于开发测试）
-    const mockFileData = {
-        file_id: `mock_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
-        filename: 'uploaded_file.txt',
-        object_path: `mock/uploads/uploaded_file.txt`,
-        public_url: `http://localhost:${PORT}/mock/files/uploaded_file.txt`,
-        file_size: 1024
-    };
-
-    console.log('模拟文件上传成功:', mockFileData);
-
-    res.json({
-        status: 'success',
-        message: 'File uploaded successfully (mock mode)',
-        data: mockFileData
-    });
-});
-
 // 读取配置文件
 let config;
 try {
@@ -730,6 +706,35 @@ app.post('/user/knowledgebase/get_list', upload.none(), async (req, res) => {
 });
 
 app.post('/user/knowledgebase/get_detail', upload.none(), async (req, res) => {
+// 返回数据格式
+// {
+//     "status": "success",
+//     "message": "get specific knowledgebase xxx for user 9836c8af-3eb9-4739-b6fa-52ec6687141d success",
+//     "data": {
+//         "id": "xxx",
+//         "user_id": "9836c8af-3eb9-4739-b6fa-52ec6687141d",
+//         "name": "Knowledge Base xxx",
+//         "description": "Auto-created knowledge base for user 9836c8af-3eb9-4739-b6fa-52ec6687141d",
+//         "documents": [
+//             {
+//                 "id": "814ee39a-bbfd-490c-9195-c8dde3690576",
+//                 "name": "Document 814ee39a-bbfd-490c-9195-c8dde3690576",
+//                 "pdf_file_path": "http://1.tcp.cpolar.cn:21729/publicfiles/9836c8af-3eb9-4739-b6fa-52ec6687141d/knowledgebase/xxx/814ee39a-bbfd-490c-9195-c8dde3690576/814ee39a-bbfd-490c-9195-c8dde3690576.pdf",
+//                 "markdown_file_path": "http://1.tcp.cpolar.cn:21729/publicfiles/9836c8af-3eb9-4739-b6fa-52ec6687141d/knowledgebase/xxx/814ee39a-bbfd-490c-9195-c8dde3690576/814ee39a-bbfd-490c-9195-c8dde3690576.md",
+//                 "upload_time": "2025-06-16T04:48:05.183986+00:00"
+//             },
+//             {
+//                 "id": "dac08e54-cf3b-444a-982f-d2f6d0a872f7",
+//                 "name": "Document dac08e54-cf3b-444a-982f-d2f6d0a872f7",
+//                 "pdf_file_path": "http://1.tcp.cpolar.cn:21729/publicfiles/9836c8af-3eb9-4739-b6fa-52ec6687141d/knowledgebase/xxx/dac08e54-cf3b-444a-982f-d2f6d0a872f7/dac08e54-cf3b-444a-982f-d2f6d0a872f7.pdf",
+//                 "markdown_file_path": "http://1.tcp.cpolar.cn:21729/publicfiles/9836c8af-3eb9-4739-b6fa-52ec6687141d/knowledgebase/xxx/dac08e54-cf3b-444a-982f-d2f6d0a872f7/dac08e54-cf3b-444a-982f-d2f6d0a872f7.md",
+//                 "upload_time": "2025-06-16T04:53:17.491103+00:00"
+//             }
+//         ],
+//         "document_count": 2
+//     }
+// }
+
     try {
         const token = req.body.token;
         const valid = await check_token_valid(token);
@@ -907,6 +912,127 @@ app.post('/user/knowledgebase/delete', upload.none(), async (req, res) => {
         res.json(response.data.data);
     } catch (error) {
         console.error('删除知识库失败:', error);
+        res.status(500).json({
+            success: false,
+            message: '服务器内部错误，请稍后重试'
+        });
+    }
+});
+
+// File upload route - using raw multipart parsing to avoid middleware conflicts
+// {
+//     "status": "success",
+//     "message": "File uploaded successfully",
+//     "data": {
+//         "file_id": "adc60863-0848-4969-843c-d361ee178ab8",
+//         "filename": "【排版结果】.docx",
+//         "object_path": "xxxx/default_file_space/adc60863-0848-4969-843c-d361ee178ab8/【排版结果】.docx",
+//         "public_url": "http://120.46.208.202:9000/publicfiles/xxxx/default_file_space/adc60863-0848-4969-843c-d361ee178ab8/【排版结果】.docx",
+//         "file_size": 18246
+//     }
+// }
+app.post('/user/file/upload_file', upload.single('upload'), async (req, res) => {
+    // 简单的模拟文件上传实现，避免中间件冲突
+    console.log('收到文件上传请求');
+    console.log('Headers:', req.headers);
+    try {
+            const token = req.body.token;
+            const valid = await check_token_valid(token);
+            if (!valid) {
+                console.log('token无效，请重新登录');
+                return res.status(401).json({
+                    success: false,
+                    message: 'token无效，请重新登录'
+                });
+            }
+        
+            // 获取上传的文件
+            const upload_file = req.file;
+            const user_id = req.body.user_id;
+
+            console.log('文件信息:', {
+                file_exists: !!upload_file,
+                filename: upload_file?.originalname,
+                size: upload_file?.size,
+                mimetype: upload_file?.mimetype,
+                user_id: user_id
+            });
+
+            if (!upload_file) {
+                return res.status(400).json({
+                    success: false,
+                    message: '未找到上传文件'
+                });
+            }
+
+            const formData = new FormData();
+            // 使用文件的 buffer 和相关信息 - 修正FormData.append语法
+            formData.append('upload', upload_file.buffer, upload_file.originalname);
+            formData.append('user_id', user_id);
+
+            console.log('发送到后端的FormData信息:', {
+                upload_url: `${FILE_MANAGE_BASE_URL}/upload_minio`,
+                user_id: user_id,
+                filename: upload_file.originalname,
+                buffer_size: upload_file.buffer.length
+            });
+
+            const response = await axios.post(`${FILE_MANAGE_BASE_URL}/upload_minio`, formData, {
+                headers: {
+                    ...formData.getHeaders(),
+                    'Content-Type': 'multipart/form-data'
+                },
+                timeout: 10000
+            });
+            res.json(response.data.data);
+        } catch (error) {
+            console.error('文件上传错误:', error);
+            res.status(500).json({
+                success: false,
+                message: '文件上传失败'
+            });
+        }
+    });
+
+app.post('/user/knowledgebase/update_document', upload.none(), async (req, res) => {
+    try {
+        const token = req.body.token;
+        const valid = await check_token_valid(token);
+        if (!valid) {
+            console.log('token无效，请重新登录');
+            return res.status(401).json({
+                success: false,
+                message: 'token无效，请重新登录'
+            });
+        }
+        const knowledgebase_id = req.body.knowledgebase_id;
+        const user_id = req.body.user_id;
+        const mode = 'simple';
+        const file_url = req.body.file_url;
+        const formData = new FormData();
+        formData.append('mode', mode);
+        formData.append('knowledgebase_id', knowledgebase_id);
+        formData.append('user_id', user_id);
+        formData.append('file_url', file_url);
+        const response = await axios.post(`${BACKEND_BASE_URL}/user/knowledgebase`, formData, {
+            headers: formData.getHeaders(),
+            timeout: 10000
+        });
+        console.log('后端更新知识库响应:', response.data);
+        // 如果返回status为ok，则说明更新成功，否则更新失败
+        if (response.data.status === 'ok') {
+            res.json({
+                success: true,
+                message: '更新成功'
+            });
+        } else {
+            res.json({
+                success: false,
+                message: '更新失败'
+            });
+        }
+    } catch (error) {
+        console.error('更新知识库失败:', error);
         res.status(500).json({
             success: false,
             message: '服务器内部错误，请稍后重试'

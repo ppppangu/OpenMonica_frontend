@@ -19,17 +19,33 @@ interface UserRawInput {
     extra_request_messages: {}[]
     user_input_messages: {
         role: "user"
-        content: {
+        content: ({
             type: "text"
             text: string
-        }[]
+        } | {
+            type: "image_url"
+            image_url: {
+                url: string
+            }
+        } | {
+            type: "file"
+            file_url: string
+        })[]
     }[]
     full_input_messages: {
         role: "user"
-        content: {
+        content: ({
             type: "text"
             text: string
-        }[] | string
+        } | {
+            type: "image_url"
+            image_url: {
+                url: string
+            }
+        } | {
+            type: "file"
+            file_url: string
+        })[] | string
     }[]
     model_ids: string[]
 }
@@ -80,17 +96,49 @@ export const useUserInputStore = defineStore('user_input', () => {
 
         await process_extra_request_list()
 
-        // Create formatted user message in the new structure
-        const formattedUserMessage = {
-            role: "user" as const,
-            content: [{
+        // Create formatted user message with text and file attachments
+        const messageContent: any[] = []
+
+        // Add text content if present
+        if (user_input.value.text.trim()) {
+            messageContent.push({
                 type: "text" as const,
                 text: user_input.value.text
-            }]
+            })
+        }
+
+        // Add image attachments
+        for (const imageUrl of user_input.value.images) {
+            messageContent.push({
+                type: "image_url" as const,
+                image_url: {
+                    url: imageUrl
+                }
+            })
+        }
+
+        // Add file attachments
+        for (const fileUrl of user_input.value.file_list) {
+            messageContent.push({
+                type: "file" as const,
+                file_url: fileUrl
+            })
+        }
+
+        // Ensure we have at least some content
+        if (messageContent.length === 0) {
+            throw new Error('No content to send (text, images, or files)')
+        }
+
+        const formattedUserMessage = {
+            role: "user" as const,
+            content: messageContent
         }
 
         // Store the formatted user message
         user_input.value.user_input_messages = [formattedUserMessage]
+
+        console.log('Formatted user message with attachments:', formattedUserMessage)
 
         // Combine extra_request_messages with user_input_messages
         // User message should always be the last element

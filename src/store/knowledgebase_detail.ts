@@ -6,11 +6,14 @@ import { useKnowledgeBaseStore } from './knowledgebase_list'
 interface DocumentDetail {
   document_id: string
   document_name: string
-  document_url: string
-  document_markdown_url: string
+  pdf_file_path: string
+  markdown_file_path: string
+  upload_time: string
+  // Legacy fields for backward compatibility
+  document_url?: string
+  document_markdown_url?: string
   // Mock fields for missing backend data
   file_size?: string
-  upload_time?: string
   file_type?: string
 }
 
@@ -75,44 +78,26 @@ export const useKnowledgeBaseDetailStore = defineStore('knowledgeBaseDetail', ()
       const data = await response.json()
 
       // 处理响应数据，根据新的API结构
-      if (data && data.data && Array.isArray(data.data)) {
-        // 从第一个知识库对象中提取文档列表
-        const knowledgeBase = data.data.find((kb: any) => kb.id === targetKnowledgebaseId)
-        if (knowledgeBase && Array.isArray(knowledgeBase.documents)) {
-          documentDetailList.value = knowledgeBase.documents.map((doc: any, index: number) => {
-            // 生成模拟数据
-            const mockFileTypes = ['PDF', 'DOCX', 'TXT', 'MD']
-            const mockFileSizes = ['2.3 MB', '1.8 MB', '456 KB', '3.1 MB', '892 KB']
-            const mockUploadTimes = [
-              '2024-01-15 14:30',
-              '2024-01-14 09:15',
-              '2024-01-13 16:45',
-              '2024-01-12 11:20',
-              '2024-01-11 13:55'
-            ]
+      if (data && data.documents && Array.isArray(data.documents)) {
+        // 直接从响应中提取文档列表
+        documentDetailList.value = data.documents.map((doc: any, index: number) => {
+          // 生成模拟数据
+          const mockFileTypes = ['PDF', 'DOCX', 'TXT', 'MD']
+          const mockFileSizes = ['2.3 MB', '1.8 MB', '456 KB', '3.1 MB', '892 KB']
 
-            // 生成测试用的文档URL
-            const mockDocumentUrls = [
-              'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-              'https://httpbin.org/json',
-              'https://www.baidu.com',
-              'https://github.com',
-              'https://picsum.photos/800/600'
-            ]
-
-            return {
-              document_id: doc.document_id || doc.id || `doc_${index}`,
-              document_name: doc.document_name || doc.name || `文档 ${index + 1}`,
-              document_url: doc.document_url || mockDocumentUrls[index % mockDocumentUrls.length],
-              document_markdown_url: doc.document_markdown_url || '',
-              file_size: mockFileSizes[index % mockFileSizes.length],
-              upload_time: mockUploadTimes[index % mockUploadTimes.length],
-              file_type: mockFileTypes[index % mockFileTypes.length]
-            }
-          })
-        } else {
-          documentDetailList.value = []
-        }
+          return {
+            document_id: doc.id || `doc_${index}`,
+            document_name: doc.name || `文档 ${index + 1}`,
+            pdf_file_path: doc.pdf_file_path || '',
+            markdown_file_path: doc.markdown_file_path || '',
+            upload_time: doc.upload_time || new Date().toISOString(),
+            // Legacy fields for backward compatibility
+            document_url: doc.pdf_file_path || '',
+            document_markdown_url: doc.markdown_file_path || '',
+            file_size: mockFileSizes[index % mockFileSizes.length],
+            file_type: mockFileTypes[index % mockFileTypes.length]
+          }
+        })
       } else if (Array.isArray(data)) {
         // 兼容旧的API响应格式
         documentDetailList.value = data.map((item: any, index: number) => {
@@ -126,22 +111,16 @@ export const useKnowledgeBaseDetailStore = defineStore('knowledgeBaseDetail', ()
             '2024-01-11 13:55'
           ]
 
-          // 生成测试用的文档URL
-          const mockDocumentUrls = [
-            'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-            'https://httpbin.org/json',
-            'https://www.baidu.com',
-            'https://github.com',
-            'https://picsum.photos/800/600'
-          ]
-
           return {
-            document_id: item.document_id || item.id || `doc_${index}`,
-            document_name: item.document_name || item.name || `文档 ${index + 1}`,
-            document_url: item.document_url || mockDocumentUrls[index % mockDocumentUrls.length],
-            document_markdown_url: item.document_markdown_url || '',
+            document_id: item.id || `doc_${index}`,
+            document_name: item.name || `文档 ${index + 1}`,
+            pdf_file_path: item.pdf_file_path || '',
+            markdown_file_path: item.markdown_file_path || '',
+            upload_time: item.upload_time || new Date().toISOString(),
+            // Legacy fields for backward compatibility
+            document_url: item.pdf_file_path || '',
+            document_markdown_url: item.markdown_file_path || '',
             file_size: mockFileSizes[index % mockFileSizes.length],
-            upload_time: mockUploadTimes[index % mockUploadTimes.length],
             file_type: mockFileTypes[index % mockFileTypes.length]
           }
         })

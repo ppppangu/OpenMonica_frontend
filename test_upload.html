@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+        }
+        .upload-area:hover {
+            border-color: #7c3aed;
+            background-color: #f9fafb;
+        }
+        .file-list {
+            margin: 20px 0;
+        }
+        .file-item {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 5px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 3px;
+            color: white;
+            font-size: 12px;
+        }
+        .uploading { background-color: #f59e0b; }
+        .done { background-color: #10b981; }
+        .error { background-color: #ef4444; }
+        button {
+            background-color: #7c3aed;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #6d28d9;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .log {
+            background-color: #f3f4f6;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>File Upload Test</h1>
+    <p>Test the enhanced file upload functionality</p>
+    
+    <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+        <p>Click here to select files or drag and drop</p>
+        <p><small>Supports: images (.jpg, .png), documents, and other files</small></p>
+    </div>
+    
+    <input type="file" id="fileInput" multiple style="display: none;">
+    
+    <div class="file-list" id="fileList"></div>
+    
+    <button id="testBtn" onclick="testUpload()">Test Upload</button>
+    <button onclick="clearFiles()">Clear All</button>
+    
+    <div class="log" id="log"></div>
+
+    <script>
+        let selectedFiles = [];
+        let uploadResults = [];
+
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            selectedFiles = [...selectedFiles, ...files];
+            updateFileList();
+            log(`Selected ${files.length} file(s)`);
+        });
+
+        function updateFileList() {
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '';
+            
+            selectedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                
+                const result = uploadResults.find(r => r.index === index);
+                const status = result ? result.status : 'pending';
+                const statusClass = status === 'uploading' ? 'uploading' : 
+                                  status === 'done' ? 'done' : 
+                                  status === 'error' ? 'error' : '';
+                
+                fileItem.innerHTML = `
+                    <span>${file.name} (${(file.size / 1024).toFixed(1)} KB)</span>
+                    <span class="status ${statusClass}">${status}</span>
+                `;
+                
+                if (result && result.public_url) {
+                    const urlSpan = document.createElement('div');
+                    urlSpan.innerHTML = `<small>URL: ${result.public_url}</small>`;
+                    fileItem.appendChild(urlSpan);
+                }
+                
+                fileList.appendChild(fileItem);
+            });
+        }
+
+        async function testUpload() {
+            if (selectedFiles.length === 0) {
+                alert('Please select files first');
+                return;
+            }
+
+            const testBtn = document.getElementById('testBtn');
+            testBtn.disabled = true;
+            testBtn.textContent = 'Uploading...';
+
+            log(`Starting upload of ${selectedFiles.length} file(s)`);
+
+            for (let i = 0; i < selectedFiles.length; i++) {
+                const file = selectedFiles[i];
+                
+                // Update status to uploading
+                uploadResults[i] = { index: i, status: 'uploading' };
+                updateFileList();
+                
+                try {
+                    log(`Uploading: ${file.name}`);
+                    
+                    const formData = new FormData();
+                    formData.append('upload', file);
+                    formData.append('user_id', 'test_user');
+                    formData.append('token', 'test_token');
+
+                    const response = await fetch('http://localhost:3001/user/file/upload_file', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    log(`✅ Upload successful: ${file.name}`);
+                    log(`   Public URL: ${result.public_url}`);
+                    
+                    uploadResults[i] = { 
+                        index: i, 
+                        status: 'done', 
+                        public_url: result.public_url,
+                        result: result
+                    };
+                    
+                } catch (error) {
+                    log(`❌ Upload failed: ${file.name} - ${error.message}`);
+                    uploadResults[i] = { 
+                        index: i, 
+                        status: 'error', 
+                        error: error.message 
+                    };
+                }
+                
+                updateFileList();
+            }
+
+            testBtn.disabled = false;
+            testBtn.textContent = 'Test Upload';
+            log('Upload test completed');
+        }
+
+        function clearFiles() {
+            selectedFiles = [];
+            uploadResults = [];
+            updateFileList();
+            document.getElementById('fileInput').value = '';
+            log('Cleared all files');
+        }
+
+        // Initialize
+        log('File upload test page loaded');
+        log('Ready to test file uploads');
+    </script>
+</body>
+</html>

@@ -4,6 +4,7 @@ import ChatBox from './ChatBox.vue'
 import ChatFrame from './ChatFrame.vue'
 import ChatList from './ChatList.vue'
 import Hello from './hello.vue'
+
 import { useUserStore } from '../store/user_info'
 import { useChatHistoryStore } from '../store/chat_history'
 import { useChatHistoryContentStore } from '../store/chat_history_content'
@@ -50,6 +51,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         helloApp.use(pinia)
         helloApp.mount('#hello')
     }
+
+
 
     // 初始化stores - 在所有组件挂载后
     setTimeout(async () => {

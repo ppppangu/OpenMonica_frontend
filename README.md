@@ -85,6 +85,35 @@
 
 ## 🚀 使用方法
 
+### 🐧 Linux (Ubuntu) 环境准备
+
+在Ubuntu系统上运行此项目，需要先安装以下依赖：
+
+```bash
+# 更新包管理器
+sudo apt update
+
+# 安装Node.js和npm
+sudo apt install nodejs npm
+
+# 验证安装
+node --version
+npm --version
+
+# 如果需要最新版本的Node.js，可以使用NodeSource仓库
+curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# 安装构建工具（某些npm包可能需要）
+sudo apt install build-essential
+
+# 安装Python（某些npm包编译时需要）
+sudo apt install python3 python3-pip
+
+# 可选：安装Git（如果需要克隆项目）
+sudo apt install git
+```
+
 ### 方式一：Express服务器（推荐）
 
 ```bash

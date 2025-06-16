@@ -4,12 +4,15 @@
     <div v-if="activeDocument" class="preview-header">
       <div class="preview-file-info">
         <div class="preview-file-icon">
-          <span class="material-icons">{{ getFileIcon(activeDocument.file_type) }}</span>
+          <span class="material-icons">{{
+            getFileIcon(activeDocument.file_type)
+          }}</span>
         </div>
         <div class="preview-file-details">
           <h3 class="preview-file-title">{{ activeDocument.document_name }}</h3>
           <p class="preview-file-meta">
-            {{ activeDocument.file_type }} • {{ activeDocument.file_size }} • {{ activeDocument.upload_time }}
+            {{ activeDocument.file_type }} • {{ activeDocument.file_size }} •
+            {{ activeDocument.upload_time }}
           </p>
         </div>
       </div>
@@ -102,194 +105,216 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { useKnowledgeBaseDetailStore } from '../store/knowledgebase_detail'
+import { computed, ref, watch } from "vue";
+import { useKnowledgeBaseDetailStore } from "../store/knowledgebase_detail";
 
-defineOptions({ name: 'DocumentPreview' })
+defineOptions({ name: "DocumentPreview" });
 
 // Store
-const knowledgeBaseDetailStore = useKnowledgeBaseDetailStore()
+const knowledgeBaseDetailStore = useKnowledgeBaseDetailStore();
 
 // Refs
-const previewFrame = ref<HTMLIFrameElement | null>(null)
-const isLoadingPreview = ref(false)
-const previewError = ref<string | null>(null)
-const loadStartTime = ref<number>(0)
+const previewFrame = ref<HTMLIFrameElement | null>(null);
+const isLoadingPreview = ref(false);
+const previewError = ref<string | null>(null);
+const loadStartTime = ref<number>(0);
 
 // Computed properties
-const activeDocument = computed(() => knowledgeBaseDetailStore.activeDocumentDetail)
+const activeDocument = computed(
+  () => knowledgeBaseDetailStore.activeDocumentDetail
+);
 
 const previewUrl = computed(() => {
-  if (!activeDocument.value?.document_url) {
-    return 'about:blank'
+  // Use the new pdf_file_path for direct PDF viewing, fallback to legacy document_url
+  const pdfUrl =
+    activeDocument.value?.pdf_file_path || activeDocument.value?.document_url;
+  if (!pdfUrl) {
+    return "about:blank";
   }
-  return activeDocument.value.document_url
-})
+  return pdfUrl;
+});
 
 // Methods - Define functions before they are used
 const clearPreview = () => {
-  isLoadingPreview.value = false
-  previewError.value = null
+  isLoadingPreview.value = false;
+  previewError.value = null;
   if (previewFrame.value) {
-    previewFrame.value.src = 'about:blank'
+    previewFrame.value.src = "about:blank";
   }
-}
+};
 
 const loadPreview = (url: string) => {
-  if (!url || url === 'about:blank') {
-    clearPreview()
-    return
+  if (!url || url === "about:blank") {
+    clearPreview();
+    return;
   }
 
   // Reset state
-  previewError.value = null
-  isLoadingPreview.value = true
-  loadStartTime.value = Date.now()
+  previewError.value = null;
+  isLoadingPreview.value = true;
+  loadStartTime.value = Date.now();
 
-  console.log('Loading preview for URL:', url)
-}
+  console.log("Loading preview for URL:", url);
+};
 
 const getFileIcon = (fileType?: string) => {
   switch (fileType?.toUpperCase()) {
-    case 'PDF':
-      return 'picture_as_pdf'
-    case 'DOCX':
-    case 'DOC':
-      return 'description'
-    case 'TXT':
-      return 'text_snippet'
-    case 'MD':
-      return 'article'
+    case "PDF":
+      return "picture_as_pdf";
+    case "DOCX":
+    case "DOC":
+      return "description";
+    case "TXT":
+      return "text_snippet";
+    case "MD":
+      return "article";
     default:
-      return 'insert_drive_file'
+      return "insert_drive_file";
   }
-}
+};
 
 // 获取文档类型
 const getDocumentType = () => {
-  if (!activeDocument.value?.document_url) return 'unknown'
+  const pdfUrl =
+    activeDocument.value?.pdf_file_path || activeDocument.value?.document_url;
+  if (!pdfUrl) return "unknown";
 
-  const url = activeDocument.value.document_url.toLowerCase()
-  const fileType = activeDocument.value.file_type?.toLowerCase()
+  const url = pdfUrl.toLowerCase();
+  const fileType = activeDocument.value.file_type?.toLowerCase();
 
-  if (fileType === 'pdf' || url.includes('.pdf')) return 'pdf'
-  if (fileType === 'image' || url.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/)) return 'image'
-  if (url.match(/\.(doc|docx)$/)) return 'document'
-  if (url.match(/\.(txt|md)$/)) return 'text'
-  if (url.startsWith('http')) return 'webpage'
+  if (fileType === "pdf" || url.includes(".pdf")) return "pdf";
+  if (fileType === "image" || url.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/))
+    return "image";
+  if (url.match(/\.(doc|docx)$/)) return "document";
+  if (url.match(/\.(txt|md)$/)) return "text";
+  if (url.startsWith("http")) return "webpage";
 
-  return 'unknown'
-}
+  return "unknown";
+};
 
 // 获取预览容器的CSS类
 const getPreviewContainerClass = () => {
-  const docType = getDocumentType()
+  const docType = getDocumentType();
   return {
-    'preview-container-pdf': docType === 'pdf',
-    'preview-container-image': docType === 'image',
-    'preview-container-document': docType === 'document',
-    'preview-container-text': docType === 'text',
-    'preview-container-webpage': docType === 'webpage'
-  }
-}
+    "preview-container-pdf": docType === "pdf",
+    "preview-container-image": docType === "image",
+    "preview-container-document": docType === "document",
+    "preview-container-text": docType === "text",
+    "preview-container-webpage": docType === "webpage",
+  };
+};
 
 // 获取预览框架的CSS类
 const getPreviewFrameClass = () => {
-  const docType = getDocumentType()
+  const docType = getDocumentType();
   return {
-    'preview-frame-pdf': docType === 'pdf',
-    'preview-frame-image': docType === 'image',
-    'preview-frame-document': docType === 'document',
-    'preview-frame-text': docType === 'text',
-    'preview-frame-webpage': docType === 'webpage'
-  }
-}
+    "preview-frame-pdf": docType === "pdf",
+    "preview-frame-image": docType === "image",
+    "preview-frame-document": docType === "document",
+    "preview-frame-text": docType === "text",
+    "preview-frame-webpage": docType === "webpage",
+  };
+};
 
 // 重试预览
 const retryPreview = () => {
-  if (activeDocument.value?.document_url) {
-    loadPreview(activeDocument.value.document_url)
+  const pdfUrl =
+    activeDocument.value?.pdf_file_path || activeDocument.value?.document_url;
+  if (pdfUrl) {
+    loadPreview(pdfUrl);
   }
-}
+};
 
 // Watch for document changes to load preview
-watch(activeDocument, (newDocument) => {
-  if (newDocument?.document_url) {
-    loadPreview(newDocument.document_url)
-  } else {
-    clearPreview()
-  }
-}, { immediate: true })
+watch(
+  activeDocument,
+  (newDocument) => {
+    const pdfUrl = newDocument?.pdf_file_path || newDocument?.document_url;
+    if (pdfUrl) {
+      loadPreview(pdfUrl);
+    } else {
+      clearPreview();
+    }
+  },
+  { immediate: true }
+);
 
 const handleFrameLoad = () => {
-  isLoadingPreview.value = false
-  previewError.value = null
+  isLoadingPreview.value = false;
+  previewError.value = null;
 
-  const loadTime = Date.now() - loadStartTime.value
-  console.log(`Preview loaded in ${loadTime}ms`)
-}
+  const loadTime = Date.now() - loadStartTime.value;
+  console.log(`Preview loaded in ${loadTime}ms`);
+};
 
 const handleFrameError = () => {
-  isLoadingPreview.value = false
-  previewError.value = '无法加载该文档，可能是网络问题或该文档不允许预览'
-  console.error('Preview frame error')
-}
+  isLoadingPreview.value = false;
+  previewError.value = "无法加载该文档，可能是网络问题或该文档不允许预览";
+  console.error("Preview frame error");
+};
 
 // Event handlers
 const handleDownload = () => {
-  if (!activeDocument.value?.document_url) {
-    console.warn('No document URL available for download')
-    return
+  const pdfUrl =
+    activeDocument.value?.pdf_file_path || activeDocument.value?.document_url;
+  if (!pdfUrl) {
+    console.warn("No document URL available for download");
+    return;
   }
 
   // Create a temporary link to trigger download
-  const link = document.createElement('a')
-  link.href = activeDocument.value.document_url
-  link.download = activeDocument.value.document_name || 'document'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+  const link = document.createElement("a");
+  link.href = pdfUrl;
+  link.download = activeDocument.value.document_name || "document";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 
-  console.log('Download initiated for:', activeDocument.value.document_name)
-}
+  console.log("Download initiated for:", activeDocument.value.document_name);
+};
 
 const handleShare = () => {
-  if (!activeDocument.value?.document_url) {
-    console.warn('No document URL available for sharing')
-    return
+  const pdfUrl =
+    activeDocument.value?.pdf_file_path || activeDocument.value?.document_url;
+  if (!pdfUrl) {
+    console.warn("No document URL available for sharing");
+    return;
   }
 
   // Use Web Share API if available, otherwise copy to clipboard
   if (navigator.share) {
-    navigator.share({
-      title: activeDocument.value.document_name,
-      url: activeDocument.value.document_url
-    }).catch(err => console.log('Error sharing:', err))
+    navigator
+      .share({
+        title: activeDocument.value.document_name,
+        url: pdfUrl,
+      })
+      .catch((err) => console.log("Error sharing:", err));
   } else {
     // Fallback: copy URL to clipboard
-    navigator.clipboard.writeText(activeDocument.value.document_url)
-      .then(() => console.log('Document URL copied to clipboard'))
-      .catch(err => console.log('Error copying to clipboard:', err))
+    navigator.clipboard
+      .writeText(pdfUrl)
+      .then(() => console.log("Document URL copied to clipboard"))
+      .catch((err) => console.log("Error copying to clipboard:", err));
   }
-}
+};
 
 const handleFullscreen = () => {
   if (!previewFrame.value) {
-    console.warn('Preview frame not available')
-    return
+    console.warn("Preview frame not available");
+    return;
   }
 
   // Request fullscreen for the iframe
   if (previewFrame.value.requestFullscreen) {
-    previewFrame.value.requestFullscreen()
+    previewFrame.value.requestFullscreen();
   } else if ((previewFrame.value as any).webkitRequestFullscreen) {
-    (previewFrame.value as any).webkitRequestFullscreen()
+    (previewFrame.value as any).webkitRequestFullscreen();
   } else if ((previewFrame.value as any).msRequestFullscreen) {
-    (previewFrame.value as any).msRequestFullscreen()
+    (previewFrame.value as any).msRequestFullscreen();
   }
 
-  console.log('Fullscreen requested for preview')
-}
+  console.log("Fullscreen requested for preview");
+};
 </script>
 
 <style scoped>
@@ -614,14 +639,24 @@ const handleFullscreen = () => {
 
 /* 动画效果 */
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes progress {
-  0% { transform: translateX(-100%); }
-  50% { transform: translateX(0%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 /* 响应式设计 */

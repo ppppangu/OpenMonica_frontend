@@ -15,35 +15,32 @@ export interface FileAttachment {
   error_message?: string
 }
 
-// API response interface
+// API response interface - matches server.js response format
 interface FileUploadResponse {
-  status: string
-  message: string
-  data: {
-    file_id: string
-    filename: string
-    object_path: string
-    public_url: string
-    file_size: number
-  }
+  file_id: string
+  filename: string
+  object_path: string
+  public_url: string
+  file_size: number
 }
 
 export const useFileAttachmentsStore = defineStore('file_attachments', () => {
   // Store arrays for different file types
-  const images_url = ref<string[]>([])
+  const image_urls = ref<string[]>([])
   const documents_url = ref<string[]>([])
-  const files_url = ref<string[]>([])
-  
+  const file_urls = ref<string[]>([])
+
   // Store detailed file information
   const attachments = ref<FileAttachment[]>([])
 
-  // File type categorization
+  // File type categorization - updated to match user requirements
   const getFileType = (filename: string): 'image' | 'document' | 'other' => {
     const extension = filename.toLowerCase().split('.').pop() || ''
-    
-    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg']
+
+    // Only jpg and png go to image_urls as per user requirement
+    const imageExtensions = ['jpg', 'jpeg', 'png']
     const documentExtensions = ['pdf', 'doc', 'docx', 'txt', 'rtf', 'odt', 'xls', 'xlsx', 'ppt', 'pptx']
-    
+
     if (imageExtensions.includes(extension)) {
       return 'image'
     } else if (documentExtensions.includes(extension)) {
@@ -57,17 +54,17 @@ export const useFileAttachmentsStore = defineStore('file_attachments', () => {
   const addFileToStore = (attachment: FileAttachment) => {
     // Add to detailed attachments list
     attachments.value.push(attachment)
-    
-    // Add URL to appropriate category array
+
+    // Add URL to appropriate category array - updated variable names
     switch (attachment.file_type) {
       case 'image':
-        images_url.value.push(attachment.public_url)
+        image_urls.value.push(attachment.public_url)
         break
       case 'document':
         documents_url.value.push(attachment.public_url)
         break
       case 'other':
-        files_url.value.push(attachment.public_url)
+        file_urls.value.push(attachment.public_url)
         break
     }
   }
@@ -78,23 +75,23 @@ export const useFileAttachmentsStore = defineStore('file_attachments', () => {
     if (attachmentIndex === -1) return
 
     const attachment = attachments.value[attachmentIndex]
-    
-    // Remove from appropriate URL array
+
+    // Remove from appropriate URL array - updated variable names
     switch (attachment.file_type) {
       case 'image':
-        const imageIndex = images_url.value.indexOf(attachment.public_url)
-        if (imageIndex > -1) images_url.value.splice(imageIndex, 1)
+        const imageIndex = image_urls.value.indexOf(attachment.public_url)
+        if (imageIndex > -1) image_urls.value.splice(imageIndex, 1)
         break
       case 'document':
         const docIndex = documents_url.value.indexOf(attachment.public_url)
         if (docIndex > -1) documents_url.value.splice(docIndex, 1)
         break
       case 'other':
-        const fileIndex = files_url.value.indexOf(attachment.public_url)
-        if (fileIndex > -1) files_url.value.splice(fileIndex, 1)
+        const fileIndex = file_urls.value.indexOf(attachment.public_url)
+        if (fileIndex > -1) file_urls.value.splice(fileIndex, 1)
         break
     }
-    
+
     // Remove from detailed attachments
     attachments.value.splice(attachmentIndex, 1)
   }
@@ -103,9 +100,14 @@ export const useFileAttachmentsStore = defineStore('file_attachments', () => {
   const uploadFile = async (file: File): Promise<FileAttachment> => {
     const userStore = useUserStore()
     const userId = userStore.user?.id
-    
+    const token = userStore.user?.token
+
     if (!userId) {
       throw new Error('User not authenticated')
+    }
+
+    if (!token) {
+      throw new Error('Authentication token not found')
     }
 
     // Create temporary attachment for UI feedback
@@ -124,35 +126,47 @@ export const useFileAttachmentsStore = defineStore('file_attachments', () => {
     addFileToStore(tempAttachment)
 
     try {
-      // Prepare form data
+      // Prepare form data - matching server.js expected format (field name should be 'upload')
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('upload', file)  // server.js expects 'upload' field name
       formData.append('user_id', userId)
+      formData.append('token', token)
 
-      // Upload file
+      console.log('Uploading file:', {
+        filename: file.name,
+        size: file.size,
+        type: file.type,
+        user_id: userId
+      })
+
+      // Upload file to the existing server.js endpoint
       const response = await fetch('/user/file/upload_file', {
         method: 'POST',
         body: formData
       })
 
       if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`)
+        throw new Error(`Upload failed: ${response.status} ${response.statusText}`)
       }
 
+      // Parse response - server.js returns data directly, not wrapped in status/message
       const result: FileUploadResponse = await response.json()
 
-      if (result.status !== 'success') {
-        throw new Error(result.message || 'Upload failed')
+      console.log('File upload response:', result)
+
+      // Validate response has required fields
+      if (!result.public_url || !result.file_id) {
+        throw new Error('Invalid response from server: missing public_url or file_id')
       }
 
       // Update attachment with server response
       const finalAttachment: FileAttachment = {
-        file_id: result.data.file_id,
-        filename: result.data.filename,
-        object_path: result.data.object_path,
-        public_url: result.data.public_url,
-        file_size: result.data.file_size,
-        file_type: getFileType(result.data.filename),
+        file_id: result.file_id,
+        filename: result.filename,
+        object_path: result.object_path,
+        public_url: result.public_url,
+        file_size: result.file_size,
+        file_type: getFileType(result.filename),
         upload_status: 'done'
       }
 
@@ -160,42 +174,77 @@ export const useFileAttachmentsStore = defineStore('file_attachments', () => {
       removeFileFromStore(tempAttachment.file_id)
       addFileToStore(finalAttachment)
 
+      console.log('File uploaded successfully:', {
+        file_id: finalAttachment.file_id,
+        public_url: finalAttachment.public_url,
+        filename: finalAttachment.filename
+      })
+
       return finalAttachment
 
     } catch (error) {
+      console.error('File upload error:', error)
+
       // Update temporary attachment with error status
       const errorAttachment = { ...tempAttachment }
       errorAttachment.upload_status = 'error'
       errorAttachment.error_message = error instanceof Error ? error.message : 'Upload failed'
-      
+
       // Remove temp and add error version
       removeFileFromStore(tempAttachment.file_id)
       addFileToStore(errorAttachment)
-      
+
       throw error
     }
   }
 
   // Clear all attachments
   const clearAllAttachments = () => {
-    images_url.value = []
+    image_urls.value = []
     documents_url.value = []
-    files_url.value = []
+    file_urls.value = []
     attachments.value = []
   }
 
+  // Get all successfully uploaded file URLs
+  const getAllUploadedUrls = () => {
+    return attachments.value
+      .filter(att => att.upload_status === 'done')
+      .map(att => att.public_url)
+  }
+
+  // Get upload status summary
+  const getUploadStatus = () => {
+    const total = attachments.value.length
+    const uploading = attachments.value.filter(att => att.upload_status === 'uploading').length
+    const done = attachments.value.filter(att => att.upload_status === 'done').length
+    const error = attachments.value.filter(att => att.upload_status === 'error').length
+
+    return {
+      total,
+      uploading,
+      done,
+      error,
+      hasUploading: uploading > 0,
+      hasErrors: error > 0,
+      allDone: total > 0 && done === total
+    }
+  }
+
   return {
-    // State
-    images_url,
+    // State - updated variable names
+    image_urls,
     documents_url,
-    files_url,
+    file_urls,
     attachments,
-    
+
     // Actions
     addFileToStore,
     removeFileFromStore,
     uploadFile,
     clearAllAttachments,
-    getFileType
+    getFileType,
+    getAllUploadedUrls,
+    getUploadStatus
   }
 })

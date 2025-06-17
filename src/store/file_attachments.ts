@@ -9,7 +9,7 @@ export interface FileAttachment {
   object_path: string
   public_url: string
   file_size: number
-  file_type: 'image' | 'document' | 'other'
+  file_type: 'image' | 'other'
   upload_status: 'uploading' | 'done' | 'error'
   upload_progress?: number
   error_message?: string
@@ -25,27 +25,24 @@ interface FileUploadResponse {
 }
 
 export const useFileAttachmentsStore = defineStore('file_attachments', () => {
-  // Store arrays for different file types
+  // Store arrays for different file types - simplified to only image_urls and file_urls
   const image_urls = ref<string[]>([])
-  const documents_url = ref<string[]>([])
   const file_urls = ref<string[]>([])
 
   // Store detailed file information
   const attachments = ref<FileAttachment[]>([])
 
-  // File type categorization - updated to match user requirements
-  const getFileType = (filename: string): 'image' | 'document' | 'other' => {
+  // File type categorization - simplified to image vs non-image
+  const getFileType = (filename: string): 'image' | 'other' => {
     const extension = filename.toLowerCase().split('.').pop() || ''
 
-    // Only jpg and png go to image_urls as per user requirement
-    const imageExtensions = ['jpg', 'jpeg', 'png']
-    const documentExtensions = ['pdf', 'doc', 'docx', 'txt', 'rtf', 'odt', 'xls', 'xlsx', 'ppt', 'pptx']
+    // Image extensions - all image files go to image_urls
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'tiff', 'tif']
 
     if (imageExtensions.includes(extension)) {
       return 'image'
-    } else if (documentExtensions.includes(extension)) {
-      return 'document'
     } else {
+      // ALL non-image files go to file_urls (no distinction between documents and other files)
       return 'other'
     }
   }
@@ -55,13 +52,10 @@ export const useFileAttachmentsStore = defineStore('file_attachments', () => {
     // Add to detailed attachments list
     attachments.value.push(attachment)
 
-    // Add URL to appropriate category array - updated variable names
+    // Add URL to appropriate category array - simplified categorization
     switch (attachment.file_type) {
       case 'image':
         image_urls.value.push(attachment.public_url)
-        break
-      case 'document':
-        documents_url.value.push(attachment.public_url)
         break
       case 'other':
         file_urls.value.push(attachment.public_url)
@@ -76,15 +70,11 @@ export const useFileAttachmentsStore = defineStore('file_attachments', () => {
 
     const attachment = attachments.value[attachmentIndex]
 
-    // Remove from appropriate URL array - updated variable names
+    // Remove from appropriate URL array - simplified categorization
     switch (attachment.file_type) {
       case 'image':
         const imageIndex = image_urls.value.indexOf(attachment.public_url)
         if (imageIndex > -1) image_urls.value.splice(imageIndex, 1)
-        break
-      case 'document':
-        const docIndex = documents_url.value.indexOf(attachment.public_url)
-        if (docIndex > -1) documents_url.value.splice(docIndex, 1)
         break
       case 'other':
         const fileIndex = file_urls.value.indexOf(attachment.public_url)
@@ -201,7 +191,6 @@ export const useFileAttachmentsStore = defineStore('file_attachments', () => {
   // Clear all attachments
   const clearAllAttachments = () => {
     image_urls.value = []
-    documents_url.value = []
     file_urls.value = []
     attachments.value = []
   }
@@ -232,9 +221,8 @@ export const useFileAttachmentsStore = defineStore('file_attachments', () => {
   }
 
   return {
-    // State - updated variable names
+    // State - simplified to only image_urls and file_urls
     image_urls,
-    documents_url,
     file_urls,
     attachments,
 

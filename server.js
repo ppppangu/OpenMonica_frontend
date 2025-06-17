@@ -6,6 +6,7 @@ const yaml = require('js-yaml');
 const multer = require('multer');
 const FormData = require('form-data');
 const fileUpload = require('express-fileupload');
+const { Readable } = require('stream');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -958,38 +959,98 @@ app.post('/user/file/upload_file', upload.single('upload'), async (req, res) => 
                 user_id: user_id
             });
 
+            // 验证文件是否存在
             if (!upload_file) {
+                console.log('未找到上传文件');
                 return res.status(400).json({
-                    success: false,
+                    status: "error",
                     message: '未找到上传文件'
                 });
             }
 
+            // 验证文件名
+            if (!upload_file.originalname) {
+                console.log('文件名为空');
+                return res.status(400).json({
+                    status: "error",
+                    message: '文件名为空'
+                });
+            }
+
+            // 验证文件内容
+            if (!upload_file.buffer || upload_file.buffer.length === 0) {
+                console.log('文件内容为空');
+                return res.status(400).json({
+                    status: "error",
+                    message: '文件内容为空'
+                });
+            }
+
+            // 创建FormData，注意参数名要匹配后端期望的 'upload_file'
             const formData = new FormData();
-            // 使用文件的 buffer 和相关信息 - 修正FormData.append语法
-            formData.append('upload', upload_file.buffer, upload_file.originalname);
+
+            // 最兼容的方式：直接使用Buffer，form-data库会自动处理
+            // 使用正确的选项格式，避免DelayedStream错误
+            formData.append('upload_file', upload_file.buffer, {
+                filename: upload_file.originalname,
+                contentType: upload_file.mimetype || 'application/octet-stream'
+            });
             formData.append('user_id', user_id);
 
             console.log('发送到后端的FormData信息:', {
                 upload_url: `${FILE_MANAGE_BASE_URL}/upload_minio`,
                 user_id: user_id,
                 filename: upload_file.originalname,
-                buffer_size: upload_file.buffer.length
+                buffer_size: upload_file.buffer.length,
+                content_type: upload_file.mimetype
             });
 
             const response = await axios.post(`${FILE_MANAGE_BASE_URL}/upload_minio`, formData, {
                 headers: {
-                    ...formData.getHeaders(),
-                    'Content-Type': 'multipart/form-data'
+                    ...formData.getHeaders()
                 },
-                timeout: 10000
+                timeout: 30000, // 增加超时时间到30秒
+                maxContentLength: Infinity,
+                maxBodyLength: Infinity
             });
-            res.json(response.data.data);
+            console.log('后端响应:', response.data);
+
+            // 检查后端响应状态
+            if (response.data.status === 'success') {
+                // 直接返回数据，匹配前端期望的格式
+                res.json(response.data.data);
+            } else {
+                // 后端返回错误
+                console.error('后端返回错误:', response.data);
+                res.status(400).json({
+                    status: "error",
+                    message: response.data.message || "文件上传失败"
+                });
+            }
+
         } catch (error) {
             console.error('文件上传错误:', error);
-            res.status(500).json({
-                success: false,
-                message: '文件上传失败'
+
+            // 根据错误类型返回不同的错误信息
+            let errorMessage = '文件上传失败';
+            let statusCode = 500;
+
+            if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+                errorMessage = '上传超时，请稍后重试';
+                statusCode = 408;
+            } else if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+                errorMessage = '无法连接到文件服务，请检查网络连接';
+                statusCode = 503;
+            } else if (error.response) {
+                errorMessage = `服务器错误: ${error.response.status} ${error.response.statusText}`;
+                statusCode = error.response.status;
+                console.error('后端错误响应:', error.response.data);
+            }
+
+            res.status(statusCode).json({
+                status: "error",
+                message: errorMessage,
+                error_code: error.code || 'UNKNOWN_ERROR'
             });
         }
     });

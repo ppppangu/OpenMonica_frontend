@@ -134,21 +134,7 @@ watch(
 watch(
   () => fileAttachmentsStore.file_urls,
   (newFiles) => {
-    userInputStore.update_user_input("file_list", [
-      ...fileAttachmentsStore.documents_url,
-      ...newFiles,
-    ]);
-  },
-  { deep: true }
-);
-
-watch(
-  () => fileAttachmentsStore.documents_url,
-  (newDocs) => {
-    userInputStore.update_user_input("file_list", [
-      ...newDocs,
-      ...fileAttachmentsStore.file_urls,
-    ]);
+    userInputStore.update_user_input("file_list", newFiles);
   },
   { deep: true }
 );

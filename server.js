@@ -33,6 +33,11 @@ const uploadFile = multer({
     fileFilter: (req, file, cb) => {
         // Accept all files
         cb(null, true);
+    },
+    // 确保正确处理中文文件名
+    preservePath: false,
+    limits: {
+        fileSize: 100 * 1024 * 1024 // 100MB limit
     }
 });
 
@@ -50,16 +55,33 @@ app.use((req, res, next) => {
     }
 });
 
-// 解析JSON数据
-app.use(express.json());
+// 解析JSON数据，确保UTF-8编码支持
+app.use(express.json({
+    limit: '50mb',
+    type: 'application/json',
+    charset: 'utf-8'
+}));
 
-// 对大部分路由应用urlencoded中间件，但跳过文件上传路由
-app.use('/api', express.urlencoded({ extended: true }));
+// 对大部分路由应用urlencoded中间件，但跳过文件上传路由，确保UTF-8编码支持
+app.use('/api', express.urlencoded({
+    extended: true,
+    limit: '50mb',
+    charset: 'utf-8'
+}));
 
-// 为特定的非文件上传路由应用urlencoded中间件
-app.use('/user/account', express.urlencoded({ extended: true }));
-app.use('/user/chat_history', express.urlencoded({ extended: true }));
-app.use('/user/chat', express.urlencoded({ extended: true }));
+// 为特定的非文件上传路由应用urlencoded中间件，确保UTF-8编码支持
+app.use('/user/account', express.urlencoded({
+    extended: true,
+    charset: 'utf-8'
+}));
+app.use('/user/chat_history', express.urlencoded({
+    extended: true,
+    charset: 'utf-8'
+}));
+app.use('/user/chat', express.urlencoded({
+    extended: true,
+    charset: 'utf-8'
+}));
 // 注意：/user/knowledgebase 路由使用 upload.none() 中间件，不需要 urlencoded 中间件
 
 // 请求日志中间件
@@ -989,12 +1011,47 @@ app.post('/user/file/upload_file', upload.single('upload'), async (req, res) => 
             // 创建FormData，注意参数名要匹配后端期望的 'upload_file'
             const formData = new FormData();
 
+            // 确保中文文件名正确编码 - 使用RFC 2231编码方式
+            // 这种方式可以确保中文字符在HTTP传输中不会被损坏
+            const originalFilename = upload_file.originalname;
+
+            // 检查是否包含非ASCII字符
+            const hasNonAscii = /[^\x00-\x7F]/.test(originalFilename);
+
+            let filenameOptions;
+            if (hasNonAscii) {
+                // 对于包含中文的文件名，使用RFC 2231编码
+                const encodedFilename = encodeURIComponent(originalFilename);
+                filenameOptions = {
+                    filename: originalFilename,  // 保持原始文件名
+                    contentType: upload_file.mimetype || 'application/octet-stream',
+                    // 添加RFC 2231编码的文件名
+                    knownLength: upload_file.buffer.length
+                };
+
+                console.log('中文文件名编码处理:', {
+                    original: originalFilename,
+                    encoded: encodedFilename,
+                    hasNonAscii: hasNonAscii,
+                    bufferLength: upload_file.buffer.length
+                });
+            } else {
+                // 对于纯ASCII文件名，直接使用
+                filenameOptions = {
+                    filename: originalFilename,
+                    contentType: upload_file.mimetype || 'application/octet-stream',
+                    knownLength: upload_file.buffer.length
+                };
+
+                console.log('ASCII文件名处理:', {
+                    filename: originalFilename,
+                    bufferLength: upload_file.buffer.length
+                });
+            }
+
             // 最兼容的方式：直接使用Buffer，form-data库会自动处理
-            // 使用正确的选项格式，避免DelayedStream错误
-            formData.append('upload_file', upload_file.buffer, {
-                filename: upload_file.originalname,
-                contentType: upload_file.mimetype || 'application/octet-stream'
-            });
+            // 使用正确的选项格式，避免DelayedStream错误，确保中文文件名正确传递
+            formData.append('upload_file', upload_file.buffer, filenameOptions);
             formData.append('user_id', user_id);
 
             console.log('发送到后端的FormData信息:', {
@@ -1007,11 +1064,14 @@ app.post('/user/file/upload_file', upload.single('upload'), async (req, res) => 
 
             const response = await axios.post(`${FILE_MANAGE_BASE_URL}/upload_minio`, formData, {
                 headers: {
-                    ...formData.getHeaders()
+                    ...formData.getHeaders(),
+                    'Accept-Charset': 'utf-8'
                 },
                 timeout: 30000, // 增加超时时间到30秒
                 maxContentLength: Infinity,
-                maxBodyLength: Infinity
+                maxBodyLength: Infinity,
+                // 确保axios正确处理UTF-8编码
+                responseEncoding: 'utf8'
             });
             console.log('后端响应:', response.data);
 
@@ -1055,51 +1115,165 @@ app.post('/user/file/upload_file', upload.single('upload'), async (req, res) => 
         }
     });
 
-app.post('/user/knowledgebase/update_document', upload.none(), async (req, res) => {
+app.post('/user/knowledgebase/update_document', upload.single('upload'), async (req, res) => {
+    console.log('收到文件上传请求');
+    console.log('Headers:', req.headers);
     try {
-        const token = req.body.token;
-        const valid = await check_token_valid(token);
-        if (!valid) {
-            console.log('token无效，请重新登录');
-            return res.status(401).json({
-                success: false,
-                message: 'token无效，请重新登录'
+            const token = req.body.token;
+            const valid = await check_token_valid(token);
+            if (!valid) {
+                console.log('token无效，请重新登录');
+                return res.status(401).json({
+                    success: false,
+                    message: 'token无效，请重新登录'
+                });
+            }
+        
+            // 获取上传的文件
+            const upload_file = req.file;
+            const user_id = req.body.user_id;
+            const knowledgebase_id = req.body.knowledgebase_id;
+            console.log('文件信息:', {
+                file_exists: !!upload_file,
+                filename: upload_file?.originalname,
+                size: upload_file?.size,
+                mimetype: upload_file?.mimetype,
+                user_id: user_id
+            });
+
+            // 验证文件是否存在
+            if (!upload_file) {
+                console.log('未找到上传文件');
+                return res.status(400).json({
+                    status: "error",
+                    message: '未找到上传文件'
+                });
+            }
+
+            // 验证文件名
+            if (!upload_file.originalname) {
+                console.log('文件名为空');
+                return res.status(400).json({
+                    status: "error",
+                    message: '文件名为空'
+                });
+            }
+
+            // 验证文件内容
+            if (!upload_file.buffer || upload_file.buffer.length === 0) {
+                console.log('文件内容为空');
+                return res.status(400).json({
+                    status: "error",
+                    message: '文件内容为空'
+                });
+            }
+
+            // 创建FormData，注意参数名要匹配后端期望的 'upload_file'
+            const formData = new FormData();
+
+            // 确保中文文件名正确编码 - 使用RFC 2231编码方式
+            // 这种方式可以确保中文字符在HTTP传输中不会被损坏
+            const originalFilename = upload_file.originalname;
+
+            // 检查是否包含非ASCII字符
+            const hasNonAscii = /[^\x00-\x7F]/.test(originalFilename);
+
+            let filenameOptions;
+            if (hasNonAscii) {
+                // 对于包含中文的文件名，使用RFC 2231编码
+                const encodedFilename = encodeURIComponent(originalFilename);
+                filenameOptions = {
+                    filename: originalFilename,  // 保持原始文件名
+                    contentType: upload_file.mimetype || 'application/octet-stream',
+                    // 添加RFC 2231编码的文件名
+                    knownLength: upload_file.buffer.length
+                };
+
+                console.log('中文文件名编码处理:', {
+                    original: originalFilename,
+                    encoded: encodedFilename,
+                    hasNonAscii: hasNonAscii,
+                    bufferLength: upload_file.buffer.length
+                });
+            } else {
+                // 对于纯ASCII文件名，直接使用
+                filenameOptions = {
+                    filename: originalFilename,
+                    contentType: upload_file.mimetype || 'application/octet-stream',
+                    knownLength: upload_file.buffer.length
+                };
+
+                console.log('ASCII文件名处理:', {
+                    filename: originalFilename,
+                    bufferLength: upload_file.buffer.length
+                });
+            }
+
+            // 最兼容的方式：直接使用Buffer，form-data库会自动处理
+            // 使用正确的选项格式，避免DelayedStream错误，确保中文文件名正确传递
+            formData.append('upload_file', upload_file.buffer, filenameOptions);
+            formData.append('user_id', user_id);
+
+            console.log('发送到后端的FormData信息:', {
+                upload_url: `${FILE_MANAGE_BASE_URL}/upload_minio`,
+                user_id: user_id,
+                filename: upload_file.originalname,
+                buffer_size: upload_file.buffer.length,
+                content_type: upload_file.mimetype
+            });
+
+            const response = await axios.post(`${FILE_MANAGE_BASE_URL}/upload_minio`, formData, {
+                headers: {
+                    ...formData.getHeaders(),
+                    'Accept-Charset': 'utf-8'
+                },
+                timeout: 30000, // 增加超时时间到30秒
+                maxContentLength: Infinity,
+                maxBodyLength: Infinity,
+                // 确保axios正确处理UTF-8编码
+                responseEncoding: 'utf8'
+            });
+            console.log('后端响应:', response.data);
+
+            // 检查后端响应状态
+            if (response.data.status === 'success') {
+                // 直接返回数据，匹配前端期望的格式
+                res.json(response.data.data);
+            } else {
+                // 后端返回错误
+                console.error('后端返回错误:', response.data);
+                res.status(400).json({
+                    status: "error",
+                    message: response.data.message || "文件上传失败"
+                });
+            }
+
+        } catch (error) {
+            console.error('文件上传错误:', error);
+
+            // 根据错误类型返回不同的错误信息
+            let errorMessage = '文件上传失败';
+            let statusCode = 500;
+
+            if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+                errorMessage = '上传超时，请稍后重试';
+                statusCode = 408;
+            } else if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+                errorMessage = '无法连接到文件服务，请检查网络连接';
+                statusCode = 503;
+            } else if (error.response) {
+                errorMessage = `服务器错误: ${error.response.status} ${error.response.statusText}`;
+                statusCode = error.response.status;
+                console.error('后端错误响应:', error.response.data);
+            }
+
+            res.status(statusCode).json({
+                status: "error",
+                message: errorMessage,
+                error_code: error.code || 'UNKNOWN_ERROR'
             });
         }
-        const knowledgebase_id = req.body.knowledgebase_id;
-        const user_id = req.body.user_id;
-        const mode = 'simple';
-        const file_url = req.body.file_url;
-        const formData = new FormData();
-        formData.append('mode', mode);
-        formData.append('knowledgebase_id', knowledgebase_id);
-        formData.append('user_id', user_id);
-        formData.append('file_url', file_url);
-        const response = await axios.post(`${BACKEND_BASE_URL}/user/knowledgebase`, formData, {
-            headers: formData.getHeaders(),
-            timeout: 10000
-        });
-        console.log('后端更新知识库响应:', response.data);
-        // 如果返回status为ok，则说明更新成功，否则更新失败
-        if (response.data.status === 'ok') {
-            res.json({
-                success: true,
-                message: '更新成功'
-            });
-        } else {
-            res.json({
-                success: false,
-                message: '更新失败'
-            });
-        }
-    } catch (error) {
-        console.error('更新知识库失败:', error);
-        res.status(500).json({
-            success: false,
-            message: '服务器内部错误，请稍后重试'
-        });
-    }
-});
+    });
 
 app.post('/user/knowledgebase/update', upload.none(), async (req, res) => {
     try {
@@ -1135,6 +1309,71 @@ app.post('/user/knowledgebase/update', upload.none(), async (req, res) => {
             success: false,
             message: '服务器内部错误，请稍后重试'
         });
+    }
+});
+
+// 代理文档处理请求 - 添加文档到知识库
+app.post('/process', upload.none(), async (req, res) => {
+    try {
+        console.log('收到文档处理请求:', req.body);
+
+        const { user_id, file_url, knowledge_base_id, mode } = req.body;
+
+        if (!user_id || !file_url || !knowledge_base_id) {
+            return res.status(400).json({
+                success: false,
+                message: '缺少必要参数: user_id, file_url, knowledge_base_id'
+            });
+        }
+
+        // 验证mode参数
+        if (mode && !['simple', 'normal'].includes(mode)) {
+            return res.status(400).json({
+                success: false,
+                message: 'mode参数必须是 simple 或 normal'
+            });
+        }
+
+        // 创建FormData发送到后端
+        const FormData = require('form-data');
+        const formData = new FormData();
+        formData.append('user_id', user_id);
+        formData.append('file_url', file_url);
+        formData.append('knowledge_base_id', knowledge_base_id);
+        formData.append('mode', mode || 'simple');
+
+        console.log('发送到后端的文档处理请求:', {
+            url: `${FILE_MANAGE_BASE_URL}/process`,
+            user_id,
+            file_url,
+            knowledge_base_id,
+            mode: mode || 'simple'
+        });
+
+        const response = await axios.post(`${FILE_MANAGE_BASE_URL}/process`, formData, {
+            headers: {
+                ...formData.getHeaders(),
+                'Accept-Charset': 'utf-8'
+            },
+            timeout: 60000, // 文档处理可能需要更长时间
+            responseEncoding: 'utf8'
+        });
+
+        console.log('后端文档处理响应:', response.status, response.data);
+        res.json(response.data);
+
+    } catch (error) {
+        console.error('文档处理请求失败:', error.message);
+
+        if (error.response) {
+            console.error('后端错误响应:', error.response.status, error.response.data);
+            res.status(error.response.status).json(error.response.data);
+        } else {
+            res.status(500).json({
+                success: false,
+                message: '文档处理服务暂时不可用，请稍后重试'
+            });
+        }
     }
 });
 
@@ -1624,6 +1863,202 @@ app.post('/user/chat', upload.none(), async (req, res) => {
         console.error('聊天处理失败:', error);
         res.write(`data: {"error": "服务器内部错误"}\n\n`);
         res.end();
+    }
+});
+
+// 文件删除端点
+app.post('/user/file/delete_file', upload.none(), async (req, res) => {
+    try {
+        console.log('收到文件删除请求:', req.body);
+
+        const token = req.body.token;
+        const valid = await check_token_valid(token);
+        if (!valid) {
+            console.log('token无效，请重新登录');
+            return res.status(401).json({
+                success: false,
+                message: 'token无效，请重新登录'
+            });
+        }
+
+        const { user_id, file_id, knowledge_base_id } = req.body;
+
+        if (!user_id || !file_id || !knowledge_base_id) {
+            return res.status(400).json({
+                status: "error",
+                message: '缺少必要参数: user_id, file_id, knowledge_base_id'
+            });
+        }
+
+        // 创建FormData发送到后端
+        const formData = new FormData();
+        formData.append('user_id', user_id);
+        formData.append('file_id', file_id);
+        formData.append('knowledge_base_id', knowledge_base_id);
+
+        console.log('发送文件删除请求到后端:', {
+            url: `${FILE_MANAGE_BASE_URL}/delete_file`,
+            user_id,
+            file_id,
+            knowledge_base_id
+        });
+
+        const response = await axios.post(`${FILE_MANAGE_BASE_URL}/delete_file`, formData, {
+            headers: {
+                ...formData.getHeaders(),
+                'Accept-Charset': 'utf-8'
+            },
+            timeout: 30000,
+            responseEncoding: 'utf8'
+        });
+
+        console.log('后端文件删除响应:', response.status, response.data);
+        res.json(response.data);
+
+    } catch (error) {
+        console.error('文件删除请求失败:', error.message);
+
+        if (error.response) {
+            console.error('后端错误响应:', error.response.status, error.response.data);
+            res.status(error.response.status).json(error.response.data);
+        } else {
+            res.status(500).json({
+                status: "error",
+                message: '文件删除服务暂时不可用，请稍后重试'
+            });
+        }
+    }
+});
+
+// 知识图谱生成端点
+app.post('/user/knowledgebase/generate_graph', upload.none(), async (req, res) => {
+    try {
+        console.log('收到知识图谱生成请求:', req.body);
+
+        const token = req.body.token;
+        const valid = await check_token_valid(token);
+        if (!valid) {
+            console.log('token无效，请重新登录');
+            return res.status(401).json({
+                success: false,
+                message: 'token无效，请重新登录'
+            });
+        }
+
+        const { user_id, knowledge_base_id, level = 'document' } = req.body;
+
+        if (!user_id || !knowledge_base_id) {
+            return res.status(400).json({
+                status: "error",
+                message: '缺少必要参数: user_id, knowledge_base_id'
+            });
+        }
+
+        // 创建FormData发送到后端
+        const formData = new FormData();
+        formData.append('mode', 'produce');
+        formData.append('user_id', user_id);
+        formData.append('knowledge_base_id', knowledge_base_id);
+        formData.append('level', level);
+
+        console.log('发送知识图谱生成请求到后端:', {
+            url: `${FILE_MANAGE_BASE_URL}/graph/knowledge_base`,
+            mode: 'produce',
+            user_id,
+            knowledge_base_id,
+            level
+        });
+
+        const response = await axios.post(`${FILE_MANAGE_BASE_URL}/graph/knowledge_base`, formData, {
+            headers: {
+                ...formData.getHeaders(),
+                'Accept-Charset': 'utf-8'
+            },
+            timeout: 60000, // 图谱生成可能需要更长时间
+            responseEncoding: 'utf8'
+        });
+
+        console.log('后端知识图谱生成响应:', response.status, response.data);
+        res.json(response.data);
+
+    } catch (error) {
+        console.error('知识图谱生成请求失败:', error.message);
+
+        if (error.response) {
+            console.error('后端错误响应:', error.response.status, error.response.data);
+            res.status(error.response.status).json(error.response.data);
+        } else {
+            res.status(500).json({
+                status: "error",
+                message: '知识图谱生成服务暂时不可用，请稍后重试'
+            });
+        }
+    }
+});
+
+// 知识图谱获取端点
+app.post('/user/knowledgebase/get_graph', upload.none(), async (req, res) => {
+    try {
+        console.log('收到知识图谱获取请求:', req.body);
+
+        const token = req.body.token;
+        const valid = await check_token_valid(token);
+        if (!valid) {
+            console.log('token无效，请重新登录');
+            return res.status(401).json({
+                success: false,
+                message: 'token无效，请重新登录'
+            });
+        }
+
+        const { user_id, knowledge_base_id, level = 'document' } = req.body;
+
+        if (!user_id || !knowledge_base_id) {
+            return res.status(400).json({
+                status: "error",
+                message: '缺少必要参数: user_id, knowledge_base_id'
+            });
+        }
+
+        // 创建FormData发送到后端
+        const formData = new FormData();
+        formData.append('mode', 'get');
+        formData.append('user_id', user_id);
+        formData.append('knowledge_base_id', knowledge_base_id);
+        formData.append('level', level);
+
+        console.log('发送知识图谱获取请求到后端:', {
+            url: `${FILE_MANAGE_BASE_URL}/graph/knowledge_base`,
+            mode: 'get',
+            user_id,
+            knowledge_base_id,
+            level
+        });
+
+        const response = await axios.post(`${FILE_MANAGE_BASE_URL}/graph/knowledge_base`, formData, {
+            headers: {
+                ...formData.getHeaders(),
+                'Accept-Charset': 'utf-8'
+            },
+            timeout: 30000,
+            responseEncoding: 'utf8'
+        });
+
+        console.log('后端知识图谱获取响应:', response.status, response.data);
+        res.json(response.data);
+
+    } catch (error) {
+        console.error('知识图谱获取请求失败:', error.message);
+
+        if (error.response) {
+            console.error('后端错误响应:', error.response.status, error.response.data);
+            res.status(error.response.status).json(error.response.data);
+        } else {
+            res.status(500).json({
+                status: "error",
+                message: '知识图谱获取服务暂时不可用，请稍后重试'
+            });
+        }
     }
 });
 

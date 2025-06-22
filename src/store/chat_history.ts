@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useUserStore } from './user_info'
+import { authenticatedFormPost } from '../utils/api'
 
 interface ChatHistoryItem {
   session_id: string
@@ -31,13 +32,9 @@ export const useChatHistoryStore = defineStore('chatHistory', () => {
     }
 
     try {
-      const formData = new FormData()
-      formData.append('user_id', userid)
-      if (token) formData.append('token', token)
-
-      const response = await fetch('/user/chat_history', {
-        method: 'POST',
-        body: formData
+      // Use the new authenticated form post utility
+      const response = await authenticatedFormPost('/user/chat_history', {
+        user_id: userid
       })
 
       const data = await response.json()
@@ -143,14 +140,10 @@ export const useChatHistoryStore = defineStore('chatHistory', () => {
       console.log('Deleting chat history for session:', sessionId)
       console.log('Request payload:', { user_id: userid, session_id: sessionId, token: token })
 
-      const formData = new FormData()
-      formData.append('user_id', userid)
-      formData.append('session_id', sessionId)
-      if (token) formData.append('token', token)
-
-      const response = await fetch('/user/chat_history/delete', {
-        method: 'POST',
-        body: formData
+      // Use the new authenticated form post utility
+      const response = await authenticatedFormPost('/user/chat_history/delete', {
+        user_id: userid,
+        session_id: sessionId
       })
 
       const data = await response.json()

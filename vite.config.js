@@ -33,6 +33,10 @@ export default defineConfig({
       '/user': {
         target: 'http://localhost:3001',
         changeOrigin: true
+      },
+      '/process': {
+        target: 'http://localhost:3001',
+        changeOrigin: true
       }
     }
   }

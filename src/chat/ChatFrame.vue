@@ -7,8 +7,10 @@ import {
 } from "@ant-design/icons-vue";
 import { Button, Divider, Flex, Switch, theme, message } from "ant-design-vue";
 import { Sender, Attachments } from "ant-design-x-vue";
-import { ref, watch, h, computed } from "vue";
+import { ref, watch, h, computed, onMounted, onUnmounted } from "vue";
 import ModelList from "./model_list.vue";
+import FileUploadWidget from "./FileUploadWidget.vue";
+import VoiceInput from "./VoiceInput.vue";
 import { useUserInputStore } from "../store/user_input";
 import { useModelListStore } from "../store/model_list";
 import { useUserStore } from "../store/user_info";
@@ -606,6 +608,73 @@ function handleCancel() {
   open.value = false;
 }
 
+// Voice input handler
+const handleVoiceTranscript = (transcript: string) => {
+  console.log('🎤 Voice transcript received:', transcript);
+
+  // Append to existing text or replace if empty
+  const currentText = value.value.trim();
+  const newText = currentText ? `${currentText} ${transcript}` : transcript;
+
+  // Update the input value
+  value.value = newText;
+  userInputStore.update_user_input("text", newText);
+
+  console.log('🎤 Updated input text:', newText);
+};
+
+// Clipboard paste handler for images
+const handlePaste = async (event: ClipboardEvent) => {
+  console.log('📋 Paste event detected');
+
+  const clipboardData = event.clipboardData;
+  if (!clipboardData) {
+    console.log('📋 No clipboard data available');
+    return;
+  }
+
+  // Check for image files in clipboard
+  const items = Array.from(clipboardData.items);
+  const imageItems = items.filter(item => item.type.startsWith('image/'));
+
+  if (imageItems.length === 0) {
+    console.log('📋 No image items found in clipboard');
+    return;
+  }
+
+  console.log(`📋 Found ${imageItems.length} image(s) in clipboard`);
+
+  // Process each image
+  for (const item of imageItems) {
+    const file = item.getAsFile();
+    if (file) {
+      console.log('📋 Processing pasted image:', {
+        name: file.name || 'pasted-image.png',
+        type: file.type,
+        size: file.size
+      });
+
+      try {
+        // Create a proper File object with a name
+        const namedFile = new File([file], file.name || `pasted-image-${Date.now()}.png`, {
+          type: file.type,
+          lastModified: Date.now()
+        });
+
+        // Upload the pasted image
+        await fileAttachmentsStore.uploadFile(namedFile);
+        message.success(`Pasted image uploaded successfully`);
+
+        // Prevent default paste behavior for images
+        event.preventDefault();
+      } catch (error) {
+        console.error('📋 Failed to upload pasted image:', error);
+        message.error(`Failed to upload pasted image: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+  }
+};
+
 // Function button states and prompts
 const selectedFunctions = ref<Set<string>>(new Set());
 const functionPrompts = ref<string[]>([]);
@@ -726,9 +795,35 @@ watch(loading, () => {
     };
   }
 });
+
+// Setup paste event listener for image pasting
+onMounted(() => {
+  console.log('🎯 ChatFrame component mounted successfully!')
+
+  // 添加视觉指示器到DOM
+  const chatframeElement = document.getElementById('chatframe')
+  if (chatframeElement) {
+    chatframeElement.style.border = '2px solid #f59e0b'
+    chatframeElement.style.minHeight = '200px'
+    console.log('✅ ChatFrame DOM element styled for visibility')
+  }
+
+  console.log('📋 Setting up paste event listener for image support');
+  document.addEventListener('paste', handlePaste);
+});
+
+onUnmounted(() => {
+  console.log('📋 Cleaning up paste event listener');
+  document.removeEventListener('paste', handlePaste);
+});
 </script>
 <template>
   <div class="chat-frame-container">
+    <!-- File Upload Widget - positioned in upper-right corner -->
+    <div class="file-upload-widget-container">
+      <FileUploadWidget />
+    </div>
+
     <!-- Header Section -->
     <div class="chat-frame-header">
       <Flex wrap="wrap" :gap="12" align="center">
@@ -816,15 +911,12 @@ watch(loading, () => {
             title="Attach files"
             class="icon-button"
           />
-          <Button
-            :style="iconStyle"
-            type="text"
-            size="small"
-            title="Speech input"
-            class="icon-button"
-          >
-            🎤
-          </Button>
+          <VoiceInput
+            :onTranscript="handleVoiceTranscript"
+            language="zh-CN"
+            :continuous="false"
+            class="voice-input-wrapper"
+          />
           <Button
             :icon="h(SettingOutlined)"
             type="text"
@@ -913,6 +1005,15 @@ watch(loading, () => {
   box-sizing: border-box;
   overflow: visible; /* 改为visible确保下拉菜单可见 */
   border-radius: 16px; /* 匹配容器圆角 */
+  position: relative; /* 为文件上传组件提供定位上下文 */
+}
+
+/* File Upload Widget positioning */
+.file-upload-widget-container {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  z-index: 200; /* 确保在其他元素之上 */
 }
 
 .chat-frame-header {
@@ -1243,6 +1344,22 @@ watch(loading, () => {
 
 /* Icon button styling */
 .chat-frame-footer :deep(.icon-button) {
+  padding: 4px 6px !important;
+  height: 28px !important;
+  width: 28px !important;
+  border-radius: 6px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Voice input wrapper styling */
+.chat-frame-footer .voice-input-wrapper {
+  display: inline-flex;
+  align-items: center;
+}
+
+.chat-frame-footer .voice-input-wrapper :deep(.voice-input-button) {
   padding: 4px 6px !important;
   height: 28px !important;
   width: 28px !important;

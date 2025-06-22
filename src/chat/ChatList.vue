@@ -104,8 +104,17 @@ watch(() => chatHistoryStore.activeChatHistoryItem, (newActive) => {
 
 // 组件挂载时确保数据已加载
 onMounted(async () => {
+  console.log('🎯 ChatList component mounted successfully!')
   console.log('ChatList mounted, current items:', items.value)
   console.log('ChatList mounted, chatHistoryStore.chatHistoryList:', chatHistoryStore.chatHistoryList)
+
+  // 添加视觉指示器到DOM
+  const chatlistElement = document.getElementById('chatlist')
+  if (chatlistElement) {
+    chatlistElement.style.border = '2px solid #10b981'
+    chatlistElement.style.minHeight = '100px'
+    console.log('✅ ChatList DOM element styled for visibility')
+  }
 
   // 如果没有数据，尝试重新获取
   if (items.value.length === 0) {

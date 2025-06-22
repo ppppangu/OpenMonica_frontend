@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useUserStore } from './user_info'
 import { useKnowledgeBaseStore } from './knowledgebase_list'
+import { authenticatedFormPost } from '../utils/api'
+import { deleteFileFromKnowledgeBase } from '../utils/fileManagementApi'
 
 interface DocumentDetail {
   document_id: string
@@ -51,22 +53,16 @@ export const useKnowledgeBaseDetailStore = defineStore('knowledgeBaseDetail', ()
     error.value = null
 
     try {
-      // 创建 FormData 对象，按照后端期望的格式
-      const formData = new FormData()
-      formData.append('user_id', userId)
-      formData.append('token', token)
-      formData.append('knowledgebase_id', targetKnowledgebaseId)
-
       console.log('发送知识库详情请求:', {
         userId,
-        token: token.substring(0, 10) + '...',
         knowledgebaseId: targetKnowledgebaseId,
         endpoint: '/user/knowledgebase/get_detail'
       })
 
-      const response = await fetch('/user/knowledgebase/get_detail', {
-        method: 'POST',
-        body: formData
+      // Use the new authenticated form post utility
+      const response = await authenticatedFormPost('/user/knowledgebase/get_detail', {
+        user_id: userId,
+        knowledgebase_id: targetKnowledgebaseId
       })
 
       console.log('知识库详情响应状态:', response.status, response.statusText)
@@ -156,6 +152,49 @@ export const useKnowledgeBaseDetailStore = defineStore('knowledgeBaseDetail', ()
     activeDocumentDetail.value = null
   }
 
+  async function deleteDocument(documentId: string, knowledgeBaseId?: string) {
+    const userStore = useUserStore()
+    const knowledgeBaseStore = useKnowledgeBaseStore()
+
+    const userId = userStore.user?.id
+    const targetKnowledgeBaseId = knowledgeBaseId || knowledgeBaseStore.activeKnowledgeBaseItem?.id
+
+    if (!userId) {
+      throw new Error('用户未登录')
+    }
+
+    if (!targetKnowledgeBaseId) {
+      throw new Error('未指定知识库ID')
+    }
+
+    try {
+      console.log('删除文档:', { userId, documentId, targetKnowledgeBaseId })
+
+      const response = await deleteFileFromKnowledgeBase(userId, documentId, targetKnowledgeBaseId)
+
+      if (response.status === 'ok' || response.status === 'success') {
+        // Remove the document from the local list
+        const index = documentDetailList.value.findIndex(doc => doc.document_id === documentId)
+        if (index > -1) {
+          documentDetailList.value.splice(index, 1)
+        }
+
+        // Clear active document if it was the deleted one
+        if (activeDocumentDetail.value?.document_id === documentId) {
+          activeDocumentDetail.value = null
+        }
+
+        console.log('文档删除成功')
+        return true
+      } else {
+        throw new Error(response.message || '文档删除失败')
+      }
+    } catch (err) {
+      console.error('删除文档失败:', err)
+      throw err
+    }
+  }
+
   return {
     // State
     documentDetailList,
@@ -168,6 +207,7 @@ export const useKnowledgeBaseDetailStore = defineStore('knowledgeBaseDetail', ()
     setActiveDocumentDetail,
     clearActiveDocumentDetail,
     clearError,
-    clearDocuments
+    clearDocuments,
+    deleteDocument
   }
 })

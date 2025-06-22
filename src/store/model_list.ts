@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useUserStore } from './user_info'
+import { authenticatedFormPost } from '../utils/api'
 
 
 // 模型列表接口
@@ -56,14 +57,8 @@ export const useModelListStore = defineStore('model_list', () => {
             try {
                 console.log(`尝试获取模型列表 (第${attempt + 1}次)`)
 
-                const formData = new FormData()
-                formData.append('token', userStore.user?.token || '')
-
-                const response = await fetch(`/user/model/get_list`, {
-                    method: 'POST',
-                    body: formData,
-                    signal: AbortSignal.timeout(30000) // 30 second timeout
-                })
+                // Use the new authenticated form post utility
+                const response = await authenticatedFormPost('/user/model/get_list')
 
                 // 检查响应是否成功
                 if (!response.ok) {

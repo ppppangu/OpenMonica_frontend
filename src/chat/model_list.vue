@@ -22,9 +22,9 @@ const handleClickOutside = (event: Event) => {
   }
 };
 
-// 计算下拉菜单位置
+// 计算下拉菜单位置 - 简化逻辑，确保下拉菜单直接出现在按钮上方
 const calculateDropdownPosition = () => {
-  const button = document.querySelector('.model-dropdown-container button');
+  const button = document.querySelector('.model-dropdown-container .model-selector-button');
   if (button) {
     const rect = button.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
@@ -36,52 +36,64 @@ const calculateDropdownPosition = () => {
     const spaceAbove = rect.top;
     const spaceBelow = viewportHeight - rect.bottom;
 
-    // 确保下拉菜单不会超出视口右边界
+    // 计算左侧位置 - 与按钮左对齐
     let leftPosition = rect.left;
+
+    // 确保下拉菜单不会超出视口右边界
     if (leftPosition + dropdownWidth > viewportWidth) {
-      leftPosition = viewportWidth - dropdownWidth - 16; // 16px margin from edge
+      leftPosition = rect.right - dropdownWidth; // 右对齐到按钮右边
     }
 
     // 确保下拉菜单不会超出视口左边界
-    if (leftPosition < 16) {
-      leftPosition = 16; // 16px margin from edge
+    if (leftPosition < 8) {
+      leftPosition = 8; // 8px margin from edge
     }
 
-    if (spaceAbove >= dropdownHeight || spaceAbove > spaceBelow) {
-      // 向上展开
+    // 优先向上展开（因为按钮通常在底部）
+    if (spaceAbove >= 200 || spaceAbove > spaceBelow) {
+      // 向上展开 - 直接在按钮上方
       dropdownStyle.value = {
         position: 'fixed',
         left: `${leftPosition}px`,
-        bottom: `${viewportHeight - rect.top + 4}px`, // 减少间距从8px到4px
+        bottom: `${viewportHeight - rect.top + 8}px`, // 8px间距
         width: '12rem',
         zIndex: 9999,
-        maxHeight: '300px',
+        maxHeight: '280px',
         overflowY: 'auto',
-        transformOrigin: 'bottom left' // 设置变换原点
+        transformOrigin: 'bottom left'
       };
     } else {
-      // 向下展开
+      // 向下展开 - 直接在按钮下方
       dropdownStyle.value = {
         position: 'fixed',
         left: `${leftPosition}px`,
-        top: `${rect.bottom + 4}px`, // 减少间距从8px到4px
+        top: `${rect.bottom + 8}px`, // 8px间距
         width: '12rem',
         zIndex: 9999,
-        maxHeight: '300px',
+        maxHeight: '280px',
         overflowY: 'auto',
-        transformOrigin: 'top left' // 设置变换原点
+        transformOrigin: 'top left'
       };
     }
+
+    console.log('下拉菜单位置计算:', {
+      buttonRect: rect,
+      leftPosition,
+      spaceAbove,
+      spaceBelow,
+      direction: spaceAbove >= 200 || spaceAbove > spaceBelow ? 'up' : 'down',
+      dropdownStyle: dropdownStyle.value
+    });
   } else {
-    // 如果无法找到按钮，使用默认样式
+    // 如果无法找到按钮，使用默认样式（相对定位）
     dropdownStyle.value = {
       position: 'absolute',
       bottom: '100%',
       left: '0',
-      marginBottom: '4px', // 减少间距
+      marginBottom: '8px',
       width: '12rem',
       zIndex: 9999,
-      maxHeight: '300px',
+      maxHeight: '280px',
       overflowY: 'auto',
       transformOrigin: 'bottom left'
     };

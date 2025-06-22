@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useUserStore } from './user_info'
+import { authenticatedFormPost } from '../utils/api'
 
 interface KnowledgeBaseItem {
   id: string
@@ -44,20 +45,14 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
     error.value = null
 
     try {
-      // 创建 FormData 对象，按照后端期望的格式
-      const formData = new FormData()
-      formData.append('user_id', userId)
-      formData.append('token', token)
-
       console.log('发送知识库列表请求:', {
         userId,
-        token: token.substring(0, 10) + '...',
         endpoint: '/user/knowledgebase/get_list'
       })
 
-      const response = await fetch('/user/knowledgebase/get_list', {
-        method: 'POST',
-        body: formData
+      // Use the new authenticated form post utility
+      const response = await authenticatedFormPost('/user/knowledgebase/get_list', {
+        user_id: userId
       })
 
       console.log('知识库列表响应状态:', response.status, response.statusText)
@@ -146,20 +141,10 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
       error.value = null
 
       try {
-        const formData = new FormData()
         // 没传入的话生成一个随机id
         if (!knowledgebase_id) {
           knowledgebase_id = Math.random().toString(36).substring(2, 15)
-          formData.append('knowledgebase_id', knowledgebase_id)
-        } else {
-          formData.append('knowledgebase_id', knowledgebase_id)
         }
-        // 用的就是update
-        formData.append('mode', 'update')
-        formData.append('name', name)
-        formData.append('description', description)
-        formData.append('user_id', userId)
-        formData.append('token', token)
 
         console.log('发送创建知识库请求:', {
           mode: 'update',
@@ -169,9 +154,13 @@ export const useKnowledgeBaseStore = defineStore('knowledgeBase', () => {
           knowledgebase_id
         })
 
-        const response = await fetch('/user/knowledgebase/create', {
-          method: 'POST',
-          body: formData
+        // Use the new authenticated form post utility
+        const response = await authenticatedFormPost('/user/knowledgebase/create', {
+          knowledgebase_id,
+          mode: 'update',
+          name,
+          description,
+          user_id: userId
         })
 
         console.log('创建知识库响应状态:', response.status, response.statusText)

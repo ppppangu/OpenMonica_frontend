@@ -674,6 +674,16 @@ if (import.meta.env.DEV) {
 
 onMounted(async () => {
   try {
+    console.log('🎯 ChatBox component mounted successfully!')
+
+    // 添加视觉指示器到DOM
+    const chatboxElement = document.getElementById('chatbox')
+    if (chatboxElement) {
+      chatboxElement.style.border = '2px solid #3b82f6'
+      chatboxElement.style.minHeight = '200px'
+      console.log('✅ ChatBox DOM element styled for visibility')
+    }
+
     // Clear all states first to prevent any leftover reactive loops
     clearAllStates();
 

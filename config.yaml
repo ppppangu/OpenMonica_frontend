@@ -2,3 +2,35 @@ user_manage_url: "http://120.46.208.202:8006"
 file_manage_url: "http://120.46.208.202:8087"
 model_chat_url: "http://120.46.208.202:8030"
 # model_chat_url: "http://127.0.0.1:12356"
+
+# 知识图谱可视化配置
+knowledge_graph:
+  # 节点配置
+  nodes:
+    # 文档节点
+    document:
+      color: "#8b5cf6"  # 紫色
+      size: 20
+      stroke_color: "#6d28d9"
+      stroke_width: 2
+    # 标签节点
+    tag:
+      color: "#10b981"  # 绿色
+      size: 15
+      stroke_color: "#059669"
+      stroke_width: 1.5
+  # 连线配置
+  links:
+    color: "#d1d5db"  # 灰色
+    width: 2
+    opacity: 0.6
+  # 布局配置
+  layout:
+    force_strength: -300
+    link_distance: 100
+    center_force: 0.1
+  # 交互配置
+  interaction:
+    hover_opacity: 0.8
+    selected_opacity: 1.0
+    unselected_opacity: 0.3

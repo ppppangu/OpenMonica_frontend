@@ -6,56 +6,97 @@
       </a>
       <div class="header-title-section">
         <h1 class="header-title">{{ knowledgeBaseName }}</h1>
-        <p class="header-subtitle">{{ knowledgeBaseDescription }} • {{ documentCount }}个文档</p>
+        <p class="header-subtitle">
+          {{ knowledgeBaseDescription }} • {{ documentCount }}个文档
+        </p>
       </div>
     </div>
     <div class="header-actions">
-      <button class="header-action-btn header-action-secondary" @click="handleUpload">
+      <button
+        class="header-action-btn header-action-graph"
+        @click="handleViewGraph"
+        title="查看知识图谱"
+      >
+        <span class="material-icons">account_tree</span>
+        <span>知识图谱</span>
+      </button>
+      <button
+        class="header-action-btn header-action-secondary"
+        @click="handleUpload"
+      >
         <span class="material-icons">upload</span>
         <span>上传文档</span>
       </button>
-      <button class="header-action-btn header-action-primary" @click="handleCreateNew">
+      <button
+        class="header-action-btn header-action-primary"
+        @click="handleCreateNew"
+      >
         <span class="material-icons">add</span>
         <span>新建文档</span>
       </button>
     </div>
   </div>
+
+  <!-- 上传文档弹窗 -->
+  <DocumentUploadModal
+    :visible="showUploadModal"
+    @close="showUploadModal = false"
+    @uploaded="handleUploadSuccess"
+  />
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useKnowledgeBaseStore } from '../store/knowledgebase_list'
-import { useKnowledgeBaseDetailStore } from '../store/knowledgebase_detail'
+import { computed, ref } from "vue";
+import { useKnowledgeBaseStore } from "../store/knowledgebase_list";
+import { useKnowledgeBaseDetailStore } from "../store/knowledgebase_detail";
+import DocumentUploadModal from "./DocumentUploadModal.vue";
 
-defineOptions({ name: 'KnowledgeBaseDetailHeader' })
+defineOptions({ name: "KnowledgeBaseDetailHeader" });
 
 // Stores
-const knowledgeBaseStore = useKnowledgeBaseStore()
-const knowledgeBaseDetailStore = useKnowledgeBaseDetailStore()
+const knowledgeBaseStore = useKnowledgeBaseStore();
+const knowledgeBaseDetailStore = useKnowledgeBaseDetailStore();
+
+// Refs
+const showUploadModal = ref(false);
 
 // Computed properties
-const knowledgeBaseName = computed(() => 
-  knowledgeBaseStore.activeKnowledgeBaseItem?.name || '知识库详情'
-)
+const knowledgeBaseName = computed(
+  () => knowledgeBaseStore.activeKnowledgeBaseItem?.name || "知识库详情"
+);
 
-const knowledgeBaseDescription = computed(() => 
-  knowledgeBaseStore.activeKnowledgeBaseItem?.description || '暂无描述'
-)
+const knowledgeBaseDescription = computed(
+  () => knowledgeBaseStore.activeKnowledgeBaseItem?.description || "暂无描述"
+);
 
-const documentCount = computed(() => 
-  knowledgeBaseDetailStore.documentDetailList.length
-)
+const documentCount = computed(
+  () => knowledgeBaseDetailStore.documentDetailList.length
+);
 
 // Event handlers
+const handleViewGraph = () => {
+  const knowledgeBaseId = knowledgeBaseStore.activeKnowledgeBaseItem?.id;
+  if (knowledgeBaseId) {
+    window.location.href = `/src/knowledgegraph/knowledgegraph.html?id=${knowledgeBaseId}`;
+  } else {
+    console.warn("No active knowledge base ID found");
+  }
+};
+
 const handleUpload = () => {
-  console.log('Upload document clicked')
-  // TODO: 实现文档上传功能
-}
+  console.log("Upload document clicked");
+  showUploadModal.value = true;
+};
 
 const handleCreateNew = () => {
-  console.log('Create new document clicked')
+  console.log("Create new document clicked");
   // TODO: 实现新建文档功能
-}
+};
+
+const handleUploadSuccess = () => {
+  console.log("Document uploaded successfully");
+  // 弹窗组件内部已经处理了刷新知识库详情的逻辑
+};
 </script>
 
 <style scoped>
@@ -150,6 +191,34 @@ const handleCreateNew = () => {
 
 .header-action-primary:hover {
   background: #6d28d9;
+}
+
+.header-action-graph {
+  background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.header-action-graph::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.header-action-graph:hover::before {
+  left: 100%;
+}
+
+.header-action-graph:hover {
+  background: linear-gradient(135deg, #6d28d9 0%, #7c3aed 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
 }
 
 .header-action-btn .material-icons {

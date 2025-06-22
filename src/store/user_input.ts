@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useUserStore } from './user_info'
 import { useModelListStore } from './model_list'
+import { createAuthFormData } from '../utils/api'
 
 interface UserRawInput {
     user_id: string
@@ -179,22 +180,22 @@ export const useUserInputStore = defineStore('user_input', () => {
         // Handle multiple models vs single model
         if (models.length > 1) {
             // Multiple models: make asynchronous requests
-            return await sendMultipleModelRequests(chatData, token)
+            return await sendMultipleModelRequests(chatData)
         } else {
             // Single model: handle as normal streaming response
-            return await sendSingleModelRequest(chatData, token)
+            return await sendSingleModelRequest(chatData)
         }
     }
 
     // Helper function for multiple model requests
-    async function sendMultipleModelRequests(chatData: any, token: string): Promise<any[]> {
+    async function sendMultipleModelRequests(chatData: any): Promise<any[]> {
         const promises = chatData.models.map(async (model: string) => {
-            const formData = new FormData()
-            formData.append('token', token)
-            formData.append('user_id', chatData.user_id)
-            formData.append('model_id', model)
-            formData.append('user_message_list', JSON.stringify(chatData.full_input_messages))
-            formData.append('extra_request_list', JSON.stringify(user_input.value.extra_request_list))
+            const formData = createAuthFormData({
+                user_id: chatData.user_id,
+                model_id: model,
+                user_message_list: JSON.stringify(chatData.full_input_messages),
+                extra_request_list: JSON.stringify(user_input.value.extra_request_list)
+            })
 
             try {
                 const response = await fetch('/user/chat', {
@@ -229,13 +230,13 @@ export const useUserInputStore = defineStore('user_input', () => {
     }
 
     // Helper function for single model request
-    async function sendSingleModelRequest(chatData: any, token: string): Promise<any> {
-        const formData = new FormData()
-        formData.append('token', token)
-        formData.append('user_id', chatData.user_id)
-        formData.append('model_id', chatData.models[0])
-        formData.append('user_message_list', JSON.stringify(chatData.full_input_messages))
-        formData.append('extra_request_list', JSON.stringify(user_input.value.extra_request_list))
+    async function sendSingleModelRequest(chatData: any): Promise<any> {
+        const formData = createAuthFormData({
+            user_id: chatData.user_id,
+            model_id: chatData.models[0],
+            user_message_list: JSON.stringify(chatData.full_input_messages),
+            extra_request_list: JSON.stringify(user_input.value.extra_request_list)
+        })
 
         try {
             const response = await fetch('/user/chat', {

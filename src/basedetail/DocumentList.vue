@@ -50,14 +50,30 @@
         <div class="file-item-content">
           <div class="file-item-title">{{ document.document_name }}</div>
           <div class="file-item-meta">
-            {{ document.file_type }} • {{ document.file_size }} • {{ document.upload_time }}
+            {{ document.file_type }} • {{ document.file_size }} • {{ formatDate(document.upload_time) }}
+          </div>
+          <!-- 标签显示 -->
+          <div class="file-item-tags" v-if="document.tags && document.tags.length > 0">
+            <span
+              v-for="tag in document.tags.slice(0, 3)"
+              :key="tag"
+              class="tag-item"
+            >
+              {{ tag }}
+            </span>
+            <span v-if="document.tags.length > 3" class="tag-more">
+              +{{ document.tags.length - 3 }}
+            </span>
           </div>
         </div>
         <div class="file-item-actions">
-          <button class="file-action-btn" @click="handleDownload(document, $event)">
+          <button class="file-action-btn" @click="handleDownload(document, $event)" title="下载文档">
             <span class="material-icons">download</span>
           </button>
-          <button class="file-action-btn" @click="handleMenu(document, $event)">
+          <button class="file-action-btn delete-btn" @click="handleDelete(document, $event)" title="删除文档">
+            <span class="material-icons">delete</span>
+          </button>
+          <button class="file-action-btn" @click="handleMenu(document, $event)" title="更多选项">
             <span class="material-icons">more_vert</span>
           </button>
         </div>
@@ -70,6 +86,32 @@
         </div>
         <h3 class="empty-title">暂无文档</h3>
         <p class="empty-desc">{{ searchQuery ? '没有找到匹配的文档' : '这个知识库还没有文档' }}</p>
+      </div>
+    </div>
+
+    <!-- 删除确认对话框 -->
+    <div v-if="showDeleteDialog" class="delete-dialog-overlay" @click="cancelDelete">
+      <div class="delete-dialog" @click.stop>
+        <div class="delete-dialog-header">
+          <h3>确认删除</h3>
+          <button class="close-btn" @click="cancelDelete">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div class="delete-dialog-content">
+          <div class="delete-warning-icon">
+            <span class="material-icons">warning</span>
+          </div>
+          <p>确定要删除文档 <strong>{{ documentToDelete?.document_name }}</strong> 吗？</p>
+          <p class="delete-warning">此操作不可撤销，文档将从知识库中永久删除。</p>
+        </div>
+        <div class="delete-dialog-actions">
+          <button class="cancel-btn" @click="cancelDelete">取消</button>
+          <button class="confirm-delete-btn" @click="confirmDelete" :disabled="isDeleting">
+            <span v-if="isDeleting" class="loading-spinner-small"></span>
+            {{ isDeleting ? '删除中...' : '确认删除' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -86,6 +128,9 @@ const knowledgeBaseDetailStore = useKnowledgeBaseDetailStore()
 
 // Local state
 const searchQuery = ref('')
+const showDeleteDialog = ref(false)
+const documentToDelete = ref<any>(null)
+const isDeleting = ref(false)
 
 // Computed properties
 const documentDetailList = computed(() => knowledgeBaseDetailStore.documentDetailList)
@@ -135,10 +180,81 @@ const handleDownload = (document: any, event: Event) => {
   // TODO: 实现文档下载功能
 }
 
+const handleDelete = (document: any, event: Event) => {
+  event.stopPropagation()
+  documentToDelete.value = document
+  showDeleteDialog.value = true
+}
+
 const handleMenu = (document: any, event: Event) => {
   event.stopPropagation()
   console.log('Document menu clicked:', document)
   // TODO: 显示文档菜单选项
+}
+
+const cancelDelete = () => {
+  showDeleteDialog.value = false
+  documentToDelete.value = null
+  isDeleting.value = false
+}
+
+const confirmDelete = async () => {
+  if (!documentToDelete.value) return
+
+  isDeleting.value = true
+  try {
+    await knowledgeBaseDetailStore.deleteDocument(documentToDelete.value.document_id)
+    console.log('Document deleted successfully:', documentToDelete.value.document_name)
+
+    // 显示成功消息
+    showSuccessMessage('文档删除成功')
+
+    // 关闭对话框
+    cancelDelete()
+  } catch (error) {
+    console.error('Delete document failed:', error)
+    showErrorMessage(error instanceof Error ? error.message : '删除文档失败')
+    isDeleting.value = false
+  }
+}
+
+const formatDate = (dateString: string) => {
+  try {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  } catch {
+    return dateString
+  }
+}
+
+const showSuccessMessage = (message: string) => {
+  // 简单的成功提示实现
+  const toast = document.createElement('div')
+  toast.className = 'success-toast'
+  toast.textContent = message
+  document.body.appendChild(toast)
+
+  setTimeout(() => {
+    toast.remove()
+  }, 3000)
+}
+
+const showErrorMessage = (message: string) => {
+  // 简单的错误提示实现
+  const toast = document.createElement('div')
+  toast.className = 'error-toast'
+  toast.textContent = message
+  document.body.appendChild(toast)
+
+  setTimeout(() => {
+    toast.remove()
+  }, 3000)
 }
 
 const handleRetry = () => {
@@ -417,5 +533,208 @@ watch(documentDetailList, (newList) => {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* 标签样式 */
+.file-item-tags {
+  display: flex;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tag-item {
+  font-size: 0.75rem;
+  padding: 0.125rem 0.375rem;
+  background: #e0e7ff;
+  color: #5b21b6;
+  border-radius: 0.25rem;
+  border: 1px solid #c7d2fe;
+  white-space: nowrap;
+}
+
+.tag-more {
+  font-size: 0.75rem;
+  padding: 0.125rem 0.375rem;
+  background: #f3f4f6;
+  color: #6b7280;
+  border-radius: 0.25rem;
+  border: 1px solid #d1d5db;
+}
+
+/* 删除按钮特殊样式 */
+.delete-btn:hover {
+  background: #dc2626 !important;
+  color: white !important;
+  border-color: #dc2626 !important;
+}
+
+/* 删除对话框样式 */
+.delete-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.delete-dialog {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-width: 400px;
+  width: 90%;
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+.delete-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 1.5rem 0 1.5rem;
+}
+
+.delete-dialog-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.delete-dialog-content {
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.delete-warning-icon {
+  color: #f59e0b;
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.delete-warning-icon .material-icons {
+  font-size: 3rem;
+}
+
+.delete-dialog-content p {
+  margin: 0 0 0.75rem 0;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.delete-warning {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.delete-dialog-actions {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0 1.5rem 1.5rem 1.5rem;
+  justify-content: flex-end;
+}
+
+.cancel-btn,
+.confirm-delete-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cancel-btn {
+  background: white;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.cancel-btn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.confirm-delete-btn {
+  background: #dc2626;
+  color: white;
+  border-color: #dc2626;
+}
+
+.confirm-delete-btn:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.confirm-delete-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.loading-spinner-small {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Toast 样式 */
+.success-toast,
+.error-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 16px;
+  border-radius: 6px;
+  color: white;
+  font-size: 14px;
+  z-index: 1001;
+  animation: slideIn 0.3s ease-out;
+}
+
+.success-toast {
+  background: #10b981;
+}
+
+.error-toast {
+  background: #dc2626;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 </style>

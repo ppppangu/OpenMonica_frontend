@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useUserStore } from './user_info'
+import { createAuthFormData } from '../utils/api'
 
 // File attachment interface
 export interface FileAttachment {
@@ -117,10 +118,10 @@ export const useFileAttachmentsStore = defineStore('file_attachments', () => {
 
     try {
       // Prepare form data - matching server.js expected format (field name should be 'upload')
-      const formData = new FormData()
+      const formData = createAuthFormData({
+        user_id: userId
+      })
       formData.append('upload', file)  // server.js expects 'upload' field name
-      formData.append('user_id', userId)
-      formData.append('token', token)
 
       console.log('Uploading file:', {
         filename: file.name,

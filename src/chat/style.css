@@ -364,6 +364,13 @@ body {
     right: 5px; /* 最小右边距离 */
 }
 
+/* 确保主内容区域始终可见 - 调试修复 */
+.container-main-content {
+    left: 85px !important; /* 强制设置左边距，确保可见 */
+    right: 5px !important; /* 强制设置右边距，确保可见 */
+    width: auto !important; /* 自动宽度 */
+}
+
 .main-content-wrapper {
     height: 100%;
     margin: 0;

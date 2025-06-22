@@ -30,18 +30,21 @@ export const useUserStore = defineStore('user', () => {
 
     console.log('User logged in:', user.value)
 
-    // Store in localStorage for persistence
+    // Store in localStorage for persistence with consistent keys
     localStorage.setItem('user', JSON.stringify(user.value))
     localStorage.setItem('isAuthenticated', 'true')
+    // Also store token separately for API utility compatibility
+    localStorage.setItem('authToken', userData.token)
   }
 
   async function logout() {
     user.value = null
     isAuthenticated.value = false
 
-    // Clear localStorage
+    // Clear localStorage - remove all auth-related items
     localStorage.removeItem('user')
     localStorage.removeItem('isAuthenticated')
+    localStorage.removeItem('authToken')
 
     // Call logout API to clear server-side token (if implemented)
     try {
@@ -92,8 +95,12 @@ export const useUserStore = defineStore('user', () => {
   function updateUser(userData: Partial<User>) {
     if (user.value) {
       user.value = { ...user.value, ...userData }
-      // Update localStorage
+      // Update localStorage with consistent keys
       localStorage.setItem('user', JSON.stringify(user.value))
+      // Update token separately if it was changed
+      if (userData.token) {
+        localStorage.setItem('authToken', userData.token)
+      }
     }
   }
 

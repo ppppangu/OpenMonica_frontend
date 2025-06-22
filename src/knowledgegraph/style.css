@@ -1,0 +1,344 @@
+/* Knowledge Graph Page Styles */
+
+/* 基础布局样式 */
+.container-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 60px;
+    height: 100vh;
+    background: white;
+    border-right: 1px solid #e5e7eb;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 12px 0;
+}
+
+.sidebar-nav-top {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 8px;
+}
+
+.sidebar-nav-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 8px;
+}
+
+.sidebar-nav-item {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: #6b7280;
+    transition: all 0.2s ease;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+.sidebar-nav-item:hover {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.sidebar-nav-item.sidebar-nav-active {
+    background: #7c3aed;
+    color: white;
+}
+
+.sidebar-user-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #7c3aed;
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+/* 主内容区域 */
+.main-content-area {
+    margin-left: 60px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: #f9fafb;
+}
+
+.container-header {
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 16px 24px;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+}
+
+.container-main-layout {
+    flex: 1;
+    padding: 24px;
+    overflow: auto;
+}
+
+/* 知识图谱特定样式 */
+.knowledge-graph-page {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.graph-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.graph-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+}
+
+.graph-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.graph-content {
+    flex: 1;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.graph-toolbar {
+    padding: 16px 24px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f8f9fa;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.graph-controls {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.graph-info {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.graph-visualization {
+    flex: 1;
+    position: relative;
+    min-height: 500px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .container-sidebar {
+        width: 50px;
+    }
+    
+    .main-content-area {
+        margin-left: 50px;
+    }
+    
+    .container-main-layout {
+        padding: 16px;
+    }
+    
+    .graph-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .graph-controls {
+        justify-content: center;
+    }
+    
+    .graph-info {
+        justify-content: center;
+    }
+}
+
+/* 加载和空状态样式 */
+.graph-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 400px;
+    color: #6b7280;
+}
+
+.graph-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 400px;
+    color: #6b7280;
+}
+
+.graph-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 400px;
+    color: #dc2626;
+}
+
+/* 图谱统计卡片 */
+.stats-card {
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    padding: 16px;
+    text-align: center;
+}
+
+.stats-value {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 4px;
+}
+
+.stats-label {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+/* 面包屑导航 */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.breadcrumb a {
+    color: #7c3aed;
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    text-decoration: underline;
+}
+
+.breadcrumb-separator {
+    color: #d1d5db;
+}
+
+/* 工具提示 */
+.tooltip {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+/* 图例 */
+.graph-legend {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 12px;
+}
+
+.legend-item:last-child {
+    margin-bottom: 0;
+}
+
+.legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+/* 动画 */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* 滚动条样式 */
+.container-main-layout::-webkit-scrollbar {
+    width: 6px;
+}
+
+.container-main-layout::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.container-main-layout::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.container-main-layout::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}

@@ -1,7 +1,19 @@
 <script setup lang="ts">
 import { useUserStore } from '../store/user_info'
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 const userStore = useUserStore()
+
+onMounted(() => {
+  console.log('🎯 Hello component mounted successfully!')
+
+  // 添加视觉指示器到DOM
+  const helloElement = document.getElementById('hello')
+  if (helloElement) {
+    helloElement.style.border = '2px solid #ef4444'
+    helloElement.style.minHeight = '60px'
+    console.log('✅ Hello DOM element styled for visibility')
+  }
+})
 
 const time_hello = computed(() => {
     const now = new Date();

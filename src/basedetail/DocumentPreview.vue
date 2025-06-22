@@ -131,7 +131,13 @@ const previewUrl = computed(() => {
   if (!pdfUrl) {
     return "about:blank";
   }
-  return pdfUrl;
+
+  // Use proxy endpoint to avoid CORS issues
+  const proxyUrl = new URL('/file/proxy', window.location.origin)
+  proxyUrl.searchParams.set('url', pdfUrl)
+  proxyUrl.searchParams.set('t', Date.now().toString()) // Prevent caching
+
+  return proxyUrl.toString();
 });
 
 // Methods - Define functions before they are used
@@ -143,7 +149,7 @@ const clearPreview = () => {
   }
 };
 
-const loadPreview = (url: string) => {
+const loadPreview = async (url: string) => {
   if (!url || url === "about:blank") {
     clearPreview();
     return;
@@ -155,6 +161,34 @@ const loadPreview = (url: string) => {
   loadStartTime.value = Date.now();
 
   console.log("Loading preview for URL:", url);
+
+  try {
+    // Test proxy endpoint accessibility first
+    const proxyTestUrl = new URL('/file/proxy', window.location.origin)
+    proxyTestUrl.searchParams.set('url', url)
+
+    const response = await fetch(proxyTestUrl.toString(), {
+      method: 'HEAD'
+    })
+
+    if (!response.ok) {
+      throw new Error(`Proxy response: ${response.status} ${response.statusText}`)
+    }
+
+    console.log("Proxy endpoint accessible, loading document");
+
+  } catch (error) {
+    console.warn('Proxy accessibility check failed:', error)
+    // Continue with loading, let iframe handle the error
+  }
+
+  // Set a timeout for loading
+  setTimeout(() => {
+    if (isLoadingPreview.value) {
+      isLoadingPreview.value = false
+      previewError.value = '文档加载超时，请检查网络连接或稍后重试'
+    }
+  }, 20000) // 20 second timeout
 };
 
 const getFileIcon = (fileType?: string) => {
@@ -249,6 +283,27 @@ const handleFrameLoad = () => {
 
 const handleFrameError = () => {
   isLoadingPreview.value = false;
+
+  // Try fallback to direct URL if proxy failed
+  const directUrl = activeDocument.value?.pdf_file_path || activeDocument.value?.document_url;
+  const currentSrc = previewFrame.value?.src;
+
+  if (currentSrc && currentSrc.includes('/file/proxy') && directUrl) {
+    console.log("Proxy failed, trying direct URL:", directUrl);
+    previewFrame.value!.src = directUrl;
+    isLoadingPreview.value = true;
+
+    // Set another timeout for direct load
+    setTimeout(() => {
+      if (isLoadingPreview.value) {
+        isLoadingPreview.value = false;
+        previewError.value = "无法加载该文档，可能是网络问题或该文档不允许预览";
+      }
+    }, 10000);
+
+    return;
+  }
+
   previewError.value = "无法加载该文档，可能是网络问题或该文档不允许预览";
   console.error("Preview frame error");
 };

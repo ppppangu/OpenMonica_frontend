@@ -251,6 +251,10 @@ app.get('/help', (req, res) => {
 });
 
 app.get('/knowledgebase', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src/knowledgebase/unified.html'));
+});
+
+app.get('/knowledgebase/legacy', (req, res) => {
     res.sendFile(path.join(__dirname, 'src/knowledgebase/knowledgebase.html'));
 });
 
@@ -1992,6 +1996,95 @@ app.post('/user/knowledgebase/generate_graph', upload.none(), async (req, res) =
                 status: "error",
                 message: '知识图谱生成服务暂时不可用，请稍后重试'
             });
+        }
+    }
+});
+
+// 文件代理端点 - 解决CORS问题
+app.get('/file/proxy', async (req, res) => {
+    try {
+        const fileUrl = req.query.url;
+
+        if (!fileUrl) {
+            return res.status(400).json({
+                success: false,
+                message: '缺少文件URL参数'
+            });
+        }
+
+        console.log('代理文件请求:', fileUrl);
+
+        // 验证URL格式
+        let targetUrl;
+        try {
+            targetUrl = new URL(fileUrl);
+        } catch (error) {
+            return res.status(400).json({
+                success: false,
+                message: '无效的文件URL格式'
+            });
+        }
+
+        // 发起代理请求
+        const response = await axios({
+            method: 'GET',
+            url: fileUrl,
+            responseType: 'stream',
+            timeout: 30000,
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+        });
+
+        // 设置响应头
+        res.set({
+            'Content-Type': response.headers['content-type'] || 'application/octet-stream',
+            'Content-Length': response.headers['content-length'],
+            'Content-Disposition': 'inline', // 优先内联显示而不是下载
+            'Cache-Control': 'public, max-age=3600', // 缓存1小时
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET',
+            'Access-Control-Allow-Headers': 'Content-Type'
+        });
+
+        // 如果是PDF文件，确保正确的Content-Type
+        if (fileUrl.toLowerCase().includes('.pdf')) {
+            res.set('Content-Type', 'application/pdf');
+        }
+
+        // 流式传输文件内容
+        response.data.pipe(res);
+
+        response.data.on('error', (error) => {
+            console.error('文件流传输错误:', error);
+            if (!res.headersSent) {
+                res.status(500).json({
+                    success: false,
+                    message: '文件传输失败'
+                });
+            }
+        });
+
+    } catch (error) {
+        console.error('文件代理失败:', error.message);
+
+        if (!res.headersSent) {
+            if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+                res.status(404).json({
+                    success: false,
+                    message: '文件不存在或服务器不可达'
+                });
+            } else if (error.code === 'ETIMEDOUT') {
+                res.status(408).json({
+                    success: false,
+                    message: '文件加载超时'
+                });
+            } else {
+                res.status(500).json({
+                    success: false,
+                    message: '文件代理服务器错误'
+                });
+            }
         }
     }
 });

@@ -383,10 +383,26 @@ const allMessages = computed(() => {
   try {
     // 处理历史消息
     chatContentsStore.chatHistoryContent.forEach((item: any, index: number) => {
-      const originalRole = item.messages[0].role;
+      // 支持新的数据结构：直接包含chat_id, role, content等字段
+      let originalRole, content, chatId, messageKey;
+
+      if (item.messages && item.messages[0]) {
+        // 旧格式：包含messages数组
+        originalRole = item.messages[0].role;
+        content = filterDone(item.messages[0].content[0].text);
+        chatId = item.chat_id;
+        messageKey = `history_${item.chat_id || item.timestamp || index}`;
+      } else {
+        // 新格式：直接包含字段
+        originalRole = item.role;
+        content = filterDone(item.content);
+        chatId = item.chat_id;
+        messageKey = `history_${item.chat_id || item.timestamp || index}`;
+      }
+
       const role = originalRole === "assistant" ? "assistant_history" : originalRole;
-      const content = filterDone(item.messages[0].content[0].text);
-      const messageKey = `history_${item.timestamp || index}`;
+
+      console.log(`处理历史消息: key=${messageKey}, role=${role}, chat_id=${chatId}, content长度=${content?.length || 0}`);
 
       // Process tool calls separately (non-reactive) - use setTimeout to break reactive chain
       if (role === "assistant_history") {
@@ -398,6 +414,7 @@ const allMessages = computed(() => {
         key: messageKey,
         role: role,
         content: content,
+        chat_id: chatId, // 保留chat_id
       };
 
       // Override messageRender for assistant messages to include tool call detection
@@ -412,20 +429,28 @@ const allMessages = computed(() => {
     chatContentsStore.currentChatMessages.forEach((item: any, index: number) => {
       // 对于流式响应，使用assistant角色；对于历史消息，使用assistant_history
       const role = item.role === 'assistant' && !item.streaming ? 'assistant_history' : item.role;
-      const messageKey = item.key || `current_${index}`;
+      const messageKey = item.chat_id || item.key || `current_${index}`;
 
-      console.log(`处理当前消息: key=${messageKey}, role=${role}, originalRole=${item.role}, streaming=${item.streaming}, content长度=${item.content?.length || 0}`);
+      console.log(`处理当前消息: key=${messageKey}, role=${role}, originalRole=${item.role}, streaming=${item.streaming}, content长度=${item.content?.length || 0}, reasoning长度=${item.reasoning_content?.length || 0}`);
 
       // Process tool calls immediately for assistant messages
       if (role === "assistant" || role === "assistant_history") {
         detectAndProcessToolCalls(item.content, messageKey);
       }
 
+      // 合并正文内容和推理内容
+      let displayContent = item.content || '';
+      if (item.reasoning_content && item.reasoning_content.trim()) {
+        // 如果有推理内容，添加到显示内容中
+        displayContent = `**思考过程：**\n${item.reasoning_content}\n\n**回答：**\n${displayContent}`;
+      }
+
       // Create message with enhanced renderer for assistant messages
       const messageToAdd: any = {
         key: messageKey,
         role: role,
-        content: item.content,
+        content: displayContent,
+        chat_id: item.chat_id, // 保留chat_id
       };
 
       // Override messageRender for assistant messages to include tool call detection
@@ -433,7 +458,7 @@ const allMessages = computed(() => {
         messageToAdd.messageRender = (content: string) => renderMarkdownWithToolCalls(content, messageKey);
       }
 
-      console.log(`添加消息到渲染列表: key=${messageKey}, role=${role}, content预览="${item.content?.substring(0, 50)}..."`);
+      console.log(`添加消息到渲染列表: key=${messageKey}, role=${role}, chat_id=${item.chat_id}, content预览="${displayContent?.substring(0, 50)}..."`);
       processedMessages.push(messageToAdd);
     });
 

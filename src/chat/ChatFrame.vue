@@ -178,7 +178,7 @@ async function handleSendChat() {
     value.value = "";
     userInputStore.update_user_input("text", "");
 
-    // 2. 开始AI流式响应
+    // 2. 开始AI流式响应（暂时不传chat_id，等后端返回后再设置）
     chatContentStore.startStreamingResponse();
 
     // 3. 发送聊天请求并处理流式响应
@@ -289,30 +289,21 @@ async function sendChatWithStreaming(userMessage: string) {
           console.log("合并后缓冲区长度:", buffer.length);
           console.log("=== 原始数据块处理完成 ===\n");
 
-          // 使用测试工具验证成功的解析算法
+          // 【重要】OpenAI格式SSE解析
+          // 支持三种情况：
+          // 1. 大模型输出（content/reasoning_content）
+          // 2. 工具调用结果（role=system）
+          // 3. 输出结束（finish_reason=stop）
           //
-          // 【重要】两次经验教训总结：
-          // 第一次教训：必须正确解析JSON来提取content字段，不能直接使用原始SSE数据
-          //   - 错误做法：直接使用 `data:` 后的内容 → 导致显示 `{"content": "\n"}` 而不是换行符
-          //   - 正确做法：JSON.parse() 解析后提取 jsonData.content
-          //
-          // 第二次教训：遇到非SSE格式行不能停止处理，要继续处理后续data:行
-          //   - 错误做法：遇到非 `data:` 开头的行就 break 停止处理
-          //   - 正确做法：跳过非SSE格式行，继续处理后续的 `data:` 行
-          //
-          // 综合解决方案：逐行处理 + JSON解析 + 跳过非SSE行 = 完美解决换行符显示问题
-          //
-          console.log("=== 前端SSE解析开始 ===");
+          console.log("=== OpenAI格式SSE解析开始 ===");
           console.log("当前缓冲区内容:", JSON.stringify(buffer));
           console.log("缓冲区长度:", buffer.length);
 
-          // 解析SSE数据 - 完全基于测试工具成功的算法
-          let parsedContent = "";
-
-          // 按行分割，但要小心处理包含换行符的JSON
+          // 按行分割处理SSE数据
           const lines = buffer.split("\n");
           let i = 0;
           let processedLines = 0;
+          let shouldFinish = false;
 
           while (i < lines.length) {
             const line = lines[i];
@@ -325,221 +316,83 @@ async function sendChatWithStreaming(userMessage: string) {
               // 检查是否是 [DONE] 标记
               if (dataContent.trim() === "[DONE]") {
                 console.log("检测到 [DONE] 标记，流式响应结束");
-                parsedContent += "[DONE]";
+                shouldFinish = true;
                 processedLines = i + 1;
                 break;
               }
 
-              // 如果这行以 {"content": " 开始但没有结束的 }，说明内容跨行了
-              if (
-                dataContent.startsWith('{"content": "') &&
-                !dataContent.endsWith('"}')
-              ) {
-                console.log("检测到跨行JSON，开始合并多行");
-                // 继续读取下一行直到找到结束的 "}
-                let j = i + 1;
-                while (j < lines.length && !lines[j].endsWith('"}')) {
-                  dataContent += "\n" + lines[j];
-                  console.log(`合并第 ${j} 行:`, JSON.stringify(lines[j]));
-                  j++;
+              // 尝试解析OpenAI格式的JSON数据
+              if (dataContent.trim()) {
+                console.log("尝试解析OpenAI格式JSON数据:", JSON.stringify(dataContent));
+
+                // 使用新的OpenAI格式解析函数
+                const parseResult = chatContentStore.parseOpenAISSEChunk(dataContent);
+
+                // 如果解析到 chatId 且当前流式消息尚未绑定 chat_id，则更新之
+                if (parseResult.chatId) {
+                  chatContentStore.setStreamingChatId(parseResult.chatId);
                 }
-                if (j < lines.length) {
-                  dataContent += "\n" + lines[j];
-                  console.log(`合并最后一行 ${j}:`, JSON.stringify(lines[j]));
-                  i = j; // 跳过已处理的行
-                }
-                console.log("跨行JSON合并完成:", JSON.stringify(dataContent));
-              }
+                console.log("OpenAI SSE解析结果:", parseResult);
 
-              // 关键修复：正确解析JSON来提取content字段，保持换行符
-              try {
-                const jsonData = JSON.parse(dataContent);
-                if (jsonData.content !== undefined) {
-                  // 第一次经验教训：必须提取content字段而不是使用原始JSON
-                  parsedContent += jsonData.content;
-                  console.log(
-                    "✓ 成功解析JSON content:",
-                    JSON.stringify(jsonData.content)
-                  );
-                  if (jsonData.content.includes("\n")) {
-                    console.log("✓ 检测到换行符，将正确保持格式");
-                  }
+                if (parseResult.isToolCall && parseResult.toolResult) {
+                  // 处理工具调用结果
+                  console.log("✓ 检测到工具调用结果:", parseResult.toolResult);
 
-                  // Check for tool calls in the content
-                  const currentMessageKey =
-                    chatContentStore.streamingMessage?.key;
-                  console.log(
-                    "🔍 Checking for tool calls in streaming content:",
-                    {
-                      currentMessageKey,
-                      contentLength: jsonData.content?.length || 0,
-                      contentPreview:
-                        jsonData.content?.substring(0, 100) + "...",
-                    }
-                  );
-
+                  // 获取当前消息的key用于工具调用处理
+                  const currentMessageKey = chatContentStore.streamingMessage?.key;
                   if (currentMessageKey) {
-                    // Detect tool call initiation
-                    const toolCallData =
-                      toolCallsStore.parseToolCallFromContent(jsonData.content);
-                    if (toolCallData) {
-                      console.log(
-                        "🔧 Tool call detected in streaming content:",
-                        toolCallData
-                      );
-
-                      // Check if tool call already exists to prevent duplicates
-                      const existingCalls =
-                        toolCallsStore.getToolCallsByMessageKey(
-                          currentMessageKey
-                        );
-                      const alreadyExists = existingCalls.some(
-                        (call: any) =>
-                          call.toolName === toolCallData.toolName &&
-                          call.status === "invoking"
-                      );
-
-                      if (!alreadyExists) {
-                        const callId = toolCallsStore.createToolCall(
-                          currentMessageKey,
-                          toolCallData.toolName,
-                          toolCallData.arguments
-                        );
-                        console.log("✅ Created new tool call:", callId);
-                      } else {
-                        console.log(
-                          "⚠️ Tool call already exists, skipping creation"
-                        );
+                    // 使用setTimeout避免阻塞流式更新
+                    setTimeout(() => {
+                      try {
+                        // 处理工具调用结果
+                        if (window.processToolCallResult) {
+                          window.processToolCallResult(currentMessageKey, parseResult.toolResult);
+                        } else {
+                          console.warn("processToolCallResult function not available");
+                        }
+                      } catch (error) {
+                        console.error("Error processing tool call result:", error);
                       }
-                    }
-
-                    // Detect tool call completion
-                    const toolResultData =
-                      toolCallsStore.parseToolResultFromContent(
-                        jsonData.content
-                      );
-                    if (toolResultData) {
-                      console.log(
-                        "✅ Tool result detected in streaming content:",
-                        toolResultData
-                      );
-
-                      // Use enhanced tool call matching
-                      const matchingCall =
-                        toolCallsStore.findBestMatchingToolCall(
-                          currentMessageKey,
-                          toolResultData.toolName,
-                          true // Prefer invoking calls
-                        );
-
-                      if (matchingCall) {
-                        console.log("🔄 Updating tool call status:", {
-                          id: matchingCall.id,
-                          toolName: matchingCall.toolName,
-                          previousStatus: matchingCall.status,
-                          newStatus: toolResultData.isError ? "error" : "done",
-                          resultLength: toolResultData.result?.length || 0,
-                        });
-
-                        toolCallsStore.updateToolCallStatus(
-                          matchingCall.id,
-                          toolResultData.isError ? "error" : "done",
-                          toolResultData.result,
-                          toolResultData.isError
-                            ? toolResultData.result
-                            : undefined
-                        );
-                      } else {
-                        console.warn(
-                          "⚠️ No matching tool call found for result - this may indicate a parsing issue or timing problem"
-                        );
-                        console.log("🔍 Debug info:", {
-                          currentMessageKey,
-                          toolName: toolResultData.toolName,
-                          allToolCalls: Array.from(
-                            toolCallsStore.toolCalls.values()
-                          ).map((call: any) => ({
-                            id: call.id,
-                            messageKey: call.messageKey,
-                            toolName: call.toolName,
-                            status: call.status,
-                          })),
-                        });
-                      }
-                    }
-
-                    // Also try to parse the entire content as a tool result (in case it's not wrapped in content field)
-                    const directToolResultData =
-                      toolCallsStore.parseToolResultFromContent(dataContent);
-                    if (directToolResultData && !toolResultData) {
-                      console.log(
-                        "✅ Tool result detected directly from dataContent:",
-                        directToolResultData
-                      );
-
-                      const matchingCall =
-                        toolCallsStore.findBestMatchingToolCall(
-                          currentMessageKey,
-                          directToolResultData.toolName,
-                          true
-                        );
-
-                      if (matchingCall) {
-                        console.log("🔄 Updating tool call status (direct):", {
-                          id: matchingCall.id,
-                          toolName: matchingCall.toolName,
-                          newStatus: directToolResultData.isError
-                            ? "error"
-                            : "done",
-                        });
-
-                        toolCallsStore.updateToolCallStatus(
-                          matchingCall.id,
-                          directToolResultData.isError ? "error" : "done",
-                          directToolResultData.result,
-                          directToolResultData.isError
-                            ? directToolResultData.result
-                            : undefined
-                        );
-                      }
-                    }
+                    }, 50);
                   }
-                } else if (jsonData.error) {
-                  parsedContent += `[ERROR: ${jsonData.error}]`;
-                  console.log("检测到错误消息:", jsonData.error);
-                }
-              } catch (e) {
-                console.log("JSON解析失败，尝试备用方案:", e.message);
-                console.log("原始数据:", JSON.stringify(dataContent));
+                } else if (parseResult.content !== undefined || parseResult.reasoningContent !== undefined) {
+                  // 处理普通内容或推理内容
+                  console.log("✓ 更新流式内容:", {
+                    content: JSON.stringify(parseResult.content),
+                    reasoningContent: JSON.stringify(parseResult.reasoningContent)
+                  });
 
-                // 备用方案1：使用正则表达式提取content字段（保持换行符）
-                const match = dataContent.match(/\{"content":\s*"(.*)"\}/s);
-                if (match) {
-                  parsedContent += match[1];
-                  console.log(
-                    "✓ 正则表达式提取成功:",
-                    JSON.stringify(match[1])
+                  // 更新流式内容
+                  chatContentStore.updateStreamingContent(
+                    parseResult.content,
+                    parseResult.reasoningContent
                   );
-                } else {
-                  // 备用方案2：检查是否是简单的字符串内容
-                  if (
-                    dataContent.startsWith('"') &&
-                    dataContent.endsWith('"')
-                  ) {
-                    // 去掉首尾引号
-                    const content = dataContent.slice(1, -1);
-                    parsedContent += content;
-                    console.log("✓ 提取引号内容:", JSON.stringify(content));
-                  } else {
-                    // 最后的备选方案：直接添加原始数据
-                    parsedContent += dataContent;
-                    console.log(
-                      "⚠ 使用原始数据作为备选方案:",
-                      JSON.stringify(dataContent)
-                    );
+
+                  // 检查工具调用（仅对正文内容）
+                  if (parseResult.content) {
+                    const currentMessageKey = chatContentStore.streamingMessage?.key;
+                    if (currentMessageKey) {
+                      setTimeout(() => {
+                        try {
+                          const currentContent = chatContentStore.streamingMessage?.content || "";
+                          if (window.detectAndProcessToolCalls) {
+                            window.detectAndProcessToolCalls(currentContent, currentMessageKey);
+                          }
+                        } catch (error) {
+                          console.error("Error in tool call detection:", error);
+                        }
+                      }, 100);
+                    }
                   }
+                }
+
+                // 检查是否结束
+                if (parseResult.isFinished) {
+                  console.log("✓ 检测到流式响应结束");
+                  shouldFinish = true;
                 }
               }
+
               processedLines = i + 1;
             } else if (line.trim() === "") {
               // 空行，跳过
@@ -553,22 +406,10 @@ async function sendChatWithStreaming(userMessage: string) {
             i++;
           }
 
-          // 如果有解析出的内容，更新到store
-          console.log("🔍 检查parsedContent:", {
-            content: JSON.stringify(parsedContent),
-            length: parsedContent.length,
-            isEmpty: !parsedContent,
-            isDone: parsedContent === "[DONE]",
-          });
-
-          if (parsedContent && parsedContent !== "[DONE]") {
-            console.log("✅ 更新流式内容:", JSON.stringify(parsedContent));
-            if (parsedContent.includes("\n")) {
-              console.log("✓ 检测到换行符，内容将正确显示多行");
-            }
-            chatContentStore.updateStreamingContent(parsedContent);
-          } else {
-            console.log("❌ 跳过更新 - parsedContent为空或为[DONE]");
+          // 检查是否需要结束流式响应
+          if (shouldFinish) {
+            console.log("✅ 流式响应结束，准备完成");
+            break;
           }
 
           // 从缓冲区中移除已处理的行
@@ -796,6 +637,53 @@ watch(loading, () => {
   }
 });
 
+// 全局函数：处理工具调用结果
+function processToolCallResult(messageKey: string, toolResult: any) {
+  console.log('🔧 Processing tool call result:', { messageKey, toolResult });
+
+  try {
+    // 解析工具调用参数
+    const params = JSON.parse(toolResult.params);
+    const toolName = params.tool;
+
+    // 查找匹配的工具调用
+    const matchingCall = toolCallsStore.findBestMatchingToolCall(
+      messageKey,
+      toolName,
+      true // 优先匹配正在执行的调用
+    );
+
+    if (matchingCall) {
+      console.log('✅ Found matching tool call, updating status:', {
+        id: matchingCall.id,
+        toolName: matchingCall.toolName,
+        isError: toolResult.is_error === 'true'
+      });
+
+      // 更新工具调用状态
+      toolCallsStore.updateToolCallStatus(
+        matchingCall.id,
+        toolResult.is_error === 'true' ? 'error' : 'done',
+        toolResult.tool_response,
+        toolResult.is_error === 'true' ? toolResult.tool_response : undefined
+      );
+    } else {
+      console.warn('⚠️ No matching tool call found for result:', {
+        messageKey,
+        toolName,
+        allToolCalls: Array.from(toolCallsStore.toolCalls.values()).map(call => ({
+          id: call.id,
+          messageKey: call.messageKey,
+          toolName: call.toolName,
+          status: call.status
+        }))
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error processing tool call result:', error);
+  }
+}
+
 // Setup paste event listener for image pasting
 onMounted(() => {
   console.log('🎯 ChatFrame component mounted successfully!')
@@ -810,6 +698,10 @@ onMounted(() => {
 
   console.log('📋 Setting up paste event listener for image support');
   document.addEventListener('paste', handlePaste);
+
+  // 注册全局函数
+  (window as any).processToolCallResult = processToolCallResult;
+  console.log('🔧 Global processToolCallResult function registered');
 });
 
 onUnmounted(() => {

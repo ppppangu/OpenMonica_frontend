@@ -27,7 +27,8 @@
     "markdown-it": "^14.1.0",
     "multer": "^2.0.1",
     "pinia": "^2.3.1",
-    "vue": "^3.5.16"
+    "vue": "^3.5.16",
+    "lodash-es": "^4.17.21"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.1.4",

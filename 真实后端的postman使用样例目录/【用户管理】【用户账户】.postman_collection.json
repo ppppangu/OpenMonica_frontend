@@ -1,0 +1,846 @@
+{
+	"info": {
+		"_postman_id": "9b9f88e5-52b5-47d1-85ec-a0a137371389",
+		"name": "【用户管理】【用户账户】",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "37834822"
+	},
+	"item": [
+		{
+			"name": "【用户账户】【注册】",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "mode",
+							"value": "register",
+							"type": "text"
+						},
+						{
+							"key": "username",
+							"value": "测试",
+							"type": "text"
+						},
+						{
+							"key": "email",
+							"value": "qq@gmail.com",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "123456789",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://120.46.208.202:8006/user/account",
+					"protocol": "http",
+					"host": [
+						"120",
+						"46",
+						"208",
+						"202"
+					],
+					"port": "8006",
+					"path": [
+						"user",
+						"account"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "【用户账户】【注册】",
+					"originalRequest": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "mode",
+									"value": "register",
+									"type": "text"
+								},
+								{
+									"key": "username",
+									"value": "测试11211",
+									"type": "text"
+								},
+								{
+									"key": "email",
+									"value": "ceshi122221@gmail.com",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "123456789",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://6.tcp.cpolar.cn:14287/user/account",
+							"protocol": "http",
+							"host": [
+								"6",
+								"tcp",
+								"cpolar",
+								"cn"
+							],
+							"port": "14287",
+							"path": [
+								"user",
+								"account"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Connection",
+							"value": "close"
+						},
+						{
+							"key": "Content-Length",
+							"value": "151"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"key": "Date",
+							"value": "Tue, 10 Jun 2025 09:26:56 GMT"
+						},
+						{
+							"key": "Server",
+							"value": "uvicorn"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"success\": true,\n    \"message\": \"create user account success\",\n    \"user_info\": {\n        \"email\": \"ceshi122221@gmail.com\",\n        \"user_id\": \"76d02915-dd64-4fbc-a5d9-aafab6762bc1\"\n    }\n}"
+				}
+			]
+		},
+		{
+			"name": "【用户账号】【密码登录】",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "mode",
+							"value": "check",
+							"type": "text"
+						},
+						{
+							"key": "email",
+							"value": "ceshi122221@gmail.com",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "123456789",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://120.46.208.202:8006/user/account",
+					"protocol": "http",
+					"host": [
+						"120",
+						"46",
+						"208",
+						"202"
+					],
+					"port": "8006",
+					"path": [
+						"user",
+						"account"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "【用户账号】【密码登录】",
+					"originalRequest": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "mode",
+									"value": "check",
+									"type": "text"
+								},
+								{
+									"key": "email",
+									"value": "ceshi122221@gmail.com",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "123456789",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://6.tcp.cpolar.cn:14287/user/account",
+							"protocol": "http",
+							"host": [
+								"6",
+								"tcp",
+								"cpolar",
+								"cn"
+							],
+							"port": "14287",
+							"path": [
+								"user",
+								"account"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Connection",
+							"value": "close"
+						},
+						{
+							"key": "Content-Length",
+							"value": "161"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"key": "Date",
+							"value": "Tue, 10 Jun 2025 09:28:15 GMT"
+						},
+						{
+							"key": "Server",
+							"value": "uvicorn"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"success\": true,\n    \"message\": \"登录成功\",\n    \"user_info\": {\n        \"user_id\": \"76d02915-dd64-4fbc-a5d9-aafab6762bc1\",\n        \"username\": \"测试11211\",\n        \"email\": \"ceshi122221@gmail.com\"\n    }\n}"
+				}
+			]
+		},
+		{
+			"name": "【用户账号】【账号注销】",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "mode",
+							"value": "delete",
+							"type": "text"
+						},
+						{
+							"key": "user_id",
+							"value": "76d02915-dd64-4fbc-a5d9-aafab6762bc1",
+							"description": "创建账号后获取了user_id再注销，禁止注销其他测试样例中的user_Id",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://120.46.208.202:8006/user/account",
+					"protocol": "http",
+					"host": [
+						"120",
+						"46",
+						"208",
+						"202"
+					],
+					"port": "8006",
+					"path": [
+						"user",
+						"account"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "【用户账号】【账号信息查询】",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "mode",
+							"value": "get",
+							"type": "text"
+						},
+						{
+							"key": "user_id",
+							"value": "fe7c37c9-4eea-4399-a4d8-e5d3ec6fb474",
+							"type": "text"
+						},
+						{
+							"key": "target",
+							"value": "email",
+							"description": "username|email",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://120.46.208.202:8006/user/account",
+					"protocol": "http",
+					"host": [
+						"120",
+						"46",
+						"208",
+						"202"
+					],
+					"port": "8006",
+					"path": [
+						"user",
+						"account"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "【用户账号】【账号信息查询】",
+					"originalRequest": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "mode",
+									"value": "get",
+									"type": "text"
+								},
+								{
+									"key": "user_id",
+									"value": "fe7c37c9-4eea-4399-a4d8-e5d3ec6fb474",
+									"type": "text"
+								},
+								{
+									"key": "target",
+									"value": "email",
+									"description": "username|email",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://6.tcp.cpolar.cn:14287/user/account",
+							"protocol": "http",
+							"host": [
+								"6",
+								"tcp",
+								"cpolar",
+								"cn"
+							],
+							"port": "14287",
+							"path": [
+								"user",
+								"account"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Connection",
+							"value": "close"
+						},
+						{
+							"key": "Content-Length",
+							"value": "116"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"key": "Date",
+							"value": "Tue, 10 Jun 2025 09:47:55 GMT"
+						},
+						{
+							"key": "Server",
+							"value": "uvicorn"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"status\": \"success\",\n    \"message\": \"get user fe7c37c9-4eea-4399-a4d8-e5d3ec6fb474 info success\",\n    \"data\": \"email@gmail.com\"\n}"
+				}
+			]
+		},
+		{
+			"name": "【用户账号】【账号信息更改】****",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "mode",
+							"value": "update",
+							"type": "text"
+						},
+						{
+							"key": "target",
+							"value": "email",
+							"description": "username|email|password",
+							"type": "text"
+						},
+						{
+							"key": "user_id",
+							"value": "fe7c37c9-4eea-4399-a4d8-e5d3ec6fb474",
+							"type": "text"
+						},
+						{
+							"key": "new_value",
+							"value": "email@gmail.com",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://120.46.208.202:8006/user/account",
+					"protocol": "http",
+					"host": [
+						"120",
+						"46",
+						"208",
+						"202"
+					],
+					"port": "8006",
+					"path": [
+						"user",
+						"account"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "【用户账号】【账号信息更改】****",
+					"originalRequest": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "mode",
+									"value": "update",
+									"type": "text"
+								},
+								{
+									"key": "target",
+									"value": "email",
+									"description": "username|email|password",
+									"type": "text"
+								},
+								{
+									"key": "user_id",
+									"value": "fe7c37c9-4eea-4399-a4d8-e5d3ec6fb474",
+									"type": "text"
+								},
+								{
+									"key": "new_value",
+									"value": "email@gmail.com",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://6.tcp.cpolar.cn:14287/user/account",
+							"protocol": "http",
+							"host": [
+								"6",
+								"tcp",
+								"cpolar",
+								"cn"
+							],
+							"port": "14287",
+							"path": [
+								"user",
+								"account"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Connection",
+							"value": "close"
+						},
+						{
+							"key": "Content-Length",
+							"value": "94"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"key": "Date",
+							"value": "Tue, 10 Jun 2025 09:48:12 GMT"
+						},
+						{
+							"key": "Server",
+							"value": "uvicorn"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"status\": \"success\",\n    \"message\": \"update user fe7c37c9-4eea-4399-a4d8-e5d3ec6fb474 info success\"\n}"
+				}
+			]
+		},
+		{
+			"name": "【用户账号】【请求token】",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "mode",
+							"value": "request",
+							"type": "text"
+						},
+						{
+							"key": "user_uuid",
+							"value": "e4f7d0a3-fa32-4ca6-964e-01d02104844b",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://120.46.208.202:8006/user/token",
+					"protocol": "http",
+					"host": [
+						"120",
+						"46",
+						"208",
+						"202"
+					],
+					"port": "8006",
+					"path": [
+						"user",
+						"token"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "【用户账号】【请求token】",
+					"originalRequest": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "mode",
+									"value": "request",
+									"type": "text"
+								},
+								{
+									"key": "user_uuid",
+									"value": "e4f7d0a3-fa32-4ca6-964e-01d02104844b",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://6.tcp.cpolar.cn:14287/user/token",
+							"protocol": "http",
+							"host": [
+								"6",
+								"tcp",
+								"cpolar",
+								"cn"
+							],
+							"port": "14287",
+							"path": [
+								"user",
+								"token"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Connection",
+							"value": "close"
+						},
+						{
+							"key": "Content-Length",
+							"value": "463"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"key": "Date",
+							"value": "Tue, 10 Jun 2025 09:46:50 GMT"
+						},
+						{
+							"key": "Server",
+							"value": "uvicorn"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"status\": \"success\",\n    \"message\": \"请求token成功\",\n    \"data\": {\n        \"action\": \"extended\",\n        \"message\": \"已有活跃token，续期成功\",\n        \"user_uuid\": \"e4f7d0a3-fa32-4ca6-964e-01d02104844b\",\n        \"token\": \"RQ1a8zMyngIbKRoe2RoZ2ylHpPT9yuvI4r3_UuwuWejqEtd9TvcquSERvoo8UX4-SVuLNuwMvAK3Q-rQG-e-9Q\",\n        \"token_created_at\": \"2025-06-08T16:05:55.337097+08:00\",\n        \"old_expires_at\": \"2025-06-17T17:44:07.217914+08:00\",\n        \"new_expires_at\": \"2025-06-17T17:46:51.061608+08:00\",\n        \"extend_days\": 7,\n        \"has_token\": true\n    }\n}"
+				}
+			]
+		},
+		{
+			"name": "【用户账号】【删除token】",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "mode",
+							"value": "delete",
+							"type": "text"
+						},
+						{
+							"key": "token",
+							"value": "RQ1a8zMyngIbKRoe2RoZ2ylHpPT9yuvI4r3_UuwuWejqEtd9TvcquSERvoo8UX4-SVuLNuwMvAK3Q-rQG-e-9Q",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://120.46.208.202:8006/user/token",
+					"protocol": "http",
+					"host": [
+						"120",
+						"46",
+						"208",
+						"202"
+					],
+					"port": "8006",
+					"path": [
+						"user",
+						"token"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "【用户账号】【删除token】",
+					"originalRequest": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "mode",
+									"value": "delete",
+									"type": "text"
+								},
+								{
+									"key": "token",
+									"value": "RQ1a8zMyngIbKRoe2RoZ2ylHpPT9yuvI4r3_UuwuWejqEtd9TvcquSERvoo8UX4-SVuLNuwMvAK3Q-rQG-e-9Q",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://6.tcp.cpolar.cn:14287/user/token",
+							"protocol": "http",
+							"host": [
+								"6",
+								"tcp",
+								"cpolar",
+								"cn"
+							],
+							"port": "14287",
+							"path": [
+								"user",
+								"token"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Connection",
+							"value": "close"
+						},
+						{
+							"key": "Content-Length",
+							"value": "155"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"key": "Date",
+							"value": "Tue, 10 Jun 2025 09:47:15 GMT"
+						},
+						{
+							"key": "Server",
+							"value": "uvicorn"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"status\": \"success\",\n    \"message\": \"删除token成功\",\n    \"data\": {\n        \"success\": true,\n        \"message\": \"Token删除成功\",\n        \"user_uuid\": \"e4f7d0a3-fa32-4ca6-964e-01d02104844b\"\n    }\n}"
+				}
+			]
+		},
+		{
+			"name": "【用户账号】【校验token】",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "",
+						"value": "",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "mode",
+							"value": "validate",
+							"type": "text"
+						},
+						{
+							"key": "token",
+							"value": "9aA7BJx0n76hXY-YkaGCgU-NK2a7VGL5_r4ijrGgsFA6q14fV2ipF3QDxurPzjL_LMmVhxepaNQUEbQVwLkQ6g",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://120.46.208.202:8006/user/token",
+					"protocol": "http",
+					"host": [
+						"120",
+						"46",
+						"208",
+						"202"
+					],
+					"port": "8006",
+					"path": [
+						"user",
+						"token"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "【用户账号】【校验token】",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "mode",
+									"value": "validate",
+									"type": "text"
+								},
+								{
+									"key": "token",
+									"value": "9aA7BJx0n76hXY-YkaGCgU-NK2a7VGL5_r4ijrGgsFA6q14fV2ipF3QDxurPzjL_LMmVhxepaNQUEbQVwLkQ6g",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://6.tcp.cpolar.cn:14287/user/token",
+							"protocol": "http",
+							"host": [
+								"6",
+								"tcp",
+								"cpolar",
+								"cn"
+							],
+							"port": "14287",
+							"path": [
+								"user",
+								"token"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Connection",
+							"value": "close"
+						},
+						{
+							"key": "Content-Length",
+							"value": "313"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"key": "Date",
+							"value": "Tue, 10 Jun 2025 09:47:45 GMT"
+						},
+						{
+							"key": "Server",
+							"value": "uvicorn"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"status\": \"success\",\n    \"message\": \"校验token成功\",\n    \"data\": {\n        \"valid\": true,\n        \"user_info\": {\n            \"user_uuid\": \"e4f7d0a3-fa32-4ca6-964e-01d02104844b\",\n            \"username\": \"xxx\",\n            \"email\": \"meidici911@gmail.com\"\n        },\n        \"token_info\": {\n            \"created_at\": \"2025-06-10T17:47:38.747159+08:00\",\n            \"expires_at\": \"2025-06-17T17:47:38.761405+08:00\",\n            \"is_active\": true\n        }\n    }\n}"
+				}
+			]
+		}
+	]
+}

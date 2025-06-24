@@ -372,6 +372,31 @@
         .normal-content + .reasoning-content {
             margin-top: 10px;
         }
+        /* 聊天历史容器 */
+        .chat-history {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .chat-bubble.user {
+            align-self: flex-end;
+            background-color: #ebf8ff;
+            border-color: #4299e1;
+        }
+
+        .chat-bubble.assistant {
+            align-self: flex-start;
+        }
+
+        .chat-bubble.user .bubble-header {
+            justify-content: flex-end;
+        }
+
+        .chat-bubble.user .bubble-content {
+            text-align: right;
+        }
     </style>
 </head>
 <body>
@@ -415,7 +440,10 @@
                 <strong>当前会话:</strong> <span id="current-session">无</span>
             </div>
 
-            <div id="chat-bubble" class="chat-bubble" style="display: none;">
+            <div id="chat-history" class="chat-history"></div>
+
+            <!-- 模板：旧单气泡元素保留但默认隐藏，可作参考 -->
+            <div id="chat-bubble-template" class="chat-bubble" style="display: none;">
                 <div class="bubble-header">
                     <span>AI助手回复</span>
                     <span id="bubble-status" class="bubble-status">准备中</span>
@@ -454,6 +482,11 @@
         let reconnectAttempts = 0;
         const MAX_RECONNECT_ATTEMPTS = 2;
         let lastUserMessage = '';
+
+        // 当前对话中最后一个 assistant 气泡的元素引用
+        let currentAssistantBubble = null;
+        let currentBubbleStatus = null;
+        let currentBubbleContent = null;
 
         // 显示状态信息
         function showStatus(elementId, message, type = 'info') {
@@ -734,14 +767,38 @@
             updateSendButtonState();
             showStatus('chat-status', '正在发送消息...', 'info');
 
-            // 显示聊天气泡
-            const chatBubble = document.getElementById('chat-bubble');
-            const bubbleStatus = document.getElementById('bubble-status');
-            const bubbleContent = document.getElementById('bubble-content');
-            
-            chatBubble.style.display = 'block';
-            chatBubble.className = 'chat-bubble streaming';
+            // -- 组装 UI：用户 & 助手气泡 --
+            const chatHistory = document.getElementById('chat-history');
+
+            if (!isRetry) {
+                // 用户气泡
+                const userBubble = document.createElement('div');
+                userBubble.className = 'chat-bubble user complete';
+                userBubble.innerHTML = `
+                    <div class="bubble-header"><span>我</span></div>
+                    <div class="bubble-content">${marked.parse(message)}</div>`;
+                chatHistory.appendChild(userBubble);
+
+                // 助手气泡
+                const assistantBubble = document.createElement('div');
+                assistantBubble.className = 'chat-bubble assistant streaming';
+                assistantBubble.innerHTML = `
+                    <div class="bubble-header"><span>AI助手回复</span>
+                        <span class="bubble-status streaming">连接中</span></div>
+                    <div class="bubble-content">等待响应...</div>`;
+                chatHistory.appendChild(assistantBubble);
+
+                currentAssistantBubble = assistantBubble;
+                currentBubbleStatus = assistantBubble.querySelector('.bubble-status');
+                currentBubbleContent = assistantBubble.querySelector('.bubble-content');
+            }
+
+            const chatBubble = currentAssistantBubble;
+            const bubbleStatus = currentBubbleStatus;
+            const bubbleContent = currentBubbleContent;
+
             bubbleStatus.textContent = '连接中';
+            bubbleStatus.innerHTML = '连接中<span class="streaming-indicator"></span>';
             bubbleStatus.className = 'bubble-status streaming';
             bubbleContent.textContent = '';
 

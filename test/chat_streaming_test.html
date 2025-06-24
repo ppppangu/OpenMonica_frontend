@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat Streaming Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -251,48 +252,17 @@
             font-size: 12px;
         }
         .tool-call-header {
-            font-weight: bold;
-            color: #92400e;
-            margin-bottom: 5px;
+            cursor: pointer;
+            user-select: none;
         }
-        .tool-call-block {
-            background-color: #f0f9ff;
-            border: 1px solid #0ea5e9;
-            border-radius: 8px;
-            padding: 12px;
-            margin: 8px 0;
-            position: relative;
+        .tool-call-header .toggle-icon {
+            margin-right: 6px;
         }
-        .tool-call-block.invoking {
-            border-color: #f59e0b;
-            background-color: #fffbeb;
+        .tool-call-content .tool-call-details {
+            margin-top: 6px;
         }
-        .tool-call-block.completed {
-            border-color: #10b981;
-            background-color: #f0fdf4;
-        }
-        .tool-call-block.error {
-            border-color: #ef4444;
-            background-color: #fef2f2;
-        }
-        .tool-call-status {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: bold;
-            color: white;
-        }
-        .tool-call-status.invoking {
-            background-color: #f59e0b;
-        }
-        .tool-call-status.completed {
-            background-color: #10b981;
-        }
-        .tool-call-status.error {
-            background-color: #ef4444;
+        .tool-call-content.collapsed .tool-call-details {
+            display: none;
         }
         .tool-call-name {
             font-weight: bold;
@@ -465,6 +435,15 @@
         let currentStreamContent = '';  // 当前流式输出的完整内容
         let pendingToolCalls = new Map();  // 待处理的工具调用 (tool_id -> tool_info)
         let isInThinkingMode = false;  // 是否在思考模式中
+
+        // 心跳检测相关变量
+        let lastRecvTime = 0;
+        let heartbeatTimer = null;
+        const HEARTBEAT_CHECK_INTERVAL = 10000; // 10 秒检查一次
+        const HEARTBEAT_TIMEOUT = 45000;        // 45 秒无数据判定超时
+        let reconnectAttempts = 0;
+        const MAX_RECONNECT_ATTEMPTS = 2;
+        let lastUserMessage = '';
 
         // 显示状态信息
         function showStatus(elementId, message, type = 'info') {
@@ -699,6 +678,7 @@
             }
 
             showStatus('chat-status', '连接已主动断开', 'info');
+            stopHeartbeat();
         }
 
         // 更新发送按钮状态
@@ -718,11 +698,15 @@
         }
 
         // 发送消息
-        async function sendMessage() {
-            const message = document.getElementById('message-input').value.trim();
+        async function sendMessage(isRetry = false) {
+            const message = isRetry ? lastUserMessage : document.getElementById('message-input').value.trim();
             if (!message) {
                 showStatus('chat-status', '请输入消息内容', 'error');
                 return;
+            }
+            if (!isRetry) {
+                lastUserMessage = message;
+                reconnectAttempts = 0; // 新对话重置
             }
 
             if (!currentToken || !currentUserId) {
@@ -788,6 +772,8 @@
                 bubbleStatus.textContent = '接收中';
                 bubbleStatus.innerHTML = '接收中<span class="streaming-indicator"></span>';
 
+                startHeartbeat();       // 启动心跳检测
+
                 while (true) {
                     const { done, value } = await reader.read();
 
@@ -812,6 +798,7 @@
 
                     for (const line of lines) {
                         if (line.startsWith('data: ')) {
+                            lastRecvTime = Date.now(); // 更新最后接收时间
                             const data = line.slice(6).trim();
 
                             if (data === '[DONE]') {
@@ -892,6 +879,7 @@
                 isStreaming = false;
                 streamReader = null;
                 updateSendButtonState();
+                stopHeartbeat();
             }
         }
 
@@ -1063,15 +1051,23 @@
         // 添加工具调用使用内容
         function appendToolUsingContent(bubbleContentEl, jsonObj, rawText) {
             const div = document.createElement('div');
-            div.className = 'tool-call-content';
+            div.className = 'tool-call-content collapsed';
             div.innerHTML = `
-                <div class="tool-call-header">
+                <div class="tool-call-header"><span class="toggle-icon">▶</span>
                     <span class="content-type-indicator content-type-tool">工具</span>
                     工具调用（进行中）
                 </div>
-                <div class="tool-call-name">${jsonObj.tool}</div>
-                <div class="tool-call-args"><pre>${JSON.stringify(jsonObj.arguments, null, 2)}</pre></div>
+                <div class="tool-call-details">
+                    <div class="tool-call-name">${jsonObj.tool}</div>
+                    <div class="tool-call-args"><pre>${JSON.stringify(jsonObj.arguments, null, 2)}</pre></div>
+                </div>
             `;
+            // 点击折叠/展开
+            div.querySelector('.tool-call-header').onclick = () => {
+                div.classList.toggle('collapsed');
+                const icon = div.querySelector('.toggle-icon');
+                icon.textContent = div.classList.contains('collapsed') ? '▶' : '▼';
+            };
             bubbleContentEl.appendChild(div);
             bubbleContentEl.scrollTop = bubbleContentEl.scrollHeight;
         }
@@ -1079,19 +1075,26 @@
         // 添加工具调用完成内容
         function appendToolDoneContent(bubbleContentEl, jsonObj, rawText) {
             const div = document.createElement('div');
-            div.className = 'tool-call-content';
+            div.className = 'tool-call-content collapsed';
             let parsedParams = {};
             try { parsedParams = JSON.parse(jsonObj.params); } catch {}
             div.innerHTML = `
-                <div class="tool-call-header">
+                <div class="tool-call-header"><span class="toggle-icon">▶</span>
                     <span class="content-type-indicator content-type-tool">工具</span>
                     工具调用结果
                 </div>
-                <div class="tool-call-name">${parsedParams.tool || 'tool'}</div>
-                <div class="tool-call-args"><pre>${JSON.stringify(parsedParams.arguments || {}, null, 2)}</pre></div>
-                <div class="tool-call-result">${jsonObj.tool_response}</div>
-                <div><strong>状态:</strong> ${jsonObj.is_error === 'true' || jsonObj.is_error === true ? '❌ 错误' : '✅ 成功'}</div>
+                <div class="tool-call-details">
+                    <div class="tool-call-name">${parsedParams.tool || 'tool'}</div>
+                    <div class="tool-call-args"><pre>${JSON.stringify(parsedParams.arguments || {}, null, 2)}</pre></div>
+                    <div class="tool-call-result">${jsonObj.tool_response}</div>
+                    <div><strong>状态:</strong> ${jsonObj.is_error === 'true' || jsonObj.is_error === true ? '❌ 错误' : '✅ 成功'}</div>
+                </div>
             `;
+            div.querySelector('.tool-call-header').onclick = () => {
+                div.classList.toggle('collapsed');
+                const icon = div.querySelector('.toggle-icon');
+                icon.textContent = div.classList.contains('collapsed') ? '▶' : '▼';
+            };
             bubbleContentEl.appendChild(div);
             bubbleContentEl.scrollTop = bubbleContentEl.scrollHeight;
         }
@@ -1102,11 +1105,9 @@
             appendToolCallContent(bubbleContentEl, toolData);
         }
 
-        // 添加推理内容（标灰显示）
+        // 添加推理内容（标灰显示，支持 Markdown）
         function appendReasoningContent(bubbleContentEl, content) {
-            // 查找最后一个推理内容元素，如果没有则创建新的
             let lastReasoningElement = bubbleContentEl.querySelector('.reasoning-content:last-child');
-
             if (!lastReasoningElement) {
                 lastReasoningElement = document.createElement('div');
                 lastReasoningElement.className = 'reasoning-content';
@@ -1114,16 +1115,21 @@
                 bubbleContentEl.appendChild(lastReasoningElement);
             }
 
-            // 添加内容到最后一个推理内容元素（不重复添加"思考"标签）
-            lastReasoningElement.appendChild(document.createTextNode(content));
+            // 确保有 md-body 容器
+            let body = lastReasoningElement.querySelector('.md-body');
+            if (!body) {
+                body = document.createElement('span');
+                body.className = 'md-body';
+                lastReasoningElement.appendChild(body);
+            }
+
+            body.insertAdjacentHTML('beforeend', marked.parse(content));
             bubbleContentEl.scrollTop = bubbleContentEl.scrollHeight;
         }
 
-        // 添加普通内容
+        // 添加普通内容（支持 Markdown）
         function appendNormalContent(bubbleContentEl, content) {
-            // 查找最后一个普通内容元素，如果没有则创建新的
             let lastNormalElement = bubbleContentEl.querySelector('.normal-content:last-child');
-
             if (!lastNormalElement) {
                 lastNormalElement = document.createElement('div');
                 lastNormalElement.className = 'normal-content';
@@ -1131,8 +1137,14 @@
                 bubbleContentEl.appendChild(lastNormalElement);
             }
 
-            // 添加内容到最后一个普通内容元素（不重复添加"回复"标签）
-            lastNormalElement.appendChild(document.createTextNode(content));
+            let body = lastNormalElement.querySelector('.md-body');
+            if (!body) {
+                body = document.createElement('span');
+                body.className = 'md-body';
+                lastNormalElement.appendChild(body);
+            }
+
+            body.insertAdjacentHTML('beforeend', marked.parse(content));
             bubbleContentEl.scrollTop = bubbleContentEl.scrollHeight;
         }
 
@@ -1163,6 +1175,42 @@
 
             bubbleContentEl.appendChild(toolDiv);
             bubbleContentEl.scrollTop = bubbleContentEl.scrollHeight;
+        }
+
+        // 心跳检测与自动重连函数
+        function startHeartbeat() {
+            lastRecvTime = Date.now();
+            if (heartbeatTimer) clearInterval(heartbeatTimer);
+            heartbeatTimer = setInterval(() => {
+                if (isStreaming && Date.now() - lastRecvTime > HEARTBEAT_TIMEOUT) {
+                    console.warn('心跳超时，尝试自动重连...');
+                    reconnectStream();
+                }
+            }, HEARTBEAT_CHECK_INTERVAL);
+        }
+
+        function stopHeartbeat() {
+            if (heartbeatTimer) {
+                clearInterval(heartbeatTimer);
+                heartbeatTimer = null;
+            }
+        }
+
+        function reconnectStream() {
+            if (!isStreaming) return;
+            if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+                stopHeartbeat();
+                isStreaming = false;
+                updateSendButtonState();
+                showStatus('chat-status', '自动重连失败，请手动重试', 'error');
+                return;
+            }
+            reconnectAttempts++;
+            showStatus('chat-status', `自动重连中（${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}）...`, 'info');
+            disconnectStream();
+            setTimeout(() => {
+                sendMessage(true); // 带 retry 标记
+            }, 0);
         }
     </script>
 </body>

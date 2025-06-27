@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Interface - 知识库与设置</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <link href="style.css" rel="stylesheet" />
+    <link href="../settings/style.css" rel="stylesheet" />
+</head>
+<body class="bg-gray-50 h-screen">
+<!-- 全局控制器 -->
+<input type="checkbox" id="knowledge-panel-toggle" class="hidden" checked>
+
+<!-- 第一容器：固定侧边栏 -->
+<div id="container-sidebar" class="container-sidebar">
+    <div class="sidebar-content">
+        <div class="sidebar-nav-top">
+            <button class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">menu</span>
+            </button>
+            <a href="/src/chat/chat.html" class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">chat_bubble_outline</span>
+            </a>
+            <label for="knowledge-panel-toggle" class="sidebar-nav-item sidebar-nav-active">
+                <span class="material-icons">storage</span>
+            </label>
+            <button class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">videocam</span>
+            </button>
+            <button class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">mic</span>
+            </button>
+            <button class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">explore</span>
+            </button>
+            <button class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">bookmark_border</span>
+            </button>
+            <button class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">more_horiz</span>
+            </button>
+        </div>
+        <div class="sidebar-nav-bottom">
+            <a href="/src/help/help.html" class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">help_outline</span>
+            </a>
+            <a href="/src/settings/settings.html" class="sidebar-nav-item">
+                <span class="material-icons text-gray-600">settings</span>
+            </a>
+            <a href="/src/home/home.html" class="sidebar-user-avatar">
+                M
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- 第二容器：知识库管理面板 -->
+<div id="container-knowledge-panel" class="container-knowledge-panel">
+    <div class="knowledge-panel-header">
+        <h3 class="knowledge-panel-title">知识库管理</h3>
+    </div>
+    <div class="knowledge-panel-content">
+        <div class="knowledge-panel-item" data-view="dashboard">
+            <div class="knowledge-panel-icon">
+                <span class="material-icons">dashboard</span>
+            </div>
+            <div class="knowledge-panel-info">
+                <div class="knowledge-panel-item-title">知识库概览</div>
+                <div class="knowledge-panel-item-desc">仪表盘看自己的知识库总览</div>
+            </div>
+        </div>
+
+        <div class="knowledge-panel-item" data-view="detail">
+            <div class="knowledge-panel-icon">
+                <span class="material-icons">info</span>
+            </div>
+            <div class="knowledge-panel-info">
+                <div class="knowledge-panel-item-title">知识库详情</div>
+                <div class="knowledge-panel-item-desc">查看知识库详细信息</div>
+            </div>
+        </div>
+
+        <div class="knowledge-panel-item" data-view="graph">
+            <div class="knowledge-panel-icon">
+                <span class="material-icons">account_tree</span>
+            </div>
+            <div class="knowledge-panel-info">
+                <div class="knowledge-panel-item-title">知识图谱</div>
+                <div class="knowledge-panel-item-desc">知识图谱和关系展示</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 第三容器：主内容区域 -->
+<div id="container-knowledge-main" class="container-knowledge-main">
+    <div class="knowledge-main-content">
+        <header class="knowledge-main-header">
+            <h1 class="knowledge-main-title">知识库管理</h1>
+        </header>
+
+        <!-- 动态Vue组件容器 -->
+        <div id="knowledge-dynamic-content" class="knowledge-dynamic-content">
+            <!-- 知识库网格区域 - Vue组件容器 -->
+        </div>
+
+        <!-- 自定义提示词和模型记忆设置 -->
+        <div id="knowledge-settings-wrapper" class="knowledge-settings-wrapper">
+            <div id="user-prompt-container">
+                <div class="loading-placeholder">
+                    <p>加载自定义提示词...</p>
+                </div>
+            </div>
+            <div id="model-memory-container">
+                <div class="loading-placeholder">
+                    <p>加载模型记忆...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module" src="main.ts"></script>
+<script type="module" src="../settings/main.ts"></script>
+</body>
+</html>

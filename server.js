@@ -58,7 +58,7 @@ app.use((req, res, next) => {
 // ==================== 路由设置 ====================
 
 // 页面路由
-const pages = ['/', '/login', '/signin', '/signup', '/index', '/settings', '/help', '/knowledgebase', '/home'];
+const pages = ['/', '/login', '/signin', '/signup', '/index', '/settings', '/help', '/knowledgebase', '/knowledge-settings', '/home'];
 pages.forEach(route => {
     app.get(route, (req, res) => {
         const filePath = route === '/' ? '/login.html' : `${route}.html`;
@@ -130,6 +130,7 @@ app.listen(PORT, () => {
     console.log(`   - http://localhost:${PORT}/settings (设置)`);
     console.log(`   - http://localhost:${PORT}/help (帮助)`);
     console.log(`   - http://localhost:${PORT}/knowledgebase (知识库)`);
+    console.log(`   - http://localhost:${PORT}/knowledge-settings (知识库设置)`);
     console.log(`   - http://localhost:${PORT}/home (用户账户)`);
     console.log(`🔧 API端点: 通过模块化路由提供`);
 });

@@ -4,7 +4,7 @@ import { DeleteOutlined, EditOutlined, MessageOutlined, PlusOutlined } from '@an
 import { theme, message, Modal } from 'ant-design-vue';
 import { Conversations, type ConversationsProps } from 'ant-design-x-vue';
 import { computed, h, onMounted, watch } from 'vue';
-import { useChatHistoryStore } from '../store/chat_history'
+import { useChatHistoryStore } from '../../store/chat_history'
 
 const chatHistoryStore = useChatHistoryStore()
 

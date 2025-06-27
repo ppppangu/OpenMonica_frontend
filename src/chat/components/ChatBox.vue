@@ -12,11 +12,11 @@ import { Prompts } from "ant-design-x-vue";
 import { Attachments } from "ant-design-x-vue";
 import markdownit from "markdown-it";
 import { ref, h, onMounted, computed, watch } from "vue";
-import { useChatHistoryContentStore } from "../store/chat_history_content";
-import { useChatHistoryStore } from "../store/chat_history";
-import { useUserStore } from "../store/user_info";
-import { useToolCallsStore } from "../store/tool_calls";
-import ToolCallInterface from "../components/ToolCallInterface.vue";
+import { useChatHistoryContentStore } from "../../store/chat_history_content";
+import { useChatHistoryStore } from "../../store/chat_history";
+import { useUserStore } from "../../store/user_info";
+import { useToolCallsStore } from "../../store/tool_calls";
+import ToolCallInterface from "./ToolCallInterface.vue";
 
 defineOptions({ name: "ChatBox" });
 

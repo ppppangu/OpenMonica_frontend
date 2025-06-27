@@ -14,7 +14,7 @@ export default defineConfig({
         index: './index.html',
         login: './src/login/signin.html',
         signup: './src/login/signup.html',
-        chat: './src/chat/chat.html',
+        chat: './src/chat/pages/chat.html',
         knowledge: './src/knowledgebase/knowledgebase.html',
         basedetail: './src/basedetail/basedetail.html',
         settings: './src/settings/settings.html',

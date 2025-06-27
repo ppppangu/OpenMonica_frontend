@@ -2,7 +2,7 @@
 import { ref, computed, h } from 'vue'
 import { Button, Upload, message, Tooltip, Badge } from 'ant-design-vue'
 import { CloudUploadOutlined, FileOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons-vue'
-import { useFileAttachmentsStore } from '../store/file_attachments'
+import { useFileAttachmentsStore } from '../../store/file_attachments'
 
 defineOptions({ name: 'FileUploadWidget' })
 

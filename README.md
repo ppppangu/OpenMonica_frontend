@@ -1,5 +1,12 @@
 # AI Chat Interface - 静态版本
 
+此仓库包含一个简易的流式演示页面。
+
+## 使用方式
+1. `npm install` 安装依赖
+2. `npm run dev` 启动本地服务
+3. 在浏览器打开 `http://localhost:5173/src/chat/pages/chat.html` 观看流式效果
+
 这是一个简化的AI聊天界面，已移除所有JavaScript脚本，只保留基本的HTML结构和组件完整性。
 
 ## 📁 项目结构

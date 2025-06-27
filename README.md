@@ -10,6 +10,7 @@
 ├── settings.html       # 设置页面
 ├── help.html          # 帮助页面
 ├── knowledgebase.html  # 知识库管理页面
+├── knowledge_settings.html  # 知识库设置页面
 ├── basedetail.html    # 知识库详情页面
 ├── home.html          # 用户账户页面
 ├── login.html         # 登录页面
@@ -61,24 +62,29 @@
 - 静态知识库卡片展示
 - 新建知识库功能
 
-### 5. basedetail.html - 知识库详情
+### 5. knowledge_settings.html - 知识库设置
+
+- 集成自定义提示词和模型记忆模块
+- 与知识库视图在同一页面展示
+
+### 6. basedetail.html - 知识库详情
 
 - 知识库详情页面，显示具体知识库内容
 - 左侧文档列表，右侧PDF文档查看器
 - 支持文档搜索、上传和管理功能
 
-### 6. home.html - 用户账户
+### 7. home.html - 用户账户
 
 - 个人信息表单
 - 密码管理表单
 - 偏好设置表单
 
-### 6. signin.html - 登录页面
+### 8. signin.html - 登录页面
 
 - 登录表单
 - 导航到注册页面
 
-### 7. signup.html - 注册页面
+### 9. signup.html - 注册页面
 
 - 注册表单
 - 导航到登录页面
@@ -164,6 +170,7 @@ npx serve .
 - `http://localhost:3000/settings` - 设置页面
 - `http://localhost:3000/help` - 帮助页面
 - `http://localhost:3000/knowledgebase` - 知识库管理
+- `http://localhost:3000/knowledge-settings` - 知识库设置
 - `http://localhost:3000/basedetail` - 知识库详情
 - `http://localhost:3000/home` - 用户账户
 - `http://localhost:3000/login` - 登录页面（重定向到signin）

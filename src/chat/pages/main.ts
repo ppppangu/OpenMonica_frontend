@@ -1,15 +1,15 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import ChatBox from './ChatBox.vue'
-import ChatFrame from './ChatFrame.vue'
-// import ChatFrame from './SimpleChatFrame.vue'
-import ChatList from './ChatList.vue'
-import Hello from './hello.vue'
+import ChatBox from '../components/ChatBox.vue'
+// The real ChatFrame component is under development; use a simple stub for now
+import ChatFrame from '../components/SimpleChatFrame.vue'
+import ChatList from '../components/ChatList.vue'
+import Hello from '../components/hello.vue'
 
-import { useUserStore } from '../store/user_info'
-import { useChatHistoryStore } from '../store/chat_history'
-import { useChatHistoryContentStore } from '../store/chat_history_content'
-import { useModelListStore } from '../store/model_list'
+import { useUserStore } from '../../store/user_info'
+import { useChatHistoryStore } from '../../store/chat_history'
+import { useChatHistoryContentStore } from '../../store/chat_history_content'
+import { useModelListStore } from '../../store/model_list'
 
 
 // 创建Pinia实例

@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import { useUserStore } from '../store/user_info'
+import { useUserStore } from '../../store/user_info'
 
 // 使用用户store
 const userStore = useUserStore()

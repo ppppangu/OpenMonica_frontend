@@ -165,7 +165,7 @@ const handleSubmit = async () => {
       })
 
       // 重定向到聊天界面
-      window.location.href = '/src/chat/chat.html'
+      window.location.href = '/src/chat/pages/chat.html'
     } else {
       showError(result.message || '登录失败，请检查邮箱和密码')
     }

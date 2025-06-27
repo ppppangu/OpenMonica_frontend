@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { theme, message } from 'ant-design-vue';
 import { onMounted, computed, ref, onUnmounted } from 'vue';
-import { useModelListStore } from '../store/model_list';
+import { useModelListStore } from '../../store/model_list';
 
 defineOptions({ name: 'ModelList' });
 

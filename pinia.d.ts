@@ -5,7 +5,9 @@ declare module 'pinia' {
     install(app: App): void
   }
   
-  export function createPinia(): Plugin
-  
+  export function createPinia(): Pinia
+
   export function defineStore(id: string, options: any): any
-} 
+
+  export function setActivePinia(pinia: Pinia): void
+}

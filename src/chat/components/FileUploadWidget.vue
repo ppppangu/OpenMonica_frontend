@@ -85,6 +85,10 @@ const getFileIcon = (filename: string) => {
     return '📎'
   }
 }
+
+const openPublicUrl = (url: string) => {
+  window.open(url, '_blank')
+}
 </script>
 
 <template>
@@ -158,7 +162,7 @@ const getFileIcon = (filename: string) => {
                 type="text"
                 size="small"
                 :icon="h(EyeOutlined)"
-                @click="window.open(attachment.public_url, '_blank')"
+                @click="() => openPublicUrl(attachment.public_url)"
               />
             </Tooltip>
             <Tooltip title="Remove file">

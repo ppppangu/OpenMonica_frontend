@@ -105,9 +105,9 @@ function setupModularRoutes() {
 // 所有API端点现在通过模块化路由设置
 setupModularRoutes();
 
-// Favicon处理
-app.get('/favicon.ico', (req, res) => {
-    res.status(204).end();
+// 平台信息接口，前端可动态读取
+app.get('/branding', (req, res) => {
+    res.json({ name: config.platform?.name || '', icon_url: config.platform?.icon_url || '/favicon.ico' });
 });
 
 // 静态文件服务 - 托管所有HTML、CSS、JS文件（放在路由后面，避免覆盖路由）

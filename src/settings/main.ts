@@ -12,7 +12,7 @@ const pinia = createPinia()
 setActivePinia(pinia)
 
 // 设置页面功能
-document.addEventListener('DOMContentLoaded', () => {
+function init() {
     try {
         // 挂载用户提示组件
         const userPromptElement = document.getElementById('user-prompt-container');
@@ -59,4 +59,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
         console.error('Error during Vue components initialization:', error)
     }
-});
+}
+
+init()

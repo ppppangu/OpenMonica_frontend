@@ -1,3 +1,6 @@
+process.on('unhandledRejection', err => {
+  console.error('未捕获的 Promise Rejection:', err);
+});
 const express = require('express');
 const path = require('path');
 const fs = require('fs');

@@ -118,6 +118,8 @@ app.listen(PORT, () => {
     console.log(`🚀 服务器运行在 http://localhost:${PORT}`);
     console.log(`📁 静态文件目录: ${__dirname}`);
     console.log(`🔗 配置信息:`);
+    console.log(`   - 平台名称: ${config.platform.name}`);
+    console.log(`   - 图标链接: ${config.platform.icon_url}`);
     console.log(`   - 用户管理服务: ${config.user_manage_url}`);
     console.log(`   - 模型聊天服务: ${config.model_chat_url}`);
     console.log(`   - 文件管理服务: ${config.file_manage_url}`);

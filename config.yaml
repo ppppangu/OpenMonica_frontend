@@ -1,3 +1,8 @@
+# 平台配置
+platform:
+  name: "NovaAgent"
+  icon_url: "/favicon.ico"
+
 user_manage_url: "http://120.46.208.202:8006"
 file_manage_url: "http://120.46.208.202:8087"
 model_chat_url: "http://120.46.208.202:8030"

@@ -23,7 +23,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useKnowledgebaseViewStore } from '../../store/knowledgebase_view'
-import DocumentList from './DocumentList.vue'
+import DocumentList from '../../knowledgebase/DocumentList.vue'
 import { useKnowledgeBaseDetailStore } from '../../store/knowledgebase_detail'
 
 defineOptions({ name: 'KnowledgebaseDetail' })

@@ -7,8 +7,7 @@
     "start": "node server.js",
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
-    "preview": "vite preview",
-    "static": "echo \"Open index.html in your browser to view the static interface\""
+    "preview": "vite preview"
   },
   "dependencies": {
     "@types/d3": "^7.4.3",

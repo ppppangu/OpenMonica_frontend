@@ -24,6 +24,12 @@ try {
     process.exit(1);
 }
 
+// 输出平台信息，方便确认配置
+if (config.platform) {
+    console.log(`✨ 平台名称: ${config.platform.name}`);
+    console.log(`🎨 图标链接: ${config.platform.icon_url}`);
+}
+
 // 创建Express应用
 const app = express();
 const PORT = process.env.PORT || 3001;

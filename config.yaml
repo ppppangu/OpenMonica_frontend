@@ -3,6 +3,11 @@ file_manage_url: "http://120.46.208.202:8087"
 model_chat_url: "http://120.46.208.202:8030"
 # model_chat_url: "http://127.0.0.1:12356"
 
+# 平台信息
+platform:
+  name: "灵犀助手"
+  icon_url: "/favicon.ico"
+
 # 知识图谱可视化配置
 knowledge_graph:
   # 节点配置

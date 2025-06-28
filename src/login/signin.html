@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>智达AI平台 - 登录</title>
+    <title>灵犀助手平台 - 登录</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
     <link href="./style.css" rel="stylesheet"/>
@@ -14,10 +14,8 @@
         <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
             <!-- Logo和标题 -->
             <div class="text-center mb-8">
-                <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <span class="material-icons text-white text-2xl">ZD</span>
-                </div>
-                <h1 class="text-2xl font-bold text-gray-800">智达AI平台</h1>
+                <img id="branding-icon" class="w-16 h-16 mx-auto mb-4" src="/favicon.ico" alt="logo" />
+                <h1 id="branding-name" class="text-2xl font-bold text-gray-800">灵犀助手平台</h1>
                 <p class="text-gray-600 mt-2">欢迎回来，请登录您的账户</p>
             </div>
 
@@ -44,6 +42,15 @@
     </div>
 
     <script type="module" src="signin-main.ts"></script>
+    <script>
+        fetch('/branding')
+            .then(r => r.json())
+            .then(b => {
+                document.title = `${b.name}平台 - 登录`;
+                document.getElementById('branding-name').textContent = `${b.name}平台`;
+                document.getElementById('branding-icon').src = b.icon_url;
+            });
+    </script>
 
 </body>
 </html>

@@ -438,13 +438,13 @@ async function init() {
         const modelListStore = useModelListStore()
         await modelListStore.get_model_list()
         console.log('Model list fetched from API, current list:', modelListStore.model_list)
-    }, 100) // 稍微增加延迟确保组件完全挂载
+    }, 100); // 稍微增加延迟确保组件完全挂载
 
     // 初始化聊天输入框拖拽调整大小功能
-    initChatInputResize()
+    initChatInputResize();
 
     // 初始化CSS变量
-    updateMainContentPadding(180) // 设置默认高度
+    ;setMainContentPadding(180); // 设置默认高度
 
     // 添加全局调试函数
     (window as any).debugVueComponents = () => {
@@ -472,7 +472,7 @@ async function init() {
 init()
 
 // 更新主内容区域的底部间距以适应聊天输入框高度变化
-function updateMainContentPadding(inputHeight: number) {
+function setMainContentPadding(inputHeight: number) {
     const mainContentElement = document.getElementById('container-main-content')
     if (mainContentElement) {
         mainContentElement.style.setProperty('--chat-input-height', `${inputHeight}px`)
@@ -545,7 +545,7 @@ function initChatInputResize() {
         chatInputContainer.style.height = `${newHeight}px`
 
         // 更新CSS变量以动态调整主内容区域的底部间距
-        updateMainContentPadding(newHeight)
+        setMainContentPadding(newHeight)
 
         e.preventDefault()
     })

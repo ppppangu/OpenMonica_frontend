@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, readonly } from 'vue'
 import { Button, message, Tooltip } from 'ant-design-vue'
 import { AudioOutlined, AudioMutedOutlined, LoadingOutlined } from '@ant-design/icons-vue'
 

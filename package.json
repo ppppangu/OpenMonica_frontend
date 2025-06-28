@@ -36,6 +36,7 @@
     "typescript": "~5.8.0",
     "unplugin-vue-macros": "^2.14.5",
     "vite": "^6.2.0",
-    "vue-tsc": "^2.1.6"
+    "vue-tsc": "^2.1.6",
+    "esbuild": "0.25.3"
   }
 }

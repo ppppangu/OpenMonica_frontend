@@ -153,7 +153,15 @@ const handleSubmit = async () => {
       credentials: 'include' // Include cookies for authentication
     })
 
-    const result = await response.json()
+    // 尝试解析JSON响应，如果解析失败则获取文本响应
+    let result: any
+    try {
+      result = await response.json()
+    } catch (parseError) {
+      const text = await response.text()
+      console.warn('无法解析JSON响应，返回文本:', text)
+      result = { success: false, message: text }
+    }
 
     if (response.ok && result.success) {
       // 登录成功，存储用户信息到 Pinia

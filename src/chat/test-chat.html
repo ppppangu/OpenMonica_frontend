@@ -113,8 +113,8 @@
         // Import Vue and components
         import { createApp } from '/node_modules/vue/dist/vue.esm-browser.js';
         import { createPinia } from '/node_modules/pinia/dist/pinia.esm-browser.js';
-        import { createBubbleState, addChunk } from '/src/utils/streamingUpdate.ts';
-        import { parseX, renderSegmentsToHtml } from '/src/utils/streamingRender.ts';
+        import { createBubbleState, addChunk } from '/src/chat/utils/streamingUpdate.ts';
+        import { parseX, renderSegmentsToHtml } from '/src/chat/utils/streamingRender.ts';
         
         // Update Vue status
         document.getElementById('vue-status').textContent = 'Loaded ✓';

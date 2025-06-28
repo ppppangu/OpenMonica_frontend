@@ -18,7 +18,7 @@ const pinia = createPinia()
 
 
 // 聊天页面功能
-document.addEventListener('DOMContentLoaded', async () => {
+async function init() {
     console.log('🚀 DOM Content Loaded - Starting Vue component mounting...')
 
     // 诊断DOM元素是否存在
@@ -467,7 +467,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     console.log('🔧 Debug function available: window.debugVueComponents()')
 
-});
+}
+
+init()
 
 // 更新主内容区域的底部间距以适应聊天输入框高度变化
 function updateMainContentPadding(inputHeight: number) {

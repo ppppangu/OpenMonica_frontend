@@ -1,24 +1,19 @@
 import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import vueJsx from '@vitejs/plugin-vue-jsx'
+import react from '@vitejs/plugin-react'
+import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
-  plugins: [
-    vue(),
-    vueJsx(),
-  ],
+  plugins: [react()],
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
   build: {
     outDir: 'dist',
     rollupOptions: {
       input: {
-        index: './index.html',
-        login: './src/login/signin.html',
-        signup: './src/login/signup.html',
-        chat: './src/chat/chat.html',
-        knowledge: './src/knowledgebase/knowledgebase.html',
-        basedetail: './src/basedetail/basedetail.html',
-        settings: './src/settings/settings.html',
-        help: './src/help/help.html',
+        main: './index.html',
       },
     },
   },

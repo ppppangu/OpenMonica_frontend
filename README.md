@@ -1,42 +1,74 @@
-# AI Chat Interface - 静态版本
+# AI Chat Interface - React版本
 
-这是一个简化的AI聊天界面，已移除所有JavaScript脚本，只保留基本的HTML结构和组件完整性。
+这是一个现代化的AI聊天界面，使用React 18 + TypeScript + Vite技术栈构建，提供完整的聊天、知识库管理和文件处理功能。
 
 ## 📁 项目结构
 
-```
+```text
 前端/
-├── index.html          # 主聊天界面
-├── settings.html       # 设置页面
-├── help.html          # 帮助页面
-├── knowledgebase.html  # 知识库管理页面
-├── basedetail.html    # 知识库详情页面
-├── home.html          # 用户账户页面
-├── login.html         # 登录页面
-├── styles.css         # 统一样式文件
-├── server.js          # 基本Express服务器
-├── package.json       # 项目配置
-└── README.md          # 项目说明
+├── index.html                    # React应用入口
+├── src/
+│   ├── main.tsx                  # React应用主入口
+│   ├── App.tsx                   # 主应用组件
+│   ├── pages/                    # 页面组件
+│   │   ├── LoginPage.tsx         # 登录页面
+│   │   ├── ChatPage.tsx          # 聊天页面
+│   │   ├── KnowledgeBasePage.tsx # 知识库页面
+│   │   ├── SettingsPage.tsx      # 设置页面
+│   │   └── HelpPage.tsx          # 帮助页面
+│   ├── components/               # 可复用组件
+│   │   ├── layout/               # 布局组件
+│   │   ├── chat/                 # 聊天相关组件
+│   │   ├── knowledgebase/        # 知识库组件
+│   │   └── file/                 # 文件管理组件
+│   ├── stores/                   # Zustand状态管理
+│   │   ├── authStore.ts          # 用户认证状态
+│   │   ├── chatStore.ts          # 聊天状态
+│   │   ├── knowledgeBaseStore.ts # 知识库状态
+│   │   └── fileStore.ts          # 文件管理状态
+│   ├── hooks/                    # React Hooks
+│   │   ├── useAuth.ts            # 认证相关hooks
+│   │   └── useApi.ts             # API相关hooks
+│   └── utils/                    # 工具函数
+│       ├── api.ts                # API工具
+│       └── streamingUtils.ts     # 流式处理工具
+├── server.js                     # Express代理服务器
+├── package.json                  # 项目配置
+├── vite.config.js               # Vite配置
+├── tailwind.config.js           # Tailwind CSS配置
+└── README.md                    # 项目说明
 ```
 
 ## ✨ 主要特性
 
-### 🎨 保持的组件完整性
+### 🚀 现代化技术栈
 
-- **侧边栏导航** - 所有页面保持一致的侧边栏设计
-- **表单结构** - 所有表单都转换为标准HTML表单
-- **页面布局** - 保持原有的视觉设计和布局
-- **样式系统** - 继续使用Tailwind CSS和Material Icons
+- **React 18** - 最新的React版本，支持并发特性
+- **TypeScript** - 静态类型检查，提升开发体验和代码质量
+- **Vite** - 快速的构建工具，支持热模块替换
+- **Ant Design** - 企业级UI组件库
+- **Tailwind CSS** - 原子化CSS框架
+- **Zustand** - 轻量级状态管理
+- **TanStack Query** - 强大的数据获取和缓存库
 
-### 🔄 简化的功能
+### 🎯 核心功能
 
-- **静态导航** - 使用HTML链接代替JavaScript路由
-- **标准表单** - 所有交互都通过HTML表单提交
-- **移除脚本** - 删除所有Vue.js、React和自定义JavaScript
-- **统一样式** - 所有CSS整合到单个styles.css文件
-- **保留样式** - 保持所有CSS样式和视觉效果
+- **智能对话** - 支持流式响应、工具调用、多模型选择
+- **知识库管理** - 文档上传、知识图谱可视化、智能搜索
+- **文件处理** - 多格式文件上传、预览、分类管理
+- **用户认证** - 安全的登录注册、会话管理
+- **响应式设计** - 适配各种屏幕尺寸
+- **实时通信** - SSE流式数据传输
 
-## 📄 页面说明 
+### 🔧 开发特性
+
+- **组件化架构** - 模块化、可复用的组件设计
+- **类型安全** - 完整的TypeScript类型定义
+- **状态管理** - 统一的状态管理和数据流
+- **API集成** - 完整的后端API集成
+- **测试支持** - 内置测试工具和示例
+
+## 📄 功能说明
 
 ### 1. index.html - 主聊天界面
 

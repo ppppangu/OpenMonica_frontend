@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React 应用基础测试</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/antd@5.1.4/dist/reset.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/antd@5.1.4/dist/antd.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/antd@5.1.4/dist/antd.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 8px 0;
+            padding: 8px;
+            border-radius: 4px;
+            background: #f9f9f9;
+        }
+        .status-success { background: #f6ffed; color: #52c41a; }
+        .status-error { background: #fff2f0; color: #ff4d4f; }
+        .status-warning { background: #fffbe6; color: #faad14; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { Button, Card, Typography, Space, Divider, Alert } = antd;
+        const { Title, Text } = Typography;
+
+        function ReactBasicTest() {
+            const [testResults, setTestResults] = useState({});
+            const [isLoading, setIsLoading] = useState(false);
+
+            const runTest = (testName, testFn) => {
+                try {
+                    const result = testFn();
+                    setTestResults(prev => ({ ...prev, [testName]: result }));
+                    return result;
+                } catch (error) {
+                    console.error(`Test ${testName} failed:`, error);
+                    setTestResults(prev => ({ ...prev, [testName]: false }));
+                    return false;
+                }
+            };
+
+            const testReactBasics = () => {
+                return runTest('React 基础功能', () => {
+                    return typeof React !== 'undefined' && typeof ReactDOM !== 'undefined';
+                });
+            };
+
+            const testAntDesign = () => {
+                return runTest('Ant Design 组件', () => {
+                    return typeof antd !== 'undefined' && typeof antd.Button !== 'undefined';
+                });
+            };
+
+            const testStateManagement = () => {
+                return runTest('状态管理', () => {
+                    const [count, setCount] = useState(0);
+                    setCount(1);
+                    return true;
+                });
+            };
+
+            const testJSXRendering = () => {
+                return runTest('JSX 渲染', () => {
+                    const element = React.createElement('div', null, 'Test');
+                    return element.type === 'div';
+                });
+            };
+
+            const runAllTests = () => {
+                setIsLoading(true);
+                setTimeout(() => {
+                    const tests = [
+                        testReactBasics,
+                        testAntDesign,
+                        testStateManagement,
+                        testJSXRendering
+                    ];
+
+                    let passedCount = 0;
+                    tests.forEach(test => {
+                        if (test()) {
+                            passedCount++;
+                        }
+                    });
+
+                    setIsLoading(false);
+                    
+                    if (passedCount === tests.length) {
+                        alert(`🎉 所有测试通过! (${passedCount}/${tests.length})`);
+                    } else {
+                        alert(`⚠️ 部分测试失败 (${passedCount}/${tests.length})`);
+                    }
+                }, 500);
+            };
+
+            const getTestStatus = (testName) => {
+                const result = testResults[testName];
+                if (result === undefined) return { icon: '⏳', status: 'warning', text: '未测试' };
+                return result 
+                    ? { icon: '✅', status: 'success', text: '通过' }
+                    : { icon: '❌', status: 'error', text: '失败' };
+            };
+
+            return (
+                <div className="test-container">
+                    <Title level={2}>React 应用基础测试</Title>
+                    <Text type="secondary">
+                        这个测试验证 React 应用的基础功能是否正常工作。
+                    </Text>
+
+                    <Divider />
+
+                    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                        {['React 基础功能', 'Ant Design 组件', '状态管理', 'JSX 渲染'].map(testName => {
+                            const status = getTestStatus(testName);
+                            return (
+                                <div key={testName} className={`status-item status-${status.status}`}>
+                                    <span>{status.icon}</span>
+                                    <Text strong>{testName}</Text>
+                                    <Text>- {status.text}</Text>
+                                </div>
+                            );
+                        })}
+                    </Space>
+
+                    <Divider />
+
+                    <div style={{ textAlign: 'center' }}>
+                        <Button 
+                            type="primary" 
+                            size="large" 
+                            onClick={runAllTests}
+                            loading={isLoading}
+                        >
+                            运行所有测试
+                        </Button>
+                    </div>
+
+                    <Divider />
+
+                    <Alert
+                        message="测试说明"
+                        description="如果所有测试都通过，说明 React 基础环境正常，可以继续开发完整的应用。"
+                        type="info"
+                        showIcon
+                    />
+
+                    <div style={{ marginTop: 16, textAlign: 'center' }}>
+                        <Text type="secondary">
+                            Vue.js 到 React 迁移 - 基础功能验证
+                        </Text>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<ReactBasicTest />, document.getElementById('root'));
+    </script>
+</body>
+</html>

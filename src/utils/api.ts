@@ -1,8 +1,8 @@
 // API utility functions for handling authenticated requests
-import { useUserStore } from '../store/user_info'
+import { useAuthStore } from '../stores/authStore'
 
 /**
- * Get the authentication token from localStorage or Pinia store
+ * Get the authentication token from localStorage or auth store
  */
 export function getAuthToken(): string | null {
   // First try localStorage (for compatibility)
@@ -11,12 +11,12 @@ export function getAuthToken(): string | null {
     return tokenFromStorage
   }
 
-  // Fallback to Pinia store
+  // Fallback to auth store
   try {
-    const userStore = useUserStore()
-    return userStore.user?.token || null
+    const { user } = useAuthStore.getState()
+    return user?.token || null
   } catch (error) {
-    console.warn('Could not access user store:', error)
+    console.warn('Could not access auth store:', error)
     return null
   }
 }
@@ -73,10 +73,9 @@ export async function authenticatedFetch(url: string, options: RequestInit = {})
   // Handle 401 Unauthorized responses
   if (response.status === 401) {
     // Clear stored authentication data
-    localStorage.removeItem('authToken')
-    localStorage.removeItem('user')
-    localStorage.removeItem('isAuthenticated')
-    
+    const { logout } = useAuthStore.getState()
+    logout()
+
     // Redirect to login page
     window.location.href = '/login'
     throw new Error('Authentication failed')
@@ -114,6 +113,39 @@ export async function authenticatedGet(url: string): Promise<Response> {
   return authenticatedFetch(url, {
     method: 'GET'
   })
+}
+
+/**
+ * Handle API response and extract data
+ */
+export async function handleApiResponse<T>(response: Response): Promise<T> {
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorText}`)
+  }
+
+  const contentType = response.headers.get('content-type')
+  if (contentType && contentType.includes('application/json')) {
+    return response.json()
+  }
+
+  return response.text() as any
+}
+
+/**
+ * API request wrapper with error handling
+ */
+export async function apiRequest<T>(
+  url: string,
+  options: RequestInit = {}
+): Promise<T> {
+  try {
+    const response = await authenticatedFetch(url, options)
+    return await handleApiResponse<T>(response)
+  } catch (error) {
+    console.error('API request failed:', error)
+    throw error
+  }
 }
 
 /**

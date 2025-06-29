@@ -2,6 +2,14 @@
 echo 🚀 启动AI聊天界面开发环境
 echo.
 
+echo 🔧 设置Node.js 20环境...
+set "NODEJS20_PATH=C:\Users\meidi\scoop\apps\nodejs20\current"
+set "PATH=%NODEJS20_PATH%;%NODEJS20_PATH%\bin;%PATH%"
+
+echo 📋 当前Node.js版本:
+node --version
+echo.
+
 echo 📦 检查依赖...
 if not exist "node_modules" (
     echo ❌ 未找到node_modules，正在安装依赖...
@@ -12,7 +20,16 @@ if not exist "node_modules" (
         exit /b 1
     )
 ) else (
-    echo ✅ 依赖已安装
+    echo ✅ 依赖已安装，重新验证兼容性...
+    echo 🔄 使用Node.js 20重新安装依赖以确保兼容性...
+    rmdir /s /q node_modules 2>nul
+    del package-lock.json 2>nul
+    npm install
+    if errorlevel 1 (
+        echo ❌ 依赖安装失败
+        pause
+        exit /b 1
+    )
 )
 
 echo.

@@ -469,7 +469,12 @@ async function init() {
 
 }
 
-init()
+// Ensure initialization runs after DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init)
+} else {
+    init()
+}
 
 // 更新主内容区域的底部间距以适应聊天输入框高度变化
 function setMainContentPadding(inputHeight: number) {

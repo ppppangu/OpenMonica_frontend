@@ -1,23 +1,87 @@
 import React, { useState } from 'react'
-import { Card, Typography, Form, Input, Button, Switch, Select, Divider, Tabs, App } from 'antd'
-import { UserOutlined, SettingOutlined, SecurityScanOutlined } from '@ant-design/icons'
+import { Card, Typography, Form, Input, Button, Switch, Select, Divider, Tabs, App, Modal, Space } from 'antd'
+import { UserOutlined, SettingOutlined, SecurityScanOutlined, EditOutlined, LockOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useAuth } from '../hooks/useAuth'
+import { updateUserInfo, deleteUserAccount } from '../utils/api'
 
 const { Title, Text } = Typography
 const { Option } = Select
 
 const SettingsPage: React.FC = () => {
-  const { user, updateUser } = useAuth()
+  const { user, updateUser, logout } = useAuth()
   const { message } = App.useApp()
   const [loading, setLoading] = useState(false)
+  const [editingField, setEditingField] = useState<string | null>(null)
+  const [passwordModalVisible, setPasswordModalVisible] = useState(false)
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false)
 
-  const handleUserInfoUpdate = async (values: any) => {
+  // 处理用户名修改
+  const handleUsernameUpdate = async (values: { username: string }) => {
+    if (!user?.id) return
+
     setLoading(true)
     try {
-      updateUser(values)
-      message.success('个人信息更新成功')
+      await updateUserInfo('username', values.username, user.id)
+      updateUser({ username: values.username })
+      message.success('用户名更新成功')
+      setEditingField(null)
     } catch (error) {
-      message.error('更新失败，请稍后重试')
+      message.error(error instanceof Error ? error.message : '更新失败，请稍后重试')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 处理邮箱修改
+  const handleEmailUpdate = async (values: { email: string }) => {
+    if (!user?.id) return
+
+    setLoading(true)
+    try {
+      await updateUserInfo('email', values.email, user.id)
+      updateUser({ email: values.email })
+      message.success('邮箱地址更新成功')
+      setEditingField(null)
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '更新失败，请稍后重试')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 处理密码修改
+  const handlePasswordUpdate = async (values: { newPassword: string; confirmPassword: string }) => {
+    if (!user?.id) return
+
+    if (values.newPassword !== values.confirmPassword) {
+      message.error('新密码与确认密码不一致')
+      return
+    }
+
+    setLoading(true)
+    try {
+      await updateUserInfo('password', values.newPassword, user.id)
+      message.success('密码修改成功')
+      setPasswordModalVisible(false)
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '密码修改失败，请稍后重试')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 处理账号注销
+  const handleAccountDelete = async () => {
+    if (!user?.id) return
+
+    setLoading(true)
+    try {
+      await deleteUserAccount(user.id)
+      message.success('账号注销成功')
+      logout()
+      setDeleteModalVisible(false)
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '账号注销失败，请稍后重试')
     } finally {
       setLoading(false)
     }
@@ -42,39 +106,96 @@ const SettingsPage: React.FC = () => {
       label: <span><UserOutlined />个人信息</span>,
       children: (
         <Card>
-          <Form
-            layout="vertical"
-            initialValues={{
-              username: user?.username,
-              email: user?.email
-            }}
-            onFinish={handleUserInfoUpdate}
-          >
-            <Form.Item
-              name="username"
-              label="用户名"
-              rules={[{ required: true, message: '请输入用户名' }]}
-            >
-              <Input placeholder="输入用户名" />
-            </Form.Item>
+          <div className="space-y-6">
+            {/* 用户名修改 */}
+            <div>
+              <Title level={4}>用户名</Title>
+              <Text type="secondary">当前用户名：{user?.username || '未设置'}</Text>
+              <br />
+              {editingField === 'username' ? (
+                <Form
+                  layout="inline"
+                  initialValues={{ username: user?.username }}
+                  onFinish={handleUsernameUpdate}
+                  className="mt-2"
+                >
+                  <Form.Item
+                    name="username"
+                    rules={[{ required: true, message: '请输入用户名' }]}
+                  >
+                    <Input placeholder="输入新用户名" />
+                  </Form.Item>
+                  <Form.Item>
+                    <Space>
+                      <Button type="primary" htmlType="submit" loading={loading}>
+                        保存
+                      </Button>
+                      <Button onClick={() => setEditingField(null)}>
+                        取消
+                      </Button>
+                    </Space>
+                  </Form.Item>
+                </Form>
+              ) : (
+                <Button
+                  type="primary"
+                  icon={<EditOutlined />}
+                  className="mt-2"
+                  disabled={editingField !== null}
+                  onClick={() => setEditingField('username')}
+                >
+                  修改用户名
+                </Button>
+              )}
+            </div>
 
-            <Form.Item
-              name="email"
-              label="邮箱地址"
-              rules={[
-                { required: true, message: '请输入邮箱地址' },
-                { type: 'email', message: '请输入有效的邮箱地址' }
-              ]}
-            >
-              <Input placeholder="输入邮箱地址" disabled />
-            </Form.Item>
+            <Divider />
 
-            <Form.Item>
-              <Button type="primary" htmlType="submit" loading={loading}>
-                保存更改
-              </Button>
-            </Form.Item>
-          </Form>
+            {/* 邮箱地址修改 */}
+            <div>
+              <Title level={4}>邮箱地址</Title>
+              <Text type="secondary">当前邮箱：{user?.email || '未设置'}</Text>
+              <br />
+              {editingField === 'email' ? (
+                <Form
+                  layout="inline"
+                  initialValues={{ email: user?.email }}
+                  onFinish={handleEmailUpdate}
+                  className="mt-2"
+                >
+                  <Form.Item
+                    name="email"
+                    rules={[
+                      { required: true, message: '请输入邮箱地址' },
+                      { type: 'email', message: '请输入有效的邮箱地址' }
+                    ]}
+                  >
+                    <Input placeholder="输入新邮箱地址" />
+                  </Form.Item>
+                  <Form.Item>
+                    <Space>
+                      <Button type="primary" htmlType="submit" loading={loading}>
+                        保存
+                      </Button>
+                      <Button onClick={() => setEditingField(null)}>
+                        取消
+                      </Button>
+                    </Space>
+                  </Form.Item>
+                </Form>
+              ) : (
+                <Button
+                  type="primary"
+                  icon={<EditOutlined />}
+                  className="mt-2"
+                  disabled={editingField !== null}
+                  onClick={() => setEditingField('email')}
+                >
+                  修改邮箱地址
+                </Button>
+              )}
+            </div>
+          </div>
         </Card>
       ),
     },
@@ -151,30 +272,13 @@ const SettingsPage: React.FC = () => {
               <Title level={4}>密码安全</Title>
               <Text type="secondary">定期更改密码以保护账户安全</Text>
               <br />
-              <Button type="primary" className="mt-2">
+              <Button
+                type="primary"
+                icon={<LockOutlined />}
+                className="mt-2"
+                onClick={() => setPasswordModalVisible(true)}
+              >
                 修改密码
-              </Button>
-            </div>
-
-            <Divider />
-
-            <div>
-              <Title level={4}>登录设备</Title>
-              <Text type="secondary">管理已登录的设备和会话</Text>
-              <br />
-              <Button className="mt-2">
-                查看登录设备
-              </Button>
-            </div>
-
-            <Divider />
-
-            <div>
-              <Title level={4}>数据导出</Title>
-              <Text type="secondary">导出您的聊天记录和个人数据</Text>
-              <br />
-              <Button className="mt-2">
-                导出数据
               </Button>
             </div>
 
@@ -184,8 +288,13 @@ const SettingsPage: React.FC = () => {
               <Title level={4} type="danger">危险操作</Title>
               <Text type="secondary">删除账户将永久删除所有数据，此操作不可恢复</Text>
               <br />
-              <Button danger className="mt-2">
-                删除账户
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                className="mt-2"
+                onClick={() => setDeleteModalVisible(true)}
+              >
+                账号注销
               </Button>
             </div>
           </div>
@@ -199,6 +308,82 @@ const SettingsPage: React.FC = () => {
       <Title level={2}>设置</Title>
 
       <Tabs defaultActiveKey="profile" items={tabItems} />
+
+      {/* 密码修改模态框 */}
+      <Modal
+        title="修改密码"
+        open={passwordModalVisible}
+        onCancel={() => setPasswordModalVisible(false)}
+        footer={null}
+        forceRender={false}
+      >
+        <Form
+          layout="vertical"
+          onFinish={handlePasswordUpdate}
+        >
+          <Form.Item
+            name="newPassword"
+            label="新密码"
+            rules={[
+              { required: true, message: '请输入新密码' },
+              { min: 6, message: '密码长度至少6位' }
+            ]}
+          >
+            <Input.Password placeholder="输入新密码" />
+          </Form.Item>
+
+          <Form.Item
+            name="confirmPassword"
+            label="确认新密码"
+            rules={[{ required: true, message: '请确认新密码' }]}
+          >
+            <Input.Password placeholder="再次输入新密码" />
+          </Form.Item>
+
+          <Form.Item>
+            <Space>
+              <Button type="primary" htmlType="submit" loading={loading}>
+                确认修改
+              </Button>
+              <Button onClick={() => setPasswordModalVisible(false)}>
+                取消
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* 账号注销确认模态框 */}
+      <Modal
+        title="账号注销确认"
+        open={deleteModalVisible}
+        onCancel={() => setDeleteModalVisible(false)}
+        footer={null}
+        forceRender={false}
+      >
+        <div className="text-center py-4">
+          <DeleteOutlined className="text-red-500 text-4xl mb-4" />
+          <Title level={4} type="danger">确认注销账号？</Title>
+          <Text type="secondary" className="block mb-6">
+            此操作将永久删除您的账户和所有相关数据，包括聊天记录、知识库等。
+            <br />
+            <strong>此操作不可恢复！</strong>
+          </Text>
+          <Space>
+            <Button
+              danger
+              type="primary"
+              loading={loading}
+              onClick={handleAccountDelete}
+            >
+              确认注销
+            </Button>
+            <Button onClick={() => setDeleteModalVisible(false)}>
+              取消
+            </Button>
+          </Space>
+        </div>
+      </Modal>
     </div>
   )
 }

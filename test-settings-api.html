@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设置页面API测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            margin: 5px;
+            padding: 8px 16px;
+            background: #1890ff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #40a9ff;
+        }
+        input {
+            margin: 5px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>设置页面API测试</h1>
+    
+    <div class="test-section">
+        <h3>1. 登录获取Token</h3>
+        <input type="email" id="loginEmail" placeholder="邮箱" value="test@example.com">
+        <input type="password" id="loginPassword" placeholder="密码" value="123456">
+        <button onclick="testLogin()">登录</button>
+        <div id="loginResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2. 获取用户信息</h3>
+        <select id="getTarget">
+            <option value="username">用户名</option>
+            <option value="email">邮箱</option>
+        </select>
+        <button onclick="testGetUserInfo()">获取信息</button>
+        <div id="getUserResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>3. 更新用户信息</h3>
+        <select id="updateTarget">
+            <option value="username">用户名</option>
+            <option value="email">邮箱</option>
+            <option value="password">密码</option>
+        </select>
+        <input type="text" id="newValue" placeholder="新值">
+        <button onclick="testUpdateUserInfo()">更新信息</button>
+        <div id="updateResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>4. 删除账户</h3>
+        <button onclick="testDeleteAccount()" style="background: #ff4d4f;">删除账户</button>
+        <div id="deleteResult" class="result"></div>
+    </div>
+
+    <script>
+        let currentToken = '';
+        let currentUserId = '';
+
+        async function testLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                const formData = new FormData();
+                formData.append('mode', 'check');
+                formData.append('email', email);
+                formData.append('password', password);
+
+                const response = await fetch('/user/account', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                document.getElementById('loginResult').textContent = JSON.stringify(result, null, 2);
+                
+                if (result.success) {
+                    currentToken = result.token;
+                    currentUserId = result.user_id;
+                }
+            } catch (error) {
+                document.getElementById('loginResult').textContent = '错误: ' + error.message;
+            }
+        }
+
+        async function testGetUserInfo() {
+            const target = document.getElementById('getTarget').value;
+            
+            try {
+                const formData = new FormData();
+                formData.append('mode', 'get');
+                formData.append('target', target);
+                formData.append('user_id', currentUserId);
+                formData.append('token', currentToken);
+
+                const response = await fetch('/user/account', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                document.getElementById('getUserResult').textContent = JSON.stringify(result, null, 2);
+            } catch (error) {
+                document.getElementById('getUserResult').textContent = '错误: ' + error.message;
+            }
+        }
+
+        async function testUpdateUserInfo() {
+            const target = document.getElementById('updateTarget').value;
+            const newValue = document.getElementById('newValue').value;
+            
+            try {
+                const formData = new FormData();
+                formData.append('mode', 'update');
+                formData.append('target', target);
+                formData.append('new_value', newValue);
+                formData.append('user_id', currentUserId);
+                formData.append('token', currentToken);
+
+                const response = await fetch('/user/account', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                document.getElementById('updateResult').textContent = JSON.stringify(result, null, 2);
+            } catch (error) {
+                document.getElementById('updateResult').textContent = '错误: ' + error.message;
+            }
+        }
+
+        async function testDeleteAccount() {
+            if (!confirm('确认要删除账户吗？这是测试功能！')) {
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('mode', 'delete');
+                formData.append('user_id', currentUserId);
+                formData.append('token', currentToken);
+
+                const response = await fetch('/user/account', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                document.getElementById('deleteResult').textContent = JSON.stringify(result, null, 2);
+            } catch (error) {
+                document.getElementById('deleteResult').textContent = '错误: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,22 +1,11 @@
-# 自定义页面功能修复 Checklist
+# CustomPage 导入路径错误修复 Checklist
 
-> 文件位置：`documents/custom_page_fix_checklist.md`
-
-- [x] 创建设计文档（`custom_page_fix_design.md`）
-- [x] 阻断首次渲染空保存逻辑
-- [x] 基于远端数据初始化 `lastSavedBodyRef`
-- [x] 差异检测 + 1s Debounce 自动保存实现
-- [x] 手动「保存」按钮（含 loading & 禁用状态）
-- [x] 修正 API 路由映射（`useApi.ts`）
-- [x] 调整样式：去除 `h-full`，启用 `TextArea.autoSize`
-- [ ] 本地手动测试：进入页面可见远端数据
-- [ ] 本地手动测试：输入后 1s 自动保存（Network Tab 验证）
-- [ ] 本地手动测试：连续输入仅 1 次请求
-- [ ] 本地手动测试：「保存」按钮可立即保存并复位
-- [ ] 代码 Review & 合并
-- [ ] 部署后线上验证
-
-> **更新记录**
->
-> - 2025-06-30 初始化并完成前 5 项。
-> - 2025-07-01 完成 API & 样式修复。 
+| 序号 | 任务                                       | 负责人 | 状态 |
+| ---- | ------------------------------------------ | ------ | ---- |
+| 1    | 确认 Vite 报错并锁定缺失文件               | AI     | ✅    |
+| 2    | 创建 `CustomEditorSection` 新组件          | AI     | ✅    |
+| 3    | 更新 `CustomPage` import 路径              | AI     | ✅    |
+| 4    | 编写设计文档                               | AI     | ✅    |
+| 5    | 本地运行 `npm run dev`，确认页面加载无报错 | AI     | ⬜    |
+| 6    | 功能测试：数据加载 & 保存正常              | AI     | ⬜    |
+| 7    | 更新 Checklist 状态                        | AI     | ⬜    |

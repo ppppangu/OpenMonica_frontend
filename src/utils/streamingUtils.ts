@@ -239,8 +239,16 @@ export function renderSegmentsToHtml(segments: Segment[]): string {
 }
 
 function markdownToHtml(text: string): string {
-  // 使用 markdown-it 渲染，并在事后处理 <url> 标签
-  let html = md.render(text)
+  // 新增：在 Markdown 渲染之前，先检测 <http://...> 或 <https://...> 形式的 URL 并替换为 iframe
+  // 这样可以确保 iframe 渲染的优先级高于 Markdown 的 linkify 处理
+  const urlRe = /<(https?:\/\/[^>]+)>/g
+  const preProcessed = text.replace(urlRe, (_: string, url: string) => {
+    const safeUrl = escape(url)
+    return `<iframe src="${safeUrl}" sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer" style="width:100%;height:300px;"></iframe>`
+  })
+
+  // 使用 markdown-it 对剩余文本进行渲染
+  let html = md.render(preProcessed)
 
   html = html.replace(/&lt;(https?:\/\/[^&]+)&gt;/g, (_: string, url: string) => {
     const safeUrl = escape(url)

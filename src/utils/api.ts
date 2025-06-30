@@ -155,6 +155,71 @@ export function isAuthenticated(): boolean {
   const token = getAuthToken()
   const user = localStorage.getItem('user')
   const authFlag = localStorage.getItem('isAuthenticated')
-  
+
   return !!(token && user && authFlag === 'true')
+}
+
+// ==================== 用户账户管理 API ====================
+
+/**
+ * 获取用户信息
+ * @param target - 要获取的信息类型 ('username' | 'email')
+ * @param userId - 用户ID
+ */
+export async function getUserInfo(target: 'username' | 'email', userId: string): Promise<string> {
+  const response = await authenticatedFormPost('/user/account', {
+    mode: 'get',
+    target,
+    user_id: userId
+  })
+
+  const result = await handleApiResponse<{ status: string; message: string; data: string }>(response)
+
+  if (result.status === 'success') {
+    return result.data
+  } else {
+    throw new Error(result.message || '获取用户信息失败')
+  }
+}
+
+/**
+ * 更新用户信息
+ * @param target - 要更新的信息类型 ('username' | 'email' | 'password')
+ * @param newValue - 新值
+ * @param userId - 用户ID
+ */
+export async function updateUserInfo(
+  target: 'username' | 'email' | 'password',
+  newValue: string,
+  userId: string
+): Promise<void> {
+  const response = await authenticatedFormPost('/user/account', {
+    mode: 'update',
+    target,
+    new_value: newValue,
+    user_id: userId
+  })
+
+  const result = await handleApiResponse<{ status: string; message: string }>(response)
+
+  if (result.status !== 'success') {
+    throw new Error(result.message || '更新用户信息失败')
+  }
+}
+
+/**
+ * 注销用户账户
+ * @param userId - 用户ID
+ */
+export async function deleteUserAccount(userId: string): Promise<void> {
+  const response = await authenticatedFormPost('/user/account', {
+    mode: 'delete',
+    user_id: userId
+  })
+
+  const result = await handleApiResponse<{ status: string; message: string }>(response)
+
+  if (result.status !== 'success') {
+    throw new Error(result.message || '账号注销失败')
+  }
 }

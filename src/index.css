@@ -194,7 +194,7 @@
 
 /* Ant Design customizations */
 .ant-layout-sider {
-  background: linear-gradient(to bottom, #faf5ff 0%, #ffffff 100%) !important;
+  background: #ffffff !important;
   border-right: 1px solid #f0f0f0;
 }
 

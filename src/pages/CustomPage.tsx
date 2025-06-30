@@ -1,6 +1,6 @@
 import React from 'react'
 import { Row, Col } from 'antd'
-import CustomEditorSection from '../components/knowledgebase/CustomEditorSection'
+import CustomEditorSection from '../components/custom/CustomEditorSection'
 
 const CustomPage: React.FC = () => {
   return (

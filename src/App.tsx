@@ -4,7 +4,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import AuthPage from './pages/AuthPage'
 import ChatPage from './pages/ChatPage'
-import KnowledgeBasePage from './pages/KnowledgeBasePage'
+import KnowledgeBasePageV2 from './pages/KnowledgeBasePageV2'
 import SettingsPage from './pages/SettingsPage'
 import HelpPage from './pages/HelpPage'
 import CustomPage from './pages/CustomPage'
@@ -60,7 +60,7 @@ function App() {
                 <Routes>
                   <Route path="/" element={<Navigate to="/chat" replace />} />
                   <Route path="/chat" element={<ChatPage />} />
-                  <Route path="/knowledge" element={<KnowledgeBasePage />} />
+                  <Route path="/knowledge" element={<KnowledgeBasePageV2 />} />
                   <Route path="/custom" element={<CustomPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/help" element={<HelpPage />} />

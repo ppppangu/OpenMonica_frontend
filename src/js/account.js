@@ -236,6 +236,122 @@ function createUpdateUserInfoHandler(config, upload) {
 }
 
 /**
+ * 删除用户账户端点处理器
+ * @param {Object} config - 配置对象
+ * @param {Object} upload - multer upload middleware
+ * @returns {Function} Express route handler
+ */
+function createDeleteAccountHandler(config, upload) {
+    return async (req, res) => {
+        try {
+            // 验证token
+            const token = req.body.token;
+            const valid = await check_token_valid(token, config.user_manage_url);
+            if (!valid) {
+                console.log('token无效，请重新登录');
+                return res.status(401).json({
+                    success: false,
+                    message: 'token无效，请重新登录'
+                });
+            }
+
+            const user_id = req.body.user_id;
+            if (!user_id) {
+                return res.status(400).json({
+                    success: false,
+                    message: '缺少用户ID参数'
+                });
+            }
+
+            // 创建FormData发送到后端
+            const formData = new FormData();
+            formData.append('mode', 'delete');
+            formData.append('user_id', user_id);
+
+            console.log('发送到后端的删除账户请求:', {
+                mode: 'delete',
+                user_id: user_id,
+                backend_url: `${config.user_manage_url}/user/account`
+            });
+
+            const response = await axios.post(`${config.user_manage_url}/user/account`, formData, {
+                headers: formData.getHeaders(),
+                timeout: 10000
+            });
+
+            console.log('后端删除账户响应:', response.data);
+            res.json(response.data);
+        } catch (error) {
+            console.error('删除账户失败:', error);
+            res.status(500).json({
+                success: false,
+                message: '服务器内部错误，请稍后重试'
+            });
+        }
+    };
+}
+
+/**
+ * 获取用户信息端点处理器
+ * @param {Object} config - 配置对象
+ * @param {Object} upload - multer upload middleware
+ * @returns {Function} Express route handler
+ */
+function createGetUserInfoHandler(config, upload) {
+    return async (req, res) => {
+        try {
+            // 验证token
+            const token = req.body.token;
+            const valid = await check_token_valid(token, config.user_manage_url);
+            if (!valid) {
+                console.log('token无效，请重新登录');
+                return res.status(401).json({
+                    success: false,
+                    message: 'token无效，请重新登录'
+                });
+            }
+
+            const user_id = req.body.user_id;
+            const target = req.body.target; // username 或 email
+
+            if (!user_id || !target) {
+                return res.status(400).json({
+                    success: false,
+                    message: '缺少必要参数'
+                });
+            }
+
+            // 创建FormData发送到后端
+            const formData = new FormData();
+            formData.append('mode', 'get');
+            formData.append('user_id', user_id);
+            formData.append('target', target);
+
+            console.log('发送到后端的获取用户信息请求:', {
+                mode: 'get',
+                user_id: user_id,
+                target: target,
+                backend_url: `${config.user_manage_url}/user/account`
+            });
+
+            const response = await axios.post(`${config.user_manage_url}/user/account`, formData, {
+                headers: formData.getHeaders(),
+                timeout: 10000
+            });
+
+            console.log('后端获取用户信息响应:', response.data);
+            res.json(response.data);
+        } catch (error) {
+            console.error('获取用户信息失败:', error);
+            res.status(500).json({
+                success: false,
+                message: '服务器内部错误，请稍后重试'
+            });
+        }
+    };
+}
+
+/**
  * 统一账户端点处理器 - 根据mode参数路由到不同的处理函数
  * @param {Object} config - 配置对象
  * @param {Object} upload - multer upload middleware
@@ -245,6 +361,8 @@ function createUnifiedAccountHandler(config, upload) {
     const loginHandler = createLoginHandler(config, upload);
     const registerHandler = createRegisterHandler(config, upload);
     const updateHandler = createUpdateUserInfoHandler(config, upload);
+    const deleteHandler = createDeleteAccountHandler(config, upload);
+    const getHandler = createGetUserInfoHandler(config, upload);
 
     return async (req, res) => {
         const mode = req.body.mode;
@@ -262,6 +380,12 @@ function createUnifiedAccountHandler(config, upload) {
             case 'update':
                 console.log('路由到更新用户信息处理器');
                 return await updateHandler(req, res);
+            case 'delete':
+                console.log('路由到删除账户处理器');
+                return await deleteHandler(req, res);
+            case 'get':
+                console.log('路由到获取用户信息处理器');
+                return await getHandler(req, res);
             default:
                 console.log(`未知的模式: ${mode}`);
                 return res.status(400).json({
@@ -290,6 +414,8 @@ module.exports = {
     createLoginHandler,
     createRegisterHandler,
     createUpdateUserInfoHandler,
+    createDeleteAccountHandler,
+    createGetUserInfoHandler,
     createUnifiedAccountHandler,
     setupAccountRoutes
 };

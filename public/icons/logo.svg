@@ -1,1 +1,21 @@
- 
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="340" height="110" viewBox="0 0 340 110" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3A71FF"/>
+      <stop offset="50%" stop-color="#8040C9"/>
+      <stop offset="100%" stop-color="#FF0F5B"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Letter A -->
+  <path d="M20 80 L70 20 L120 80" stroke="url(#grad)" stroke-width="20" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Dot under A -->
+  <circle cx="70" cy="95" r="12" fill="#FF0F5B"/>
+
+  <!-- Letter I -->
+  <path d="M150 20 L210 80" stroke="url(#grad)" stroke-width="20" fill="none" stroke-linecap="round"/>
+
+  <!-- Letter V -->
+  <path d="M240 20 L290 80 L340 20" stroke="url(#grad)" stroke-width="20" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Layout, Menu, Button, Input, Modal, Form, message } from 'antd'
+import { Layout, Menu, Button, Input, Modal, Form, App } from 'antd'
 import {
   PlusOutlined,
   SearchOutlined,
@@ -22,6 +22,7 @@ const { Sider, Content } = Layout
 
 const KnowledgeBasePage: React.FC = () => {
   const { user } = useAuth()
+  const { message } = App.useApp()
   const {
     knowledgeBases,
     activeKnowledgeBaseId,

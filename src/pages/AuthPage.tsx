@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Form, Input, Button, Card, Typography, message, Divider } from 'antd'
+import { Form, Input, Button, Card, Typography, App, Divider } from 'antd'
 import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import { useAuth, useGuestOnly } from '../hooks/useAuth'
@@ -27,6 +27,7 @@ interface AuthPageProps {
 const AuthPage: React.FC<AuthPageProps> = ({ mode = 'login' }) => {
   const [authMode, setAuthMode] = useState<AuthMode>(mode)
   const { login, signup, isLoading, isAuthenticated, user } = useAuth()
+  const { message } = App.useApp()
   const isGuest = useGuestOnly()
 
   console.log('AuthPage render - Auth state:', {

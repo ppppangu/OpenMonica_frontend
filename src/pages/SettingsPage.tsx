@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Card, Typography, Form, Input, Button, Switch, Select, Divider, message, Tabs } from 'antd'
+import { Card, Typography, Form, Input, Button, Switch, Select, Divider, Tabs, App } from 'antd'
 import { UserOutlined, SettingOutlined, SecurityScanOutlined } from '@ant-design/icons'
 import { useAuth } from '../hooks/useAuth'
 
@@ -8,6 +8,7 @@ const { Option } = Select
 
 const SettingsPage: React.FC = () => {
   const { user, updateUser } = useAuth()
+  const { message } = App.useApp()
   const [loading, setLoading] = useState(false)
 
   const handleUserInfoUpdate = async (values: any) => {

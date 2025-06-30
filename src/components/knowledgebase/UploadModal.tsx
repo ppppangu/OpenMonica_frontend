@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Modal, Form, Upload, message } from 'antd'
+import { Modal, Form, Upload, App } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import { useDocumentUploadMutation } from '../../hooks/useApi'
 
@@ -12,6 +12,7 @@ interface UploadModalProps {
 const UploadModal: React.FC<UploadModalProps> = ({ open, onClose, knowledgeBaseId }) => {
   const [fileList, setFileList] = useState<any[]>([])
   const uploadMutation = useDocumentUploadMutation()
+  const { message } = App.useApp()
 
   const handleUpload = async () => {
     if (fileList.length === 0) {

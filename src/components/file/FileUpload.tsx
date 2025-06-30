@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Upload, Button, Progress, message, Card, List, Typography } from 'antd'
+import { Upload, Button, Progress, Card, List, Typography, App } from 'antd'
 import { 
   UploadOutlined, 
   DeleteOutlined, 
@@ -38,6 +38,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   } = useFileStore()
   
   const fileUploadMutation = useFileUploadMutation()
+  const { message } = App.useApp()
 
   const handleUpload = async (file: File) => {
     const fileId = `${file.name}_${Date.now()}`
@@ -65,7 +66,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
         })
       }, 200)
 
-      const result = await fileUploadMutation.mutateAsync(formData)
+      const result: any = await fileUploadMutation.mutateAsync(formData)
       
       clearInterval(progressInterval)
       

@@ -95,7 +95,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         trigger={null} 
         collapsible 
         collapsed={collapsed}
-        className="bg-white border-r border-gray-200 flex flex-col"
+        className="bg-white border-r border-gray-200 flex flex-col overflow-y-auto"
         width={260}
       >
         {/* 顶部 Logo 与 折叠按钮 */}

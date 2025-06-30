@@ -152,11 +152,12 @@ export const useSignupMutation = () => {
     mutationFn: async (userData: { username: string; email: string; password: string }) => {
       // Use the correct signup endpoint
       const formData = new FormData()
+      formData.append('mode', 'register')
       formData.append('username', userData.username)
       formData.append('email', userData.email)
       formData.append('password', userData.password)
 
-      const response = await fetch('/user/register', {
+      const response = await fetch('/user/account', {
         method: 'POST',
         body: formData
       })

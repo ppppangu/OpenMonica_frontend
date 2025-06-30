@@ -31,6 +31,11 @@ const theme = {
   },
 }
 
+// 若使用 cpolar 子域且协议非 https，自动跳转
+if (window.location.hostname.endsWith('.cpolar.cn') && window.location.protocol !== 'https:') {
+  window.location.href = 'https://' + window.location.host + window.location.pathname + window.location.search + window.location.hash
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>

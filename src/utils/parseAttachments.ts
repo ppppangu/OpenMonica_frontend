@@ -77,7 +77,8 @@ export function parseAttachmentBlock(raw: string): ParseAttachmentResult {
       }
     }
 
-    const stripped = (raw.slice(0, oldIdx) + raw.slice(oldIdx + oldTag.length + listStr.length)).trim()
+    // 直接保留附件块之前的文本，避免偏移误差导致残留字符
+    const stripped = raw.slice(0, oldIdx).trimEnd()
     return { attachments, stripped }
   }
 

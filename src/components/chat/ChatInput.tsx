@@ -44,6 +44,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const [activePrompts, setActivePrompts] = useState<{ key: string; text: string }[]>([])
   const [knowledgeSource, setKnowledgeSource] = useState<string>('smart')
   const [deepResearch, setDeepResearch] = useState<boolean>(false)
+  const [deepResearchPrompt, setDeepResearchPrompt] = useState<string>('')
   const textAreaRef = useRef<any>(null)
   
   const { addAttachment, isUploading, attachments, removeAttachment } = useFileStore()
@@ -60,7 +61,16 @@ const ChatInput: React.FC<ChatInputProps> = ({
       .then(text => {
         const data: any = yaml.load(text)
         if (data && data.prompt_buttons) {
-          setPromptButtons(data.prompt_buttons as Record<string, string>)
+          // 过滤 value 非字符串的情况
+          const buttons: Record<string, string> = {}
+          Object.entries<any>(data.prompt_buttons).forEach(([k, v]) => {
+            if (typeof v === 'string') buttons[k] = v
+          })
+          setPromptButtons(buttons)
+        }
+
+        if (data && typeof data.deep_research_prompt === 'string') {
+          setDeepResearchPrompt(data.deep_research_prompt)
         }
       })
       .catch(err => console.warn('加载 prompt_buttons 失败', err))
@@ -73,7 +83,13 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
     // 合并 prompt chips 与输入内容
     const promptText = activePrompts.map(p => p.text).join('，')
-    const finalContent = promptText ? `${promptText} • ${trimmedValue}` : trimmedValue
+
+    let finalContent = promptText ? `${promptText} • ${trimmedValue}` : trimmedValue
+
+    // DeepResearch 注入
+    if (deepResearch && deepResearchPrompt) {
+      finalContent = `${deepResearchPrompt} • ${finalContent}`
+    }
 
     onSend(finalContent)
 

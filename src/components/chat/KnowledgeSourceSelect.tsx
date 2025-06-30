@@ -1,5 +1,5 @@
 import React from 'react'
-import { Radio } from 'antd'
+import { Select } from 'antd'
 
 const OPTIONS = [
   { label: '智能模式', value: 'smart' },
@@ -14,18 +14,17 @@ interface KnowledgeSourceSelectProps {
 }
 
 /**
- * 知识来源单选按钮组（Radio.Group）。
+ * 知识来源选择下拉（Select）。
  */
 const KnowledgeSourceSelect: React.FC<KnowledgeSourceSelectProps> = ({ value = 'smart', onChange, disabled }) => {
   return (
-    <Radio.Group
-      options={OPTIONS}
-      optionType="button"
-      buttonStyle="solid"
+    <Select
       value={value}
-      onChange={(e) => onChange?.(e.target.value)}
+      onChange={(val) => onChange?.(val)}
       disabled={disabled}
-      className="knowledge-source-radio compact"
+      style={{ width: 140 }}
+      options={OPTIONS}
+      placement="topLeft"
     />
   )
 }

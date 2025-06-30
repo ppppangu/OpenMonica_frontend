@@ -26,7 +26,8 @@
   }
   
   .chat-bubble-user {
-    @apply bg-primary-600 text-white ml-auto;
+    /* 浅灰色气泡，文字深灰，与背景形成对比 */
+    @apply bg-gray-200 text-gray-900 ml-auto;
   }
   
   .chat-bubble-assistant {
@@ -43,6 +44,105 @@
   
   .sidebar-nav-item.active {
     @apply bg-primary-100 text-primary-700;
+  }
+
+  /* Chat message content styling */
+  .thinking-content {
+    @apply bg-gray-50 border-l-4 border-gray-300 pl-3 py-2 mb-3 text-gray-600 italic;
+  }
+
+  .normal-content {
+    @apply text-gray-900;
+  }
+
+  .tool-call-block {
+    @apply border rounded-lg p-3 mb-3 bg-gray-50;
+  }
+
+  .tool-call-loading {
+    /* 统一高端灰色 */
+    @apply border-gray-300 bg-gray-50;
+  }
+
+  .tool-call-success {
+    @apply border-gray-300 bg-gray-50;
+  }
+
+  .tool-call-error {
+    @apply border-gray-300 bg-gray-50;
+  }
+
+  .tool-call-header {
+    @apply font-semibold text-sm mb-2;
+  }
+
+  .tool-call-content {
+    @apply bg-gray-100 p-2 rounded text-xs font-mono overflow-x-auto;
+  }
+
+  .tool-call-result {
+    @apply text-sm whitespace-pre-wrap;
+  }
+
+  .markdown-content {
+    @apply prose prose-sm max-w-none break-words;
+  }
+
+  .markdown-content pre {
+    @apply bg-gray-100 text-gray-800 p-4 rounded-lg overflow-x-auto break-words;
+  }
+
+  .markdown-content code {
+    @apply bg-gray-100 px-1 py-0.5 rounded text-sm font-mono;
+  }
+
+  /* Auth page styling */
+  .auth-card {
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.95);
+  }
+
+  .auth-gradient-bg {
+    background: linear-gradient(135deg, #dc2626 0%, #ef4444 25%, #f59e0b 75%, #fbbf24 100%);
+  }
+
+  .auth-input:focus {
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+  }
+
+  .auth-button {
+    background: linear-gradient(135deg, #dc2626 0%, #f59e0b 100%);
+    transition: all 0.3s ease;
+  }
+
+  .auth-button:hover {
+    background: linear-gradient(135deg, #b91c1c 0%, #d97706 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px rgba(239, 68, 68, 0.3);
+  }
+
+  .tool-call-block summary {
+    @apply font-semibold text-sm mb-2 cursor-pointer select-none;
+  }
+
+  /* details箭头动画 */
+  .tool-call-block summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .tool-call-block summary::after {
+    content: '▸';
+    display: inline-block;
+    margin-left: 4px;
+    transition: transform 0.2s ease;
+  }
+
+  .tool-call-block[open] summary::after {
+    transform: rotate(90deg);
+  }
+
+  .tool-call-block {
+    transition: all 0.2s ease;
   }
 }
 
@@ -82,10 +182,6 @@
 }
 
 /* Markdown content styling */
-.markdown-content {
-  @apply prose prose-sm max-w-none;
-}
-
 .markdown-content h1,
 .markdown-content h2,
 .markdown-content h3,
@@ -99,36 +195,38 @@
   @apply text-gray-700 leading-relaxed;
 }
 
-.markdown-content code {
-  @apply bg-gray-100 px-1 py-0.5 rounded text-sm font-mono;
-}
-
-.markdown-content pre {
-  @apply bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto;
-}
-
-.markdown-content pre code {
-  @apply bg-transparent p-0;
-}
-
 /* Tool call styling */
 .tool-call-block {
   @apply border border-gray-200 rounded-lg p-4 my-2 bg-gray-50;
 }
 
 .tool-call-loading {
-  @apply border-blue-200 bg-blue-50;
+  @apply border-gray-300 bg-gray-50;
 }
 
 .tool-call-success {
-  @apply border-green-200 bg-green-50;
+  @apply border-gray-300 bg-gray-50;
 }
 
 .tool-call-error {
-  @apply border-red-200 bg-red-50;
+  @apply border-gray-300 bg-gray-50;
 }
 
 /* Thinking content styling */
 .thinking-content {
   @apply text-gray-500 italic border-l-4 border-gray-300 pl-4 my-2;
+}
+
+/* Primary color overrides (OpenAI 绿色) */
+:root {
+  --color-primary-50: #ecfdf5;
+  --color-primary-100: #d1fae5;
+  --color-primary-200: #a7f3d0;
+  --color-primary-300: #6ee7b7;
+  --color-primary-400: #34d399;
+  --color-primary-500: #10b981;
+  --color-primary-600: #0ea472;
+  --color-primary-700: #0f865e;
+  --color-primary-800: #046C4E;
+  --color-primary-900: #03543F;
 }

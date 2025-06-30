@@ -54,16 +54,29 @@ interface KnowledgeBaseState {
   graphError: string | null
   
   // View state
-  currentView: 'dashboard' | 'detail' | 'graph'
+  currentView: 'dashboard' | 'detail' | 'graph' | 'custom'
   searchTerm: string
   selectedTags: string[]
+  
+  // Stats
+  stats: {
+    totalKnowledgeBases: number
+    totalDocuments: number
+    totalStorageUsage: number // 单位：MB
+  }
+
+  // Preview document
+  previewDoc: Document | null
+
+  // Upload progress (0-100)
+  uploadProgress: number
   
   // Actions
   setKnowledgeBases: (bases: KnowledgeBase[]) => void
   setActiveKnowledgeBase: (id: string | null) => void
   setDocuments: (documents: Document[]) => void
   setActiveDocument: (id: string | null) => void
-  setCurrentView: (view: 'dashboard' | 'detail' | 'graph') => void
+  setCurrentView: (view: 'dashboard' | 'detail' | 'graph' | 'custom') => void
   setSearchTerm: (term: string) => void
   setSelectedTags: (tags: string[]) => void
   
@@ -71,6 +84,11 @@ interface KnowledgeBaseState {
   setGraphData: (data: KnowledgeGraphData) => void
   setGraphLoading: (loading: boolean) => void
   setGraphError: (error: string | null) => void
+  
+  // Stats & Upload
+  setStats: (stats: KnowledgeBaseState["stats"]) => void
+  setPreviewDoc: (doc: Document | null) => void
+  setUploadProgress: (progress: number) => void
   
   // Computed getters
   getActiveKnowledgeBase: () => KnowledgeBase | null
@@ -91,6 +109,13 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseState>()(
       currentView: 'dashboard',
       searchTerm: '',
       selectedTags: [],
+      stats: {
+        totalKnowledgeBases: 0,
+        totalDocuments: 0,
+        totalStorageUsage: 0,
+      },
+      previewDoc: null,
+      uploadProgress: 0,
 
       setKnowledgeBases: (bases: KnowledgeBase[]) => {
         set({ knowledgeBases: bases })
@@ -112,7 +137,7 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseState>()(
         set({ activeDocumentId: id })
       },
 
-      setCurrentView: (view: 'dashboard' | 'detail' | 'graph') => {
+      setCurrentView: (view: 'dashboard' | 'detail' | 'graph' | 'custom') => {
         set({ currentView: view })
       },
 
@@ -134,6 +159,18 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseState>()(
 
       setGraphError: (error: string | null) => {
         set({ graphError: error })
+      },
+
+      setStats: (stats) => {
+        set({ stats })
+      },
+
+      setPreviewDoc: (doc) => {
+        set({ previewDoc: doc })
+      },
+
+      setUploadProgress: (progress) => {
+        set({ uploadProgress: progress })
       },
 
       getActiveKnowledgeBase: () => {
@@ -160,7 +197,8 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseState>()(
       partialize: (state) => ({
         activeKnowledgeBaseId: state.activeKnowledgeBaseId,
         activeDocumentId: state.activeDocumentId,
-        currentView: state.currentView
+        currentView: state.currentView,
+        stats: state.stats,
       }),
     }
   )

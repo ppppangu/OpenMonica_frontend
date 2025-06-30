@@ -9,7 +9,7 @@ const { Title, Text, Paragraph } = Typography
 
 const ReactAppTest: React.FC = () => {
   const [testResults, setTestResults] = useState<Record<string, boolean>>({})
-  const { user, isAuthenticated, createMockUser } = useAuth()
+  const { user, isAuthenticated } = useAuth()
   const { addUserMessage, currentMessages } = useChatStore()
   const { knowledgeBases, setKnowledgeBases } = useKnowledgeBaseStore()
   const { attachments, addAttachment } = useFileStore()
@@ -34,9 +34,6 @@ const ReactAppTest: React.FC = () => {
 
   const testAuthentication = () => {
     return runTest('用户认证', () => {
-      if (!isAuthenticated) {
-        createMockUser()
-      }
       return isAuthenticated && user !== null
     })
   }

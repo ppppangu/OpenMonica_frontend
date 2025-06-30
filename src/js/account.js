@@ -236,19 +236,53 @@ function createUpdateUserInfoHandler(config, upload) {
 }
 
 /**
+ * 统一账户端点处理器 - 根据mode参数路由到不同的处理函数
+ * @param {Object} config - 配置对象
+ * @param {Object} upload - multer upload middleware
+ * @returns {Function} Express route handler
+ */
+function createUnifiedAccountHandler(config, upload) {
+    const loginHandler = createLoginHandler(config, upload);
+    const registerHandler = createRegisterHandler(config, upload);
+    const updateHandler = createUpdateUserInfoHandler(config, upload);
+
+    return async (req, res) => {
+        const mode = req.body.mode;
+
+        console.log(`收到账户请求，模式: ${mode}`);
+
+        switch (mode) {
+            case 'login':
+            case 'check':
+                console.log('路由到登录处理器');
+                return await loginHandler(req, res);
+            case 'register':
+                console.log('路由到注册处理器');
+                return await registerHandler(req, res);
+            case 'update':
+                console.log('路由到更新用户信息处理器');
+                return await updateHandler(req, res);
+            default:
+                console.log(`未知的模式: ${mode}`);
+                return res.status(400).json({
+                    success: false,
+                    message: `不支持的操作模式: ${mode}`
+                });
+        }
+    };
+}
+
+/**
  * Setup account routes
  * @param {Object} app - Express app instance
  * @param {Object} config - Configuration object
  * @param {Object} upload - multer upload middleware
  */
 function setupAccountRoutes(app, config, upload) {
-    // 登录端点
-    app.post('/api/auth/login', upload.none(), createLoginHandler(config, upload));
+    // 统一账户端点 - 根据mode参数路由到不同处理器
+    app.post('/user/account', upload.none(), createUnifiedAccountHandler(config, upload));
 
-    // 注册端点
-    app.post('/user/account', upload.none(), createRegisterHandler(config, upload));
-
-    // 更新用户信息端点
+    // 更新用户信息端点（保持向后兼容）
     app.post('/user/setting/update_generate_user_infomation', upload.none(), createUpdateUserInfoHandler(config, upload));
 }
 
@@ -256,5 +290,6 @@ module.exports = {
     createLoginHandler,
     createRegisterHandler,
     createUpdateUserInfoHandler,
+    createUnifiedAccountHandler,
     setupAccountRoutes
 };

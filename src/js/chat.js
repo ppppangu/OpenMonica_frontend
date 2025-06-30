@@ -8,27 +8,29 @@ const { check_token_valid } = require('./token');
  */
 
 /**
- * 获取对话session列表端点处理器
+ * 统一的聊天历史处理器 - 支持获取列表、获取具体内容、删除会话
  * @param {Object} config - 配置对象
  * @param {Object} upload - multer upload middleware
  * @returns {Function} Express route handler
  */
-function createGetChatHistoryHandler(config, upload) {
+function createChatHistoryHandler(config, upload) {
     return async (req, res) => {
         try {
             const token = req.body.token;
             const valid = await check_token_valid(token, config.user_manage_url);
             if (!valid) {
                 console.log('token无效，请重新登录');
-                alert('token无效，请重新登录');
-                res.redirect('/');
-                return;
+                return res.status(401).json({
+                    success: false,
+                    message: 'token无效，请重新登录'
+                });
             }
 
-            console.log('获取对话session列表请求:', req.body);
+            console.log('聊天历史请求:', req.body);
 
-            const mode = 'get_all_list'
+            const mode = req.body.mode || 'get_all_list';
             const user_id = req.body.user_id;
+            const session_id = req.body.session_id;
 
             // 验证必要字段
             if (!user_id) {
@@ -38,55 +40,89 @@ function createGetChatHistoryHandler(config, upload) {
                 });
             }
 
+            if ((mode === 'get_specific' || mode === 'delete_specific') && !session_id) {
+                return res.status(400).json({
+                    success: false,
+                    message: '会话ID是必填项'
+                });
+            }
+
             // 尝试连接后端服务
             try {
                 const formData = new FormData();
                 formData.append('mode', mode);
                 formData.append('user_id', user_id);
+                if (session_id) {
+                    formData.append('session_id', session_id);
+                }
 
-                console.log('发送到后端的对话历史请求:', { mode: mode, user_id: user_id });
+                console.log('发送到后端的聊天历史请求:', { mode, user_id, session_id });
 
                 const response = await axios.post(`${config.user_manage_url}/user/chat_history`, formData, {
                     headers: formData.getHeaders(),
                     timeout: 10000
                 });
 
-                console.log('后端对话历史响应:', response.data);
+                console.log('后端聊天历史响应:', response.data);
                 res.json(response.data);
             } catch (backendError) {
-                console.warn('后端服务不可用，使用本地模拟对话历史:', backendError.message);
+                console.warn('后端服务不可用，使用模拟响应:', backendError.message);
 
-                // 模拟对话session列表数据
-                const mockSessions = [
-                    {
-                        session_id: 'session_' + Date.now() + '_1',
-                        timestamp: new Date(Date.now() - 86400000).toISOString()
-                    },
-                    {
-                        session_id: 'session_' + Date.now() + '_2',
-                        timestamp: new Date(Date.now() - 172800000).toISOString()
-                    },
-                    {
-                        session_id: 'session_' + Date.now() + '_3',
-                        timestamp: new Date(Date.now() - 259200000).toISOString()
-                    },
-                    {
-                        session_id: 'session_' + Date.now() + '_4',
-                        timestamp: new Date(Date.now() - 345600000).toISOString()
-                    }
-                ];
+                // 根据模式返回不同的模拟数据
+                if (mode === 'get_all_list') {
+                    const mockSessions = [
+                        {
+                            session_id: 'session_' + Date.now() + '_1',
+                            timestamp: new Date(Date.now() - 86400000).toISOString()
+                        },
+                        {
+                            session_id: 'session_' + Date.now() + '_2',
+                            timestamp: new Date(Date.now() - 172800000).toISOString()
+                        }
+                    ];
 
-                res.json({
-                    success: true,
-                    message: '获取对话列表成功',
-                    data: {
-                        sessions: mockSessions,
-                        total_count: mockSessions.length
-                    }
-                });
+                    res.json({
+                        status: 'success',
+                        message: `get all chat history list for user ${user_id} success`,
+                        data: mockSessions
+                    });
+                } else if (mode === 'get_specific') {
+                    res.json({
+                        status: 'success',
+                        message: `get specific chat history ${session_id} for user ${user_id} success`,
+                        data: {
+                            session_id: session_id,
+                            chat_history: [
+                                {
+                                    messages: [
+                                        {
+                                            role: 'user',
+                                            content: [{ type: 'text', text: '你好' }]
+                                        }
+                                    ],
+                                    timestamp: new Date().toISOString()
+                                },
+                                {
+                                    messages: [
+                                        {
+                                            role: 'assistant',
+                                            content: [{ type: 'text', text: '你好！我是AI助手，很高兴为您服务。' }]
+                                        }
+                                    ],
+                                    timestamp: new Date().toISOString()
+                                }
+                            ]
+                        }
+                    });
+                } else if (mode === 'delete_specific') {
+                    res.json({
+                        status: 'success',
+                        message: `delete specific chat history ${session_id} for user ${user_id} success`
+                    });
+                }
             }
         } catch (error) {
-            console.error('获取对话历史失败:', error.message);
+            console.error('聊天历史处理失败:', error.message);
             res.status(500).json({
                 success: false,
                 message: '服务器内部错误，请稍后重试'
@@ -263,24 +299,32 @@ function createChatStreamHandler(config, upload) {
         console.log('Parsed user_message_list:', user_message_list);
         console.log('Parsed extra_request_list:', extra_request_list);
 
-        // 将user_message和extra_request_list合并成一个列表
-        const messages_list = [
-            ...user_message_list,
-            ...extra_request_list
-        ]
+        // 根据API文档，构建正确的消息格式
+        // 对于纯语言模型，使用简单的消息格式
+        // 对于多模态模型，使用复杂的content数组格式
+        let messages_list;
 
-        // extra_request_list是一个数组，数组中每个元素是一个字典，字典中包含两个键值对，两个键分别是name和parameters，name对应的键是字符串，parameters对应的键是一个列表字典，列表字典中是所需参数的名字和对应的值
+        if (user_message_list.length > 0) {
+            messages_list = user_message_list;
+        } else {
+            // 如果没有提供消息列表，从text字段构建
+            const text = req.body.text || '';
+            messages_list = [{
+                "role": "user",
+                "content": text
+            }];
+        }
+
+        // 根据API文档构建FormData
         const formData = new FormData();
         formData.append('user_id', user_id);
         formData.append('model', model_id);
         formData.append('messages', JSON.stringify(messages_list));
 
         console.log('FormData内容:');
-        console.log('- user_id:', req.body.user_id);
-        console.log('- session_id:', req.body.session_id);
+        console.log('- user_id:', user_id);
         console.log('- model:', model_id);
         console.log('- messages (JSON):', JSON.stringify(messages_list));
-        console.log('- 拼接后的user_id:', user_id);
 
         console.log('Sending to backend:', {
             user_id: user_id,
@@ -288,7 +332,7 @@ function createChatStreamHandler(config, upload) {
             messages: messages_list
         });
 
-        console.log('Backend URL:', `${config.model_chat_url}/user/chat`);
+        console.log('Backend URL:', `${config.model_chat_url}/v1/chat/completions`);
         console.log('FormData headers:', formData.getHeaders ? formData.getHeaders() : 'No headers method');
 
         try {
@@ -340,8 +384,11 @@ function createChatStreamHandler(config, upload) {
                     }
                     console.log('=== 数据块结束 ===\n');
 
-                    // 转发SSE格式的数据，保持原始格式
-                    res.write(chunkStr);
+                    // 在转发给前端之前，移除模型心跳符号 ☯ 以及其紧随的换行符
+                    const cleanedChunkStr = chunkStr.replace(/☯(\r?\n)?/g, '');
+
+                    // 转发清洗后的数据
+                    res.write(cleanedChunkStr);
                 });
 
                 response.data.on('end', () => {
@@ -360,7 +407,7 @@ function createChatStreamHandler(config, upload) {
                 console.error('=== 模型聊天服务请求失败详情 ===');
                 console.error('错误消息:', backendError.message);
                 console.error('错误代码:', backendError.code);
-                console.error('请求URL:', `${config.model_chat_url}/user/chat`);
+                console.error('请求URL:', `${config.model_chat_url}/v1/chat/completions`);
 
                 if (backendError.response) {
                     console.error('响应状态:', backendError.response.status);
@@ -430,23 +477,15 @@ function createChatStreamHandler(config, upload) {
  * @param {Object} upload - multer upload middleware
  */
 function setupChatRoutes(app, config, upload) {
-    // 获取对话session列表端点
-    app.post('/user/chat_history', upload.none(), createGetChatHistoryHandler(config, upload));
-
-    // 删除对话session端点
-    app.post('/user/chat_history/delete', upload.none(), createDeleteChatHistoryHandler(config, upload));
-
-    // 获取具体对话内容
-    app.post('/user/chat_history/get_content', upload.none(), createGetChatContentHandler(config, upload));
+    // 统一的聊天历史端点 - 支持获取列表、获取具体内容、删除会话
+    app.post('/user/chat_history', upload.none(), createChatHistoryHandler(config, upload));
 
     // 聊天流式响应端点
     app.post('/user/chat', upload.none(), createChatStreamHandler(config, upload));
 }
 
 module.exports = {
-    createGetChatHistoryHandler,
-    createDeleteChatHistoryHandler,
-    createGetChatContentHandler,
+    createChatHistoryHandler,
     createChatStreamHandler,
     setupChatRoutes
 };

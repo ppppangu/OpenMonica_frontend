@@ -10,25 +10,40 @@ export const useAuth = () => {
   const loginMutation = useLoginMutation()
   const signupMutation = useSignupMutation()
 
-  // Initialize auth on mount
-  useEffect(() => {
-    authStore.initializeAuth()
-  }, [authStore])
+  // Zustand persist middleware handles initialization automatically
+  // No need for manual initialization
 
   const login = async (credentials: { email: string; password: string }) => {
     try {
       const result = await loginMutation.mutateAsync(credentials)
-      
-      if (result.success || result.token) {
+
+      console.log('Login API result:', result) // 调试日志
+
+      if (result.success && result.token) {
         const userData = {
           token: result.token,
-          id: result.user_id || result.id,
-          email: credentials.email,
-          username: result.username || credentials.email.split('@')[0]
+          id: result.user_id || result.id, // 后端返回user_id字段
+          email: result.user_email || credentials.email, // 后端返回user_email字段
+          username: result.user_username || result.username || credentials.email.split('@')[0] // 后端返回user_username字段
         }
-        
+
+        console.log('Processed user data:', userData) // 调试日志
+
+        // Update auth store
         authStore.login(userData)
-        navigate('/chat')
+
+        console.log('Auth store updated, current state:', {
+          isAuthenticated: authStore.isAuthenticated,
+          user: authStore.user
+        })
+
+        // Force a state update and navigation
+        // Use a longer timeout to ensure Zustand state has propagated
+        setTimeout(() => {
+          console.log('Attempting navigation to /chat')
+          navigate('/chat', { replace: true })
+        }, 200)
+
         return { success: true }
       } else {
         return { success: false, error: result.message || '登录失败' }
@@ -72,7 +87,6 @@ export const useAuth = () => {
     signup,
     logout,
     checkAuth,
-    createMockUser: authStore.createMockUser,
     updateUser: authStore.updateUser
   }
 }
@@ -104,14 +118,21 @@ export const useRequireAuth = () => {
 
 // Hook for guest-only routes (login/signup)
 export const useGuestOnly = () => {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/chat')
-    }
-  }, [isAuthenticated, navigate])
+    console.log('useGuestOnly: isAuthenticated changed to:', isAuthenticated, 'user:', user)
 
-  return !isAuthenticated
+    // Check both isAuthenticated flag and user object existence
+    if (isAuthenticated && user && user.token) {
+      console.log('useGuestOnly: User is authenticated with token, redirecting to /chat')
+      // Use setTimeout to ensure the redirect happens after any pending state updates
+      setTimeout(() => {
+        navigate('/chat', { replace: true })
+      }, 100)
+    }
+  }, [isAuthenticated, user, navigate])
+
+  return !isAuthenticated || !user
 }

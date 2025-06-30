@@ -1,4 +1,6 @@
 import { escape } from 'lodash-es'
+import MarkdownIt from 'markdown-it'
+import hljs from 'highlight.js'
 
 // Types for streaming content
 export type SegmentType = "think" | "normal" | "toolUsing" | "toolDone"
@@ -30,6 +32,25 @@ export interface ToolDoneSegment extends BaseSegment {
 }
 
 export type Segment = BaseSegment | ToolUsingSegment | ToolDoneSegment
+
+// ----------------------------
+// Markdown 渲染实例（带语法高亮）
+// ----------------------------
+
+const md = new MarkdownIt({
+  html: true,
+  linkify: true,
+  highlight: (str: string, lang: string) => {
+    try {
+      if (lang && hljs.getLanguage(lang)) {
+        return `<pre class="hljs"><code>${hljs.highlight(str, { language: lang, ignoreIllegals: true }).value}</code></pre>`
+      }
+      return `<pre class="hljs"><code>${hljs.highlightAuto(str).value}</code></pre>`
+    } catch {
+      return `<pre class="hljs"><code>${escape(str)}</code></pre>`
+    }
+  },
+})
 
 // OpenAI SSE response format
 export interface OpenAISSEChunk {
@@ -154,31 +175,41 @@ function splitThinkNormal(text: string): Segment[] {
 // Render segments to HTML
 export function renderSegmentsToHtml(segments: Segment[]): string {
   const htmlParts: string[] = []
-  let currentType: "think" | "normal" = "normal"
+
+  // 收集已完成的工具调用，用于隐藏对应调用块
+  const completedSet = new Set<string>()
+  segments.forEach((seg) => {
+    if (seg.type === 'toolDone' && (seg as ToolDoneSegment).parsedParams) {
+      completedSet.add(JSON.stringify((seg as ToolDoneSegment).parsedParams))
+    }
+  })
 
   segments.forEach((segment) => {
-    if (segment.type === "think" || segment.type === "normal") {
-      currentType = segment.type
-      const className = segment.type === "think" ? "thinking-content" : "normal-content"
+    if (segment.type === 'think' || segment.type === 'normal') {
+      const className = segment.type === 'think' ? 'thinking-content' : 'normal-content'
       htmlParts.push(`<div class="${className}">${markdownToHtml(segment.content)}</div>`)
-    } else if (segment.type === "toolUsing") {
+    } else if (segment.type === 'toolUsing') {
+      // 若已完成，跳过渲染调用块
+      const key = JSON.stringify((segment as ToolUsingSegment).json)
+      if (completedSet.has(key)) return
+
       htmlParts.push(
-        `<div class="tool-call-block tool-call-loading">
-          <div class="tool-call-header">🔧 调用工具: ${escape((segment as ToolUsingSegment).json.tool)}</div>
-          <pre class="tool-call-content">${escape(segment.content)}</pre>
-        </div>`
+        `<details class="tool-call-block tool-call-loading">
+           <summary class="tool-call-header cursor-pointer select-none">🔧 调用工具: ${escape((segment as ToolUsingSegment).json.tool)}</summary>
+           <pre class="tool-call-content">${escape(segment.content)}</pre>
+         </details>`
       )
-    } else if (segment.type === "toolDone") {
+    } else if (segment.type === 'toolDone') {
       const toolDone = segment as ToolDoneSegment
-      const isError = toolDone.json.is_error === true || toolDone.json.is_error === "true"
-      const statusClass = isError ? "tool-call-error" : "tool-call-success"
-      const statusIcon = isError ? "❌" : "✅"
-      
+      const isError = toolDone.json.is_error === true || toolDone.json.is_error === 'true'
+      const statusClass = isError ? 'tool-call-error' : 'tool-call-success'
+      const statusIcon = isError ? '❌' : '✅'
+
       htmlParts.push(
-        `<div class="tool-call-block ${statusClass}">
-          <div class="tool-call-header">${statusIcon} 工具执行${isError ? '失败' : '完成'}</div>
-          <div class="tool-call-result">${escape(toolDone.json.tool_response)}</div>
-        </div>`
+        `<details class="tool-call-block ${statusClass}">
+           <summary class="tool-call-header cursor-pointer select-none">${statusIcon} 工具执行${isError ? '失败' : '完成'}</summary>
+           <div class="tool-call-result">${escape(toolDone.json.tool_response)}</div>
+         </details>`
       )
     }
   })
@@ -186,19 +217,18 @@ export function renderSegmentsToHtml(segments: Segment[]): string {
   return htmlParts.join('\n')
 }
 
-// Simple markdown to HTML conversion
 function markdownToHtml(text: string): string {
-  // Basic markdown conversions
-  let html = text
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/`(.*?)`/g, '<code>$1</code>')
-    .replace(/\n/g, '<br>')
+  // 使用 markdown-it 渲染，并在事后处理 <url> 标签
+  let html = md.render(text)
 
-  // Handle URLs in <url> tags
-  html = html.replace(/&lt;(https?:\/\/[^&]+)&gt;/g, (_, url) => {
+  html = html.replace(/&lt;(https?:\/\/[^&]+)&gt;/g, (_: string, url: string) => {
     const safeUrl = escape(url)
     return `<iframe src="${safeUrl}" sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer" style="width:100%;height:300px;"></iframe>`
+  })
+
+  // 将 ```mermaid``` 代码块转换为 mermaid div，供 mermaid.js 渲染
+  html = html.replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g, (_m, code) => {
+    return `<div class="mermaid">${escape(code)}</div>`
   })
 
   return html

@@ -5,7 +5,7 @@ export interface ChatMessage {
   key: string
   chat_id?: string
   role: 'user' | 'assistant' | 'system'
-  content: string
+  content: string | any[]
   timestamp: string
   streaming?: boolean
   reasoning_content?: string
@@ -33,33 +33,43 @@ interface ChatState {
   currentSessionId: string | null
   currentMessages: ChatMessage[]
   streamingMessage: ChatMessage | null
-  
+
   // Chat history
   chatSessions: ChatSession[]
-  
+
   // Tool calls
   toolCalls: Record<string, ToolCall>
-  
+
   // Model selection
   selectedModelIds: string[]
+
+  // UI state
+  isLoading: boolean
+  error: string | null
   
   // Actions
   setCurrentSession: (sessionId: string) => void
-  addUserMessage: (content: string) => void
+  addUserMessage: (content: string | any[]) => void
   startStreamingResponse: (chatId?: string) => void
   updateStreamingContent: (content?: string, reasoningContent?: string) => void
   finishStreamingResponse: () => void
   clearCurrentChat: () => void
   setChatSessions: (sessions: ChatSession[]) => void
   setCurrentMessages: (messages: ChatMessage[]) => void
-  
+
   // Tool call actions
   addToolCall: (toolCall: ToolCall) => void
   updateToolCall: (id: string, updates: Partial<ToolCall>) => void
   removeToolCall: (id: string) => void
-  
+
   // Model actions
   setSelectedModels: (modelIds: string[]) => void
+  createNewSession: () => string
+  loadSessionMessages: (sessionId: string, messages: ChatMessage[]) => void
+  setLoading: (loading: boolean) => void
+  setError: (error: string | null) => void
+  clearError: () => void
+  startNewConversation: () => string
 }
 
 export const useChatStore = create<ChatState>()(
@@ -71,12 +81,14 @@ export const useChatStore = create<ChatState>()(
       chatSessions: [],
       toolCalls: {},
       selectedModelIds: [],
+      isLoading: false,
+      error: null,
 
       setCurrentSession: (sessionId: string) => {
         set({ currentSessionId: sessionId, currentMessages: [] })
       },
 
-      addUserMessage: (content: string) => {
+      addUserMessage: (content: string | any[]) => {
         const message: ChatMessage = {
           key: `user_${Date.now()}`,
           role: 'user',
@@ -110,21 +122,55 @@ export const useChatStore = create<ChatState>()(
         const { streamingMessage } = get()
         if (!streamingMessage) return
 
-        const updatedMessage = { ...streamingMessage }
-        
-        if (content !== undefined && content !== null && content !== '') {
-          updatedMessage.content += content
+        const updated = { ...streamingMessage }
+
+        // 确保 content 为 string
+        if (typeof updated.content !== 'string') {
+          updated.content = ''
         }
-        
-        if (reasoningContent !== undefined && reasoningContent !== null && reasoningContent !== '') {
-          updatedMessage.reasoning_content = (updatedMessage.reasoning_content || '') + reasoningContent
+
+        const appendText = (text: string, isReason: boolean) => {
+          const current = updated.content as string
+
+          // 判断当前是否位于 <think> 内
+          const lastOpen = current.lastIndexOf('<think>')
+          const lastClose = current.lastIndexOf('</think>')
+          const inThink = lastOpen > lastClose
+
+          let newStr = current
+
+          if (isReason) {
+            if (!current) {
+              newStr += `<think>` + text
+            } else if (inThink) {
+              newStr += text
+            } else {
+              newStr += `\n<think>` + text
+            }
+            // reasoning_content 仅作兼容保留
+            updated.reasoning_content = (updated.reasoning_content || '') + text
+          } else {
+            if (inThink) {
+              newStr += `</think>` + text
+            } else {
+              newStr += text
+            }
+          }
+
+          updated.content = newStr
+        }
+
+        if (reasoningContent && reasoningContent !== '') {
+          appendText(reasoningContent, true)
+        }
+
+        if (content && content !== '') {
+          appendText(content, false)
         }
 
         set(state => ({
-          streamingMessage: updatedMessage,
-          currentMessages: state.currentMessages.map(msg => 
-            msg.key === updatedMessage.key ? updatedMessage : msg
-          )
+          streamingMessage: updated,
+          currentMessages: state.currentMessages.map(m => m.key === updated.key ? updated : m)
         }))
       },
 
@@ -178,6 +224,42 @@ export const useChatStore = create<ChatState>()(
 
       setSelectedModels: (modelIds: string[]) => {
         set({ selectedModelIds: modelIds })
+      },
+
+      createNewSession: () => {
+        const sessionId = `ss${Date.now()}`
+        set({
+          currentSessionId: sessionId,
+          currentMessages: [],
+          streamingMessage: null
+        })
+        return sessionId
+      },
+
+      loadSessionMessages: (sessionId: string, messages: ChatMessage[]) => {
+        set({
+          currentSessionId: sessionId,
+          currentMessages: messages,
+          streamingMessage: null,
+          error: null
+        })
+      },
+
+      setLoading: (loading: boolean) => {
+        set({ isLoading: loading })
+      },
+
+      setError: (error: string | null) => {
+        set({ error, isLoading: false })
+      },
+
+      clearError: () => {
+        set({ error: null })
+      },
+
+      // 兼容新命名：startNewConversation -> 实际调用 createNewSession
+      startNewConversation: () => {
+        return get().createNewSession()
       }
     }),
     {

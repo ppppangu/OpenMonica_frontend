@@ -1,4 +1,4 @@
-aieimport React from 'react'
+import React, { useMemo, useCallback } from 'react'
 import { Layout, Menu, Avatar, Dropdown, Button } from 'antd'
 import {
   MessageOutlined,
@@ -8,7 +8,8 @@ import {
   UserOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
-  MenuUnfoldOutlined
+  MenuUnfoldOutlined,
+  BulbOutlined
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
@@ -19,67 +20,74 @@ interface MainLayoutProps {
   children: React.ReactNode
 }
 
+// --------------------
+// 模块级常量：侧边栏菜单配置
+// --------------------
+const MENU_CONFIG = [
+  { key: '/chat', icon: MessageOutlined, label: '智能对话' },
+  { key: '/custom', icon: BulbOutlined, label: '自定义' },
+  { key: '/knowledge', icon: BookOutlined, label: '知识库' },
+  { key: '/settings', icon: SettingOutlined, label: '设置' },
+  { key: '/help', icon: QuestionCircleOutlined, label: '帮助' },
+]
+
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, logout } = useAuth()
   const [collapsed, setCollapsed] = React.useState(false)
 
-  const menuItems = [
-    {
-      key: '/chat',
-      icon: <MessageOutlined />,
-      label: '智能对话',
-    },
-    {
-      key: '/knowledge',
-      icon: <BookOutlined />,
-      label: '知识库',
-    },
-    {
-      key: '/settings',
-      icon: <SettingOutlined />,
-      label: '设置',
-    },
-    {
-      key: '/help',
-      icon: <QuestionCircleOutlined />,
-      label: '帮助',
-    },
-  ]
+  // 使用 useMemo 创建菜单项，避免每次渲染都创建新对象
+  const menuItems = useMemo(() =>
+    MENU_CONFIG.map(item => ({
+      key: item.key,
+      icon: React.createElement(item.icon),
+      label: item.label,
+    })),
+    []
+  )
 
-  const handleMenuClick = ({ key }: { key: string }) => {
-    navigate(key)
-  }
+  const handleMenuClick = useCallback(
+    ({ key }: { key: string }) => {
+      navigate(key)
+    },
+    [navigate]
+  )
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     logout()
-  }
+  }, [logout])
 
-  const userMenuItems = [
-    {
-      key: 'profile',
-      icon: <UserOutlined />,
-      label: '个人信息',
-      onClick: () => navigate('/settings'),
-    },
-    {
-      type: 'divider' as const,
-    },
-    {
-      key: 'logout',
-      icon: <LogoutOutlined />,
-      label: '退出登录',
-      onClick: handleLogout,
-    },
-  ]
+  const userMenuItems = useMemo(
+    () => [
+      {
+        key: 'profile',
+        icon: <UserOutlined />,
+        label: '个人信息',
+        onClick: () => navigate('/settings'),
+      },
+      {
+        type: 'divider' as const,
+      },
+      {
+        key: 'logout',
+        icon: <LogoutOutlined />,
+        label: '退出登录',
+        onClick: handleLogout,
+      },
+    ],
+    [handleLogout, navigate]
+  )
 
-  const getGreeting = () => {
+  // 缓存 Dropdown 需要的 menu 对象，防止对象字面量新建
+  const userMenu = useMemo(() => ({ items: userMenuItems }), [userMenuItems])
+
+  const getGreeting = useCallback(() => {
     const hour = new Date().getHours()
     if (hour >= 4 && hour < 11.5) return '早上好'
     if (hour >= 11.5 && hour < 19) return '下午好'
     return '晚上好'
-  }
+  }, [])
 
   return (
     <Layout className="min-h-screen">
@@ -87,10 +95,19 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         trigger={null} 
         collapsible 
         collapsed={collapsed}
-        className="bg-white border-r border-gray-200"
+        className="bg-white border-r border-gray-200 flex flex-col"
         width={260}
       >
-        <div className="flex items-center justify-center h-16 border-b border-gray-200">
+        {/* 顶部 Logo 与 折叠按钮 */}
+        <div className="relative h-16 border-b border-gray-200 flex items-center justify-center">
+          {/* 折叠按钮放在边框区域 */}
+          <Button
+            type="text"
+            size="small"
+            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            onClick={() => setCollapsed(!collapsed)}
+            className="absolute -right-3 top-1/2 -translate-y-1/2 bg-white border border-gray-200 shadow-sm rounded-full"
+          />
           <div className="flex items-center space-x-2">
             <div className="text-2xl">🤖</div>
             {!collapsed && (
@@ -98,47 +115,38 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             )}
           </div>
         </div>
-        
+
+        {/* 主菜单，占满可伸缩空间 */}
         <Menu
           mode="inline"
           selectedKeys={[location.pathname]}
           items={menuItems}
           onClick={handleMenuClick}
-          className="border-r-0"
+          className="border-r-0 flex-1 overflow-y-auto"
         />
-      </Sider>
-      
-      <Layout>
-        <Header className="bg-white border-b border-gray-200 px-4 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Button
-              type="text"
-              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-              onClick={() => setCollapsed(!collapsed)}
-              className="text-gray-600"
+
+        {/* 侧边栏底部用户信息 */}
+        <div className="p-4 border-t border-gray-200 flex items-center justify-center">
+          <Dropdown
+            menu={userMenu}
+            placement="top"
+            trigger={["click"]}
+          >
+            <Avatar 
+              icon={<UserOutlined />} 
+              className="cursor-pointer bg-primary-600"
             />
-            <h1 className="text-lg font-medium text-gray-800 m-0">
-              {menuItems.find(item => item.key === location.pathname)?.label || 'AI助手'}
-            </h1>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <span className="text-gray-600 hidden sm:inline">
-              {getGreeting()}，{user?.username || '用户'}
-            </span>
-            <Dropdown
-              menu={{ items: userMenuItems }}
-              placement="bottomRight"
-              trigger={['click']}
-            >
-              <Avatar 
-                icon={<UserOutlined />} 
-                className="cursor-pointer bg-primary-600"
-              />
-            </Dropdown>
-          </div>
+          </Dropdown>
+        </div>
+      </Sider>
+
+      <Layout>
+        <Header className="bg-white border-b border-gray-200 px-4 flex items-center">
+          <h1 className="text-lg font-medium text-gray-800 m-0">
+            {menuItems.find(item => item.key === location.pathname)?.label || 'AI助手'}
+          </h1>
         </Header>
-        
+
         <Content className="p-6 overflow-auto">
           {children}
         </Content>

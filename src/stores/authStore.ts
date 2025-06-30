@@ -14,7 +14,6 @@ interface AuthState {
   login: (userData: User) => void
   logout: () => void
   initializeAuth: () => void
-  createMockUser: () => User
   updateUser: (updates: Partial<User>) => void
   checkAuthStatus: () => Promise<boolean>
 }
@@ -32,71 +31,39 @@ export const useAuthStore = create<AuthState>()(
           email: userData.email,
           username: userData.username || userData.email.split('@')[0]
         }
-        
+
+        console.log('AuthStore: Setting user data:', user)
+        console.log('AuthStore: Setting isAuthenticated to true')
+
         set({ user, isAuthenticated: true })
-        
-        console.log('User logged in:', user)
-        
-        // Store in localStorage for API utility compatibility
+
+        console.log('AuthStore: User logged in successfully:', user)
+
+        // Store authToken separately for API utility compatibility
         localStorage.setItem('authToken', userData.token)
-        localStorage.setItem('user', JSON.stringify(user))
-        localStorage.setItem('isAuthenticated', 'true')
+
+        console.log('AuthStore: Auth token stored in localStorage')
       },
 
       logout: () => {
         set({ user: null, isAuthenticated: false })
-        
-        // Clear localStorage
+
+        // Clear authToken from localStorage (Zustand persist will handle the rest)
         localStorage.removeItem('authToken')
-        localStorage.removeItem('user')
-        localStorage.removeItem('isAuthenticated')
-        
+
         console.log('User logged out')
       },
 
-      initializeAuth: () => {
-        try {
-          const storedUser = localStorage.getItem('user')
-          const storedAuth = localStorage.getItem('isAuthenticated')
+      // Removed initializeAuth - Zustand persist middleware handles initialization automatically
 
-          console.log('Stored user:', storedUser)
-          console.log('Stored auth:', storedAuth)
 
-          if (storedUser && storedAuth === 'true') {
-            const user = JSON.parse(storedUser)
-            set({ user, isAuthenticated: true })
-            console.log('User session restored from localStorage:', user)
-            return
-          }
-
-          // For production, don't create mock user automatically
-          console.log('No stored user found')
-        } catch (error) {
-          console.error('Error initializing auth:', error)
-          get().logout()
-        }
-      },
-
-      // Development helper to create mock user
-      createMockUser: () => {
-        const mockUser = {
-          token: 'mock_token_' + Date.now(),
-          id: 'mock_user_' + Date.now(),
-          email: 'test@example.com',
-          username: 'testuser'
-        }
-        get().login(mockUser)
-        console.log('Mock user created for development:', mockUser)
-        return mockUser
-      },
 
       updateUser: (updates: Partial<User>) => {
         set(state => {
           if (!state.user) return state
           const updatedUser = { ...state.user, ...updates }
 
-          // Update localStorage
-          localStorage.setItem('user', JSON.stringify(updatedUser))
+          // Zustand persist middleware will handle localStorage automatically
 
           return { user: updatedUser }
         })
@@ -108,13 +75,18 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           // Verify token with backend
+          const formData = new FormData()
+          formData.append('token', user.token)
+          formData.append('mode', 'check')
+
           const response = await fetch('/user/account', {
             method: 'POST',
-            body: new FormData().append('token', user.token).append('mode', 'check')
+            body: formData
           })
 
           if (response.ok) {
-            return true
+            const result = await response.json()
+            return result.success === true
           } else {
             get().logout()
             return false

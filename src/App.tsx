@@ -1,23 +1,30 @@
 import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
-import LoginPage from './pages/LoginPage'
-import SignupPage from './pages/SignupPage'
+import AuthPage from './pages/AuthPage'
 import ChatPage from './pages/ChatPage'
 import KnowledgeBasePage from './pages/KnowledgeBasePage'
 import SettingsPage from './pages/SettingsPage'
 import HelpPage from './pages/HelpPage'
+import CustomPage from './pages/CustomPage'
 import MainLayout from './components/layout/MainLayout'
 import ReactAppTest from './test-samples/ReactAppTest'
 
 function App() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
+
+  console.log('App.tsx - Auth state:', { isAuthenticated, user: user?.id })
 
   // Protected route wrapper
   const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    if (!isAuthenticated) {
+    console.log('ProtectedRoute - Auth check:', { isAuthenticated, hasUser: !!user })
+
+    if (!isAuthenticated || !user) {
+      console.log('ProtectedRoute - Redirecting to login')
       return <Navigate to="/login" replace />
     }
+
+    console.log('ProtectedRoute - Access granted')
     return <>{children}</>
   }
 
@@ -25,8 +32,8 @@ function App() {
     <div className="min-h-screen bg-gray-50">
       <Routes>
         {/* Public routes */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/login" element={<AuthPage mode="login" />} />
+        <Route path="/signup" element={<AuthPage mode="signup" />} />
         
         {/* Protected routes with main layout */}
         <Route
@@ -38,6 +45,7 @@ function App() {
                   <Route path="/" element={<Navigate to="/chat" replace />} />
                   <Route path="/chat" element={<ChatPage />} />
                   <Route path="/knowledge" element={<KnowledgeBasePage />} />
+                  <Route path="/custom" element={<CustomPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/help" element={<HelpPage />} />
                   <Route path="/test" element={<ReactAppTest />} />

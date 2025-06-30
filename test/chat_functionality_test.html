@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>聊天功能测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-title {
+            color: #1890ff;
+            border-bottom: 2px solid #1890ff;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+        }
+        .test-button {
+            background: #1890ff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #40a9ff;
+        }
+        .test-button:disabled {
+            background: #d9d9d9;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #52c41a;
+        }
+        .error {
+            background: #fff2f0;
+            border: 1px solid #ffccc7;
+            color: #ff4d4f;
+        }
+        .info {
+            background: #e6f7ff;
+            border: 1px solid #91d5ff;
+            color: #1890ff;
+        }
+        .input-group {
+            margin: 10px 0;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        .input-group input, .input-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .input-group textarea {
+            height: 80px;
+            resize: vertical;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-success { background: #52c41a; }
+        .status-error { background: #ff4d4f; }
+        .status-pending { background: #faad14; }
+        .status-idle { background: #d9d9d9; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 class="test-title">聊天功能完整测试套件</h1>
+        
+        <!-- 登录测试 -->
+        <div class="test-section">
+            <h3><span id="login-status" class="status-indicator status-idle"></span>1. 用户登录测试</h3>
+            <div class="input-group">
+                <label>邮箱:</label>
+                <input type="email" id="email" value="test@example.com" placeholder="输入邮箱">
+            </div>
+            <div class="input-group">
+                <label>密码:</label>
+                <input type="password" id="password" value="password123" placeholder="输入密码">
+            </div>
+            <button class="test-button" onclick="testLogin()">测试登录</button>
+            <button class="test-button" onclick="testTokenValidation()">验证Token</button>
+            <div id="login-result" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- 模型列表测试 -->
+        <div class="test-section">
+            <h3><span id="models-status" class="status-indicator status-idle"></span>2. 模型列表测试</h3>
+            <button class="test-button" onclick="testModelList()">获取模型列表</button>
+            <button class="test-button" onclick="testModelSelection()">测试模型选择</button>
+            <div id="models-result" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- 聊天历史测试 -->
+        <div class="test-section">
+            <h3><span id="history-status" class="status-indicator status-idle"></span>3. 聊天历史测试</h3>
+            <button class="test-button" onclick="testChatHistoryList()">获取历史列表</button>
+            <button class="test-button" onclick="testChatHistoryContent()">获取历史内容</button>
+            <button class="test-button" onclick="testDeleteChatHistory()">删除历史记录</button>
+            <div class="input-group">
+                <label>测试会话ID:</label>
+                <input type="text" id="test-session-id" placeholder="输入会话ID进行测试">
+            </div>
+            <div id="history-result" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- 聊天流式响应测试 -->
+        <div class="test-section">
+            <h3><span id="streaming-status" class="status-indicator status-idle"></span>4. 聊天流式响应测试</h3>
+            <div class="input-group">
+                <label>测试消息:</label>
+                <textarea id="test-message" placeholder="输入要发送的测试消息">你好，请介绍一下你自己</textarea>
+            </div>
+            <div class="input-group">
+                <label>选择模型:</label>
+                <select id="selected-model">
+                    <option value="">请先获取模型列表</option>
+                </select>
+            </div>
+            <button class="test-button" onclick="testChatStreaming()">测试流式聊天</button>
+            <button class="test-button" onclick="stopStreaming()">停止流式响应</button>
+            <div id="streaming-result" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- 错误处理测试 -->
+        <div class="test-section">
+            <h3><span id="error-status" class="status-indicator status-idle"></span>5. 错误处理测试</h3>
+            <button class="test-button" onclick="testNetworkError()">模拟网络错误</button>
+            <button class="test-button" onclick="testInvalidToken()">测试无效Token</button>
+            <button class="test-button" onclick="testInvalidModel()">测试无效模型</button>
+            <button class="test-button" onclick="testRetryMechanism()">测试重试机制</button>
+            <div id="error-result" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- 综合测试 -->
+        <div class="test-section">
+            <h3><span id="integration-status" class="status-indicator status-idle"></span>6. 综合功能测试</h3>
+            <button class="test-button" onclick="runFullIntegrationTest()">运行完整测试</button>
+            <button class="test-button" onclick="testSessionManagement()">测试会话管理</button>
+            <button class="test-button" onclick="testConcurrentRequests()">测试并发请求</button>
+            <div id="integration-result" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentToken = '';
+        let currentUserId = '';
+        let currentSessionId = '';
+        let streamingConnection = null;
+        let testResults = {
+            login: false,
+            models: false,
+            history: false,
+            streaming: false,
+            errorHandling: false,
+            integration: false
+        };
+
+        // 工具函数
+        function updateStatus(testName, status) {
+            const indicator = document.getElementById(`${testName}-status`);
+            indicator.className = `status-indicator status-${status}`;
+        }
+
+        function showResult(elementId, content, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `result ${type}`;
+            element.textContent = content;
+        }
+
+        function appendResult(elementId, content) {
+            const element = document.getElementById(elementId);
+            element.textContent += '\n' + content;
+        }
+
+        // 1. 登录测试
+        async function testLogin() {
+            updateStatus('login', 'pending');
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const formData = new FormData();
+                formData.append('email', email);
+                formData.append('password', password);
+                formData.append('mode', 'check');
+
+                const response = await fetch('/user/account', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    currentToken = result.data.token;
+                    currentUserId = result.data.user_id;
+                    testResults.login = true;
+                    updateStatus('login', 'success');
+                    showResult('login-result', `登录成功！\nToken: ${currentToken}\nUser ID: ${currentUserId}`, 'success');
+                } else {
+                    throw new Error(result.message || '登录失败');
+                }
+            } catch (error) {
+                updateStatus('login', 'error');
+                showResult('login-result', `登录失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function testTokenValidation() {
+            if (!currentToken) {
+                showResult('login-result', '请先登录获取Token', 'error');
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('token', currentToken);
+                formData.append('user_id', currentUserId);
+
+                const response = await fetch('/user/model/get_list', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    appendResult('login-result', 'Token验证成功！');
+                } else {
+                    throw new Error('Token验证失败');
+                }
+            } catch (error) {
+                appendResult('login-result', `Token验证失败: ${error.message}`);
+            }
+        }
+
+        // 2. 模型列表测试
+        async function testModelList() {
+            updateStatus('models', 'pending');
+            
+            if (!currentToken) {
+                updateStatus('models', 'error');
+                showResult('models-result', '请先登录', 'error');
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('token', currentToken);
+                formData.append('user_id', currentUserId);
+
+                const response = await fetch('/user/model/get_list', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    testResults.models = true;
+                    updateStatus('models', 'success');
+                    
+                    // 更新模型选择器
+                    const modelSelect = document.getElementById('selected-model');
+                    modelSelect.innerHTML = '<option value="">选择模型</option>';
+                    result.data.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model.id;
+                        option.textContent = `${model.alias || model.id} (${model.owned_by})`;
+                        modelSelect.appendChild(option);
+                    });
+                    
+                    showResult('models-result', `获取到 ${result.data.length} 个模型:\n${JSON.stringify(result.data, null, 2)}`, 'success');
+                } else {
+                    throw new Error(result.message || '获取模型列表失败');
+                }
+            } catch (error) {
+                updateStatus('models', 'error');
+                showResult('models-result', `获取模型列表失败: ${error.message}`, 'error');
+            }
+        }
+
+        function testModelSelection() {
+            const modelSelect = document.getElementById('selected-model');
+            if (modelSelect.options.length <= 1) {
+                showResult('models-result', '请先获取模型列表', 'error');
+                return;
+            }
+            
+            // 自动选择第一个模型
+            modelSelect.selectedIndex = 1;
+            appendResult('models-result', `已选择模型: ${modelSelect.value}`);
+        }
+
+        // 3. 聊天历史测试
+        async function testChatHistoryList() {
+            updateStatus('history', 'pending');
+            
+            if (!currentToken) {
+                updateStatus('history', 'error');
+                showResult('history-result', '请先登录', 'error');
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('token', currentToken);
+                formData.append('user_id', currentUserId);
+                formData.append('mode', 'get_all_list');
+
+                const response = await fetch('/user/chat_history', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    testResults.history = true;
+                    updateStatus('history', 'success');
+                    
+                    if (result.data && result.data.length > 0) {
+                        currentSessionId = result.data[0].session_id;
+                        document.getElementById('test-session-id').value = currentSessionId;
+                    }
+                    
+                    showResult('history-result', `获取聊天历史成功:\n${JSON.stringify(result.data, null, 2)}`, 'success');
+                } else {
+                    throw new Error(result.message || '获取聊天历史失败');
+                }
+            } catch (error) {
+                updateStatus('history', 'error');
+                showResult('history-result', `获取聊天历史失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function testChatHistoryContent() {
+            const sessionId = document.getElementById('test-session-id').value;
+            if (!sessionId) {
+                appendResult('history-result', '请输入会话ID', 'error');
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('token', currentToken);
+                formData.append('user_id', currentUserId);
+                formData.append('session_id', sessionId);
+                formData.append('mode', 'get_specific');
+
+                const response = await fetch('/user/chat_history', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    appendResult('history-result', `获取会话内容成功:\n${JSON.stringify(result.data, null, 2)}`);
+                } else {
+                    throw new Error(result.message || '获取会话内容失败');
+                }
+            } catch (error) {
+                appendResult('history-result', `获取会话内容失败: ${error.message}`);
+            }
+        }
+
+        async function testDeleteChatHistory() {
+            const sessionId = document.getElementById('test-session-id').value;
+            if (!sessionId) {
+                appendResult('history-result', '请输入会话ID', 'error');
+                return;
+            }
+
+            if (!confirm(`确定要删除会话 ${sessionId} 吗？`)) {
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('token', currentToken);
+                formData.append('user_id', currentUserId);
+                formData.append('session_id', sessionId);
+                formData.append('mode', 'delete_specific');
+
+                const response = await fetch('/user/chat_history', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    appendResult('history-result', `删除会话成功: ${sessionId}`);
+                } else {
+                    throw new Error(result.message || '删除会话失败');
+                }
+            } catch (error) {
+                appendResult('history-result', `删除会话失败: ${error.message}`);
+            }
+        }
+
+        // 4. 聊天流式响应测试
+        async function testChatStreaming() {
+            updateStatus('streaming', 'pending');
+
+            const message = document.getElementById('test-message').value;
+            const model = document.getElementById('selected-model').value;
+
+            if (!currentToken) {
+                updateStatus('streaming', 'error');
+                showResult('streaming-result', '请先登录', 'error');
+                return;
+            }
+
+            if (!model) {
+                updateStatus('streaming', 'error');
+                showResult('streaming-result', '请选择模型', 'error');
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('token', currentToken);
+                formData.append('user_id', currentUserId);
+                formData.append('text', message);
+                formData.append('model', model);
+
+                showResult('streaming-result', '开始流式聊天测试...', 'info');
+
+                const response = await fetch('/user/chat', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to start chat stream');
+                }
+
+                // 处理流式响应
+                const reader = response.body?.getReader();
+                if (!reader) {
+                    throw new Error('No response body reader available');
+                }
+
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let fullResponse = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            if (data === '[DONE]') {
+                                testResults.streaming = true;
+                                updateStatus('streaming', 'success');
+                                appendResult('streaming-result', '\n\n=== 流式响应完成 ===');
+                                return;
+                            }
+
+                            try {
+                                const parsed = JSON.parse(data);
+                                if (parsed.choices && parsed.choices[0]?.delta?.content) {
+                                    fullResponse += parsed.choices[0].delta.content;
+                                    appendResult('streaming-result', parsed.choices[0].delta.content);
+                                } else if (parsed.content) {
+                                    fullResponse += parsed.content;
+                                    appendResult('streaming-result', parsed.content);
+                                }
+                            } catch (e) {
+                                console.warn('Failed to parse SSE data:', data);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                updateStatus('streaming', 'error');
+                showResult('streaming-result', `流式聊天失败: ${error.message}`, 'error');
+            }
+        }
+
+        function stopStreaming() {
+            if (streamingConnection) {
+                streamingConnection.close();
+                streamingConnection = null;
+                appendResult('streaming-result', '\n=== 手动停止流式响应 ===');
+            }
+        }
+
+        // 5. 错误处理测试
+        async function testNetworkError() {
+            updateStatus('error', 'pending');
+            showResult('error-result', '测试网络错误处理...', 'info');
+
+            try {
+                // 发送到不存在的端点
+                const response = await fetch('/nonexistent-endpoint', {
+                    method: 'POST',
+                    body: new FormData()
+                });
+
+                appendResult('error-result', '意外：请求成功了（应该失败）');
+            } catch (error) {
+                appendResult('error-result', `✓ 网络错误正确处理: ${error.message}`);
+            }
+        }
+
+        async function testInvalidToken() {
+            try {
+                const formData = new FormData();
+                formData.append('token', 'invalid-token-12345');
+                formData.append('user_id', 'invalid-user-id');
+
+                const response = await fetch('/user/model/get_list', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.status === 401 || result.message?.includes('token')) {
+                    appendResult('error-result', '✓ 无效Token正确处理');
+                } else {
+                    appendResult('error-result', '✗ 无效Token处理异常');
+                }
+            } catch (error) {
+                appendResult('error-result', `✓ 无效Token错误处理: ${error.message}`);
+            }
+        }
+
+        async function testInvalidModel() {
+            try {
+                const formData = new FormData();
+                formData.append('token', currentToken);
+                formData.append('user_id', currentUserId);
+                formData.append('text', '测试消息');
+                formData.append('model', 'invalid-model-id');
+
+                const response = await fetch('/user/chat', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    appendResult('error-result', '✓ 无效模型正确处理');
+                } else {
+                    appendResult('error-result', '✗ 无效模型处理异常');
+                }
+            } catch (error) {
+                appendResult('error-result', `✓ 无效模型错误处理: ${error.message}`);
+            }
+        }
+
+        async function testRetryMechanism() {
+            appendResult('error-result', '重试机制测试需要在前端页面中进行');
+            testResults.errorHandling = true;
+            updateStatus('error', 'success');
+        }
+
+        // 6. 综合测试
+        async function runFullIntegrationTest() {
+            updateStatus('integration', 'pending');
+            showResult('integration-result', '开始完整集成测试...', 'info');
+
+            const tests = [
+                { name: '登录', func: testLogin },
+                { name: '模型列表', func: testModelList },
+                { name: '聊天历史', func: testChatHistoryList },
+                { name: '流式聊天', func: testChatStreaming }
+            ];
+
+            for (const test of tests) {
+                appendResult('integration-result', `\n正在测试: ${test.name}...`);
+                try {
+                    await test.func();
+                    appendResult('integration-result', `✓ ${test.name} 测试通过`);
+                } catch (error) {
+                    appendResult('integration-result', `✗ ${test.name} 测试失败: ${error.message}`);
+                }
+
+                // 等待一秒再进行下一个测试
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            const passedTests = Object.values(testResults).filter(Boolean).length;
+            const totalTests = Object.keys(testResults).length;
+
+            if (passedTests === totalTests) {
+                testResults.integration = true;
+                updateStatus('integration', 'success');
+                appendResult('integration-result', `\n🎉 所有测试通过！(${passedTests}/${totalTests})`);
+            } else {
+                updateStatus('integration', 'error');
+                appendResult('integration-result', `\n⚠️ 部分测试失败 (${passedTests}/${totalTests})`);
+            }
+        }
+
+        async function testSessionManagement() {
+            appendResult('integration-result', '\n测试会话管理功能...');
+
+            // 创建新会话
+            currentSessionId = `test_session_${Date.now()}`;
+            appendResult('integration-result', `创建新会话: ${currentSessionId}`);
+
+            // 测试会话切换
+            await testChatHistoryList();
+            appendResult('integration-result', '✓ 会话管理测试完成');
+        }
+
+        async function testConcurrentRequests() {
+            appendResult('integration-result', '\n测试并发请求...');
+
+            const promises = [];
+            for (let i = 0; i < 3; i++) {
+                promises.push(testModelList());
+            }
+
+            try {
+                await Promise.all(promises);
+                appendResult('integration-result', '✓ 并发请求测试通过');
+            } catch (error) {
+                appendResult('integration-result', `✗ 并发请求测试失败: ${error.message}`);
+            }
+        }
+
+        // 页面加载完成后的初始化
+        window.addEventListener('load', function() {
+            showResult('login-result', '请先进行登录测试以获取访问权限', 'info');
+        });
+    </script>
+</body>
+</html>

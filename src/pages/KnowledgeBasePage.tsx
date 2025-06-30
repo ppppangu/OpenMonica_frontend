@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Layout, Menu, Button, Input, Modal, Form, message, Tabs } from 'antd'
+import { Layout, Menu, Button, Input, Modal, Form, message } from 'antd'
 import {
   PlusOutlined,
   SearchOutlined,
@@ -9,13 +9,16 @@ import {
 } from '@ant-design/icons'
 import { useAuth } from '../hooks/useAuth'
 import { useKnowledgeBaseStore } from '../stores/knowledgeBaseStore'
-import { useKnowledgeBaseList, useKnowledgeBaseDetail, useKnowledgeBaseCreateMutation } from '../hooks/useApi'
+import { useKnowledgeBaseList, useKnowledgeBaseDetail, useKnowledgeBaseCreateMutation, useDocumentDeleteMutation, useKnowledgeBaseDeleteMutation } from '../hooks/useApi'
 import KnowledgeBaseCard from '../components/knowledgebase/KnowledgeBaseCard'
 import DocumentList from '../components/knowledgebase/DocumentList'
 import KnowledgeGraph from '../components/knowledgebase/KnowledgeGraph'
+import StatsCard from '../components/knowledgebase/StatsCard'
+import QuickNav from '../components/knowledgebase/QuickNav'
+import DocumentPreviewDrawer from '../components/knowledgebase/DocumentPreviewDrawer'
+import UploadModal from '../components/knowledgebase/UploadModal'
 
 const { Sider, Content } = Layout
-const { TabPane } = Tabs
 
 const KnowledgeBasePage: React.FC = () => {
   const { user } = useAuth()
@@ -31,7 +34,11 @@ const KnowledgeBasePage: React.FC = () => {
     setActiveKnowledgeBase,
     setDocuments,
     setCurrentView,
-    getActiveKnowledgeBase
+    getActiveKnowledgeBase,
+    setStats,
+    previewDoc,
+    setPreviewDoc,
+    stats
   } = useKnowledgeBaseStore()
 
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -42,6 +49,8 @@ const KnowledgeBasePage: React.FC = () => {
   const { data: kbList, isLoading: kbLoading } = useKnowledgeBaseList(user?.id || '')
   const { data: kbDetail, isLoading: detailLoading } = useKnowledgeBaseDetail(activeKnowledgeBaseId || '')
   const createKbMutation = useKnowledgeBaseCreateMutation()
+  const deleteDocMutation = useDocumentDeleteMutation()
+  const deleteKbMutation = useKnowledgeBaseDeleteMutation()
 
   // Update store when data changes
   useEffect(() => {
@@ -55,6 +64,20 @@ const KnowledgeBasePage: React.FC = () => {
       setDocuments(kbDetail.documents)
     }
   }, [kbDetail, setDocuments])
+
+  // 计算 stats
+  useEffect(() => {
+    const totalKb = knowledgeBases.length
+    const totalDocs = knowledgeBases.reduce((acc, kb) => acc + (kb.document_count || 0), 0)
+    setStats({
+      totalKnowledgeBases: totalKb,
+      totalDocuments: totalDocs,
+      totalStorageUsage: 0 // TODO 根据后端返回的尺寸
+    })
+  }, [knowledgeBases, setStats])
+
+  // 新增预览状态 & 上传弹窗状态
+  const [showUploadModal, setShowUploadModal] = useState(false)
 
   const handleCreateKnowledgeBase = async (values: any) => {
     try {
@@ -94,8 +117,33 @@ const KnowledgeBasePage: React.FC = () => {
         icon: <ShareAltOutlined />,
         label: '知识图谱',
       }
-    ] : [])
+    ] : []),
   ]
+
+  // 删除文档
+  const handleDeleteDocument = async (id: string) => {
+    await deleteDocMutation.mutateAsync(id)
+    message.success('删除成功')
+  }
+
+  // Preview
+  const handlePreviewDocument = (doc: any) => {
+    setPreviewDoc(doc)
+  }
+
+  const handleDeleteKnowledgeBase = async (id: string) => {
+    Modal.confirm({
+      title: '确认删除该知识库？',
+      content: '此操作不可撤销，且会删除其中所有文档。',
+      okText: '删除',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: async () => {
+        await deleteKbMutation.mutateAsync(id)
+        message.success('删除成功')
+      },
+    })
+  }
 
   const renderContent = () => {
     switch (currentView) {
@@ -104,7 +152,7 @@ const KnowledgeBasePage: React.FC = () => {
           <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-semibold">知识库管理</h2>
+              <h2 className="text-2xl font-semibold">知识库概览</h2>
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
@@ -114,17 +162,30 @@ const KnowledgeBasePage: React.FC = () => {
               </Button>
             </div>
 
+            {/* 统计卡片 */}
+            <StatsCard
+              totalKnowledgeBases={stats.totalKnowledgeBases}
+              totalDocuments={stats.totalDocuments}
+              totalStorageUsage={stats.totalStorageUsage}
+            />
+
+            {/* 快捷导航 */}
+            <QuickNav
+              onGoDetail={() => setCurrentView('detail')}
+              onGoGraph={() => setCurrentView('graph')}
+            />
+
             {/* Search */}
             <Input
               placeholder="搜索知识库..."
               prefix={<SearchOutlined />}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-md"
+              className="max-w-md mt-4"
             />
 
             {/* Knowledge Base Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
               {knowledgeBases
                 .filter(kb =>
                   !searchTerm ||
@@ -136,6 +197,7 @@ const KnowledgeBasePage: React.FC = () => {
                     key={kb.knowledgebase_id}
                     knowledgeBase={kb}
                     onSelect={handleSelectKnowledgeBase}
+                    onDelete={handleDeleteKnowledgeBase}
                     isActive={kb.knowledgebase_id === activeKnowledgeBaseId}
                   />
                 ))}
@@ -151,7 +213,7 @@ const KnowledgeBasePage: React.FC = () => {
                 <h2 className="text-2xl font-semibold">{activeKb?.name}</h2>
                 <p className="text-gray-600">{activeKb?.description}</p>
               </div>
-              <Button type="primary" icon={<PlusOutlined />}>
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => setShowUploadModal(true)}>
                 上传文档
               </Button>
             </div>
@@ -159,9 +221,10 @@ const KnowledgeBasePage: React.FC = () => {
             <DocumentList
               documents={documents}
               loading={detailLoading}
-              onPreview={(doc) => message.info(`预览文档: ${doc.filename}`)}
-              onDownload={(doc) => window.open(doc.pdf_file_path || doc.markdown_file_path)}
-              onDelete={(id) => message.info(`删除文档: ${id}`)}
+              selectedDocumentId={previewDoc?.document_id || undefined}
+              onPreview={handlePreviewDocument}
+              onDownload={(doc) => window.open(doc.pdf_file_path || doc.markdown_file_path || '')}
+              onDelete={handleDeleteDocument}
             />
           </div>
         )
@@ -253,6 +316,21 @@ const KnowledgeBasePage: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* 预览抽屉 */}
+      <DocumentPreviewDrawer
+        open={!!previewDoc}
+        document={previewDoc}
+        onClose={() => setPreviewDoc(null)}
+      />
+      {/* 上传弹窗 */}
+      {activeKnowledgeBaseId && (
+        <UploadModal
+          open={showUploadModal}
+          onClose={() => setShowUploadModal(false)}
+          knowledgeBaseId={activeKnowledgeBaseId}
+        />
+      )}
     </Layout>
   )
 }

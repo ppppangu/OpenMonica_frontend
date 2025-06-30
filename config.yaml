@@ -34,3 +34,21 @@ knowledge_graph:
     hover_opacity: 0.8
     selected_opacity: 1.0
     unselected_opacity: 0.3
+
+# 文件上传配置
+file_upload:
+  image_extensions:
+    - "jpg"
+    - "jpeg"
+    - "png"
+    - "gif"
+    - "bmp"
+    - "webp"
+    - "svg"
+
+# 快捷提示词按钮配置
+prompt_buttons:
+  思维导图: "请用思维导图的方式回答下面的问题"
+  邮件: "请以邮件格式整理并发送以下内容"
+  代码执行: "请分析并给出可执行代码示例"
+  每日新闻: "请以今日新闻播报的形式回答"

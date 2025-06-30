@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Page 诊断工具</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        .diagnostic-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .diagnostic-card {
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        .diagnostic-card h3 {
+            margin-top: 0;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .status {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .status.pending { background: #ffc107; }
+        .status.success { background: #28a745; }
+        .status.error { background: #dc3545; }
+        .test-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        .test-button:hover {
+            opacity: 0.9;
+        }
+        .results {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .results.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .results.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .results.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .navigation-links {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .nav-link {
+            display: inline-block;
+            margin: 0 10px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            transform: translateY(-2px);
+            text-decoration: none;
+            color: white;
+        }
+        .console-output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Chat Page 诊断工具</h1>
+            <p>全面诊断 React Chat 页面的功能和问题</p>
+        </div>
+
+        <div class="diagnostic-grid">
+            <!-- 服务器连接测试 -->
+            <div class="diagnostic-card">
+                <h3><span class="status pending" id="server-status"></span>服务器连接测试</h3>
+                <p>检查前端和后端服务器是否正常运行</p>
+                <button class="test-button" onclick="testServerConnection()">测试服务器连接</button>
+                <div id="server-results" class="results" style="display: none;"></div>
+            </div>
+
+            <!-- 认证状态测试 -->
+            <div class="diagnostic-card">
+                <h3><span class="status pending" id="auth-status"></span>认证状态测试</h3>
+                <p>检查用户认证状态和 token 有效性</p>
+                <button class="test-button" onclick="testAuthentication()">测试认证状态</button>
+                <button class="test-button" onclick="performLogin()">执行登录</button>
+                <div id="auth-results" class="results" style="display: none;"></div>
+            </div>
+
+            <!-- Chat 页面访问测试 -->
+            <div class="diagnostic-card">
+                <h3><span class="status pending" id="page-status"></span>Chat 页面访问测试</h3>
+                <p>测试 Chat 页面是否可以正常访问和渲染</p>
+                <button class="test-button" onclick="testChatPageAccess()">测试页面访问</button>
+                <button class="test-button" onclick="openChatPage()">打开 Chat 页面</button>
+                <div id="page-results" class="results" style="display: none;"></div>
+            </div>
+
+            <!-- API 端点测试 -->
+            <div class="diagnostic-card">
+                <h3><span class="status pending" id="api-status"></span>API 端点测试</h3>
+                <p>测试聊天相关的 API 端点是否响应正常</p>
+                <button class="test-button" onclick="testChatAPIs()">测试 Chat APIs</button>
+                <button class="test-button" onclick="testModelList()">测试模型列表</button>
+                <div id="api-results" class="results" style="display: none;"></div>
+            </div>
+
+            <!-- 组件渲染测试 -->
+            <div class="diagnostic-card">
+                <h3><span class="status pending" id="component-status"></span>组件渲染测试</h3>
+                <p>检查 React 组件是否正常渲染</p>
+                <button class="test-button" onclick="testComponentRendering()">测试组件渲染</button>
+                <div id="component-results" class="results" style="display: none;"></div>
+            </div>
+
+            <!-- 浏览器控制台错误 -->
+            <div class="diagnostic-card">
+                <h3><span class="status pending" id="console-status"></span>浏览器控制台检查</h3>
+                <p>检查浏览器控制台中的错误信息</p>
+                <button class="test-button" onclick="checkConsoleErrors()">检查控制台错误</button>
+                <button class="test-button" onclick="clearConsole()">清空控制台</button>
+                <div id="console-results" class="results" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- 控制台输出 -->
+        <div class="diagnostic-card">
+            <h3>🖥️ 实时控制台输出</h3>
+            <div id="console-output" class="console-output">等待控制台输出...</div>
+        </div>
+
+        <div class="navigation-links">
+            <a href="http://localhost:5174/" class="nav-link">🏠 主页</a>
+            <a href="http://localhost:5174/login" class="nav-link">🔐 登录页面</a>
+            <a href="http://localhost:5174/chat" class="nav-link">💬 Chat 页面</a>
+            <a href="http://localhost:5174/test" class="nav-link">🧪 React 测试</a>
+        </div>
+    </div>
+
+    <script>
+        let consoleOutput = document.getElementById('console-output');
+        let originalConsole = {
+            log: console.log,
+            error: console.error,
+            warn: console.warn,
+            info: console.info
+        };
+
+        // 拦截控制台输出
+        function interceptConsole() {
+            ['log', 'error', 'warn', 'info'].forEach(method => {
+                console[method] = function(...args) {
+                    originalConsole[method].apply(console, args);
+                    const timestamp = new Date().toLocaleTimeString();
+                    const message = args.map(arg => 
+                        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                    ).join(' ');
+                    consoleOutput.textContent += `[${timestamp}] ${method.toUpperCase()}: ${message}\n`;
+                    consoleOutput.scrollTop = consoleOutput.scrollHeight;
+                };
+            });
+        }
+
+        function updateStatus(testName, status, message) {
+            const statusElement = document.getElementById(testName + '-status');
+            const resultsElement = document.getElementById(testName + '-results');
+            
+            statusElement.className = 'status ' + status;
+            resultsElement.style.display = 'block';
+            resultsElement.className = 'results ' + status;
+            resultsElement.innerHTML = message;
+        }
+
+        async function testServerConnection() {
+            console.log('开始测试服务器连接...');
+            
+            try {
+                // 测试前端服务器
+                const frontendResponse = await fetch('http://localhost:5174/');
+                const frontendOk = frontendResponse.ok;
+                
+                // 测试后端服务器
+                const backendResponse = await fetch('http://localhost:3001/health');
+                const backendData = await backendResponse.json();
+                
+                if (frontendOk && backendResponse.ok) {
+                    updateStatus('server', 'success', 
+                        `✅ 服务器连接正常<br>
+                        - 前端服务器: http://localhost:5174/ (${frontendResponse.status})<br>
+                        - 后端服务器: http://localhost:3001/ (${backendResponse.status})<br>
+                        - 后端状态: ${backendData.status}`
+                    );
+                } else {
+                    updateStatus('server', 'error', 
+                        `❌ 服务器连接异常<br>
+                        - 前端: ${frontendOk ? '正常' : '异常'}<br>
+                        - 后端: ${backendResponse.ok ? '正常' : '异常'}`
+                    );
+                }
+            } catch (error) {
+                console.error('服务器连接测试失败:', error);
+                updateStatus('server', 'error', `❌ 服务器连接失败: ${error.message}`);
+            }
+        }
+
+        async function testAuthentication() {
+            console.log('开始测试认证状态...');
+            
+            try {
+                const authToken = localStorage.getItem('authToken');
+                const user = localStorage.getItem('user');
+                const isAuthenticated = localStorage.getItem('isAuthenticated');
+                
+                let message = `认证信息检查:<br>`;
+                message += `- Token: ${authToken ? '存在' : '不存在'}<br>`;
+                message += `- 用户信息: ${user ? '存在' : '不存在'}<br>`;
+                message += `- 认证状态: ${isAuthenticated}<br>`;
+                
+                if (authToken && user) {
+                    // 验证 token 有效性
+                    const formData = new FormData();
+                    formData.append('token', authToken);
+                    formData.append('mode', 'check');
+                    
+                    const response = await fetch('/user/account', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        message += `- Token 验证: ✅ 有效`;
+                        updateStatus('auth', 'success', message);
+                    } else {
+                        message += `- Token 验证: ❌ 无效 (${result.message})`;
+                        updateStatus('auth', 'error', message);
+                    }
+                } else {
+                    message += `- 状态: ❌ 未登录`;
+                    updateStatus('auth', 'error', message);
+                }
+            } catch (error) {
+                console.error('认证测试失败:', error);
+                updateStatus('auth', 'error', `❌ 认证测试失败: ${error.message}`);
+            }
+        }
+
+        async function performLogin() {
+            console.log('执行测试登录...');
+            
+            try {
+                const formData = new FormData();
+                formData.append('email', 'test@example.com');
+                formData.append('password', 'test123');
+                
+                const response = await fetch('/user/account', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success && result.token) {
+                    // 存储认证信息
+                    localStorage.setItem('authToken', result.token);
+                    localStorage.setItem('user', JSON.stringify({
+                        token: result.token,
+                        id: result.user_id,
+                        email: result.user_email,
+                        username: result.user_username
+                    }));
+                    localStorage.setItem('isAuthenticated', 'true');
+                    
+                    updateStatus('auth', 'success', 
+                        `✅ 登录成功<br>
+                        - 用户ID: ${result.user_id}<br>
+                        - 邮箱: ${result.user_email}<br>
+                        - 用户名: ${result.user_username}`
+                    );
+                } else {
+                    updateStatus('auth', 'error', `❌ 登录失败: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('登录失败:', error);
+                updateStatus('auth', 'error', `❌ 登录失败: ${error.message}`);
+            }
+        }
+
+        async function testChatPageAccess() {
+            console.log('测试 Chat 页面访问...');
+            
+            try {
+                const response = await fetch('http://localhost:5174/chat');
+                
+                if (response.ok) {
+                    const html = await response.text();
+                    const hasReactRoot = html.includes('id="root"');
+                    const hasReactScript = html.includes('/src/main.tsx');
+                    
+                    if (hasReactRoot && hasReactScript) {
+                        updateStatus('page', 'success', 
+                            `✅ Chat 页面可以访问<br>
+                            - HTTP 状态: ${response.status}<br>
+                            - React 根元素: 存在<br>
+                            - React 脚本: 存在`
+                        );
+                    } else {
+                        updateStatus('page', 'error', 
+                            `⚠️ 页面结构异常<br>
+                            - React 根元素: ${hasReactRoot ? '存在' : '缺失'}<br>
+                            - React 脚本: ${hasReactScript ? '存在' : '缺失'}`
+                        );
+                    }
+                } else {
+                    updateStatus('page', 'error', `❌ 页面访问失败: HTTP ${response.status}`);
+                }
+            } catch (error) {
+                console.error('页面访问测试失败:', error);
+                updateStatus('page', 'error', `❌ 页面访问失败: ${error.message}`);
+            }
+        }
+
+        function openChatPage() {
+            console.log('打开 Chat 页面...');
+            window.open('http://localhost:5174/chat', '_blank');
+        }
+
+        async function testChatAPIs() {
+            console.log('测试 Chat APIs...');
+            
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            if (!user.id) {
+                updateStatus('api', 'error', '❌ 需要先登录才能测试 API');
+                return;
+            }
+            
+            try {
+                let results = [];
+                
+                // 测试聊天历史 API
+                const historyFormData = new FormData();
+                historyFormData.append('user_id', user.id);
+                historyFormData.append('mode', 'get_all_list');
+                
+                const historyResponse = await fetch('/user/chat_history', {
+                    method: 'POST',
+                    body: historyFormData
+                });
+                
+                const historyResult = await historyResponse.json();
+                results.push(`聊天历史 API: ${historyResult.success ? '✅' : '❌'} (${historyResult.message || 'OK'})`);
+                
+                updateStatus('api', 'success', results.join('<br>'));
+            } catch (error) {
+                console.error('API 测试失败:', error);
+                updateStatus('api', 'error', `❌ API 测试失败: ${error.message}`);
+            }
+        }
+
+        async function testModelList() {
+            console.log('测试模型列表 API...');
+            
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            if (!user.id) {
+                updateStatus('api', 'error', '❌ 需要先登录才能测试模型列表');
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('user_id', user.id);
+                
+                const response = await fetch('/user/model/get_list', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success || Array.isArray(result.data)) {
+                    const modelCount = result.data ? result.data.length : 0;
+                    updateStatus('api', 'success', 
+                        `✅ 模型列表 API 正常<br>
+                        - 可用模型数量: ${modelCount}<br>
+                        - 响应状态: ${response.status}`
+                    );
+                } else {
+                    updateStatus('api', 'error', `❌ 模型列表 API 失败: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('模型列表测试失败:', error);
+                updateStatus('api', 'error', `❌ 模型列表测试失败: ${error.message}`);
+            }
+        }
+
+        function testComponentRendering() {
+            console.log('测试组件渲染...');
+            
+            // 这个测试需要在实际的 React 页面中运行
+            updateStatus('component', 'info', 
+                `ℹ️ 组件渲染测试需要在 Chat 页面中进行<br>
+                请打开 Chat 页面并检查以下内容:<br>
+                - 页面头部是否显示<br>
+                - 聊天消息列表是否显示<br>
+                - 输入框是否显示<br>
+                - 模型选择器是否显示<br>
+                - 是否有 JavaScript 错误`
+            );
+        }
+
+        function checkConsoleErrors() {
+            console.log('检查控制台错误...');
+            
+            // 模拟检查控制台错误
+            updateStatus('console', 'info', 
+                `ℹ️ 请手动检查浏览器开发者工具中的控制台<br>
+                常见错误类型:<br>
+                - React 组件渲染错误<br>
+                - API 请求失败<br>
+                - 模块导入错误<br>
+                - 类型错误<br>
+                按 F12 打开开发者工具查看详细错误信息`
+            );
+        }
+
+        function clearConsole() {
+            consoleOutput.textContent = '控制台已清空...\n';
+            console.clear();
+        }
+
+        // 初始化
+        interceptConsole();
+        console.log('Chat Page 诊断工具已启动');
+        
+        // 自动运行基础测试
+        setTimeout(() => {
+            testServerConnection();
+        }, 1000);
+        
+        setTimeout(() => {
+            testAuthentication();
+        }, 2000);
+    </script>
+</body>
+</html>

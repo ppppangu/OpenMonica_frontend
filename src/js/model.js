@@ -35,7 +35,14 @@ function createGetModelListHandler(config, upload) {
                 }
             });
             console.log('后端获取模型列表响应:', response.data);
-            res.json(response.data);
+
+            // Transform the response to match frontend expectations
+            const transformedData = {
+                success: true,
+                data: response.data.data || response.data
+            };
+
+            res.json(transformedData);
         } catch (error) {
             console.error('获取模型列表失败:', error.message);
 

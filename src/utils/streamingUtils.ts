@@ -34,20 +34,36 @@ export interface ToolDoneSegment extends BaseSegment {
 export type Segment = BaseSegment | ToolUsingSegment | ToolDoneSegment
 
 // ----------------------------
-// Markdown 渲染实例（带语法高亮）
+// 自定义 Markdown 渲染，支持：
+// 1. 在代码块顶部显示语言标签
+// 2. 对于 highlight.js 不支持的语言（如 mermaid），依旧保留 language-* class
 // ----------------------------
 
 const md = new MarkdownIt({
   html: true,
   linkify: true,
   highlight: (str: string, lang: string) => {
+    // 标准化语言名（去除空白并转为小写）
+    const safeLang = (lang || '').trim().toLowerCase()
+
+    // 渲染核心函数：去除语言标签，保持简洁结构
+    const renderPlain = (codeHtml: string) => {
+      return `
+        <pre class="hljs"><code class="language-${escape(safeLang || 'text')}">${codeHtml}</code></pre>
+      `
+    }
+
     try {
-      if (lang && hljs.getLanguage(lang)) {
-        return `<pre class="hljs"><code>${hljs.highlight(str, { language: lang, ignoreIllegals: true }).value}</code></pre>`
+      // highlight.js 原生支持
+      if (safeLang && hljs.getLanguage(safeLang)) {
+        const highlighted = hljs.highlight(str, { language: safeLang, ignoreIllegals: true }).value
+        return renderPlain(highlighted)
       }
-      return `<pre class="hljs"><code>${hljs.highlightAuto(str).value}</code></pre>`
+
+      // 对于不支持的语言，保持原内容，并确保 language-* class 存在
+      return renderPlain(escape(str))
     } catch {
-      return `<pre class="hljs"><code>${escape(str)}</code></pre>`
+      return renderPlain(escape(str))
     }
   },
 })
@@ -184,8 +200,13 @@ export function renderSegmentsToHtml(segments: Segment[]): string {
     }
   })
 
+  // 读取全局隐藏配置（由 ChatInput/页面加载时注入 window）
+  const hideToolName = (typeof window !== 'undefined' && (window as any).__APP_CONFIG?.hide_tool_name === true)
+
   segments.forEach((segment) => {
     if (segment.type === 'think' || segment.type === 'normal') {
+      // 过滤空文本，避免渲染空占位块
+      if (!segment.content || segment.content.trim() === '') return
       const className = segment.type === 'think' ? 'thinking-content' : 'normal-content'
       htmlParts.push(`<div class="${className}">${markdownToHtml(segment.content)}</div>`)
     } else if (segment.type === 'toolUsing') {
@@ -195,7 +216,7 @@ export function renderSegmentsToHtml(segments: Segment[]): string {
 
       htmlParts.push(
         `<details class="tool-call-block tool-call-loading">
-           <summary class="tool-call-header cursor-pointer select-none">🔧 调用工具: ${escape((segment as ToolUsingSegment).json.tool)}</summary>
+           <summary class="tool-call-header cursor-pointer select-none">🔧 调用工具${hideToolName ? '' : ': ' + escape((segment as ToolUsingSegment).json.tool)}</summary>
            <pre class="tool-call-content">${escape(segment.content)}</pre>
          </details>`
       )
@@ -226,14 +247,24 @@ function markdownToHtml(text: string): string {
     return `<iframe src="${safeUrl}" sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer" style="width:100%;height:300px;"></iframe>`
   })
 
-  // 将 ```mermaid``` 代码块转换为 mermaid div，供 mermaid.js 渲染
-  html = html.replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g, (_m, code) => {
-    return `<div class="mermaid">${escape(code)}</div>`
+  // Mermaid 代码块 → 保留源码，交由 mermaid.js 解析
+  // 兼容前方新增的 figure.wrap
+  html = html.replace(/<pre[^>]*><code[^>]*class="[^"]*language-mermaid[^"]*"[^>]*>([\s\S]*?)<\/code><\/pre>/g, (_m, code) => {
+    return `<div class="mermaid">${code}</div>`
   })
 
   // 将 cpolar 临时隧道 http 链接升级为 https，避免 Mixed-Content 警告
   html = html.replace(/(href|src)="http:\/\/([\w.-]+\.cpolar\.cn[^"]*)"/g, (_: string, attr: string, rest: string) => {
     return `${attr}="https://${rest}"`
+  })
+
+  // 为所有图片标签添加 referrerpolicy 与 crossorigin，放宽 CSP 并减小跨源限制
+  html = html.replace(/<img ([^>]*?)(?:\/)?>/g, (_: string, attrs: string) => {
+    // 若已有相关属性则不重复添加
+    const hasReferrer = /referrerpolicy=/i.test(attrs)
+    const hasCross = /crossorigin=/i.test(attrs)
+    const extra = `${hasReferrer ? '' : ' referrerpolicy="no-referrer"'}${hasCross ? '' : ' crossorigin="anonymous"'} loading="lazy"`.trim()
+    return `<img ${attrs}${extra ? ' ' + extra : ''}/>`
   })
 
   return html

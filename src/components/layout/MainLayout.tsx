@@ -101,13 +101,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       >
         {/* 顶部 Logo 与 折叠按钮 */}
         <div className="relative h-16 border-b border-gray-200 flex items-center justify-center">
-          {/* 折叠按钮放在边框区域 */}
           <Button
             type="text"
             size="small"
             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             onClick={() => setCollapsed(!collapsed)}
-            className="absolute -right-3 top-1/2 -translate-y-1/2 bg-white border border-gray-200 shadow-sm rounded-full"
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-50 border border-gray-300 shadow-sm rounded-full"
           />
           <div className="flex items-center space-x-2">
             <img src="/icons/logo.svg" alt="logo" className="w-6 h-6" />
@@ -127,17 +126,27 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         />
 
         {/* 侧边栏底部用户信息 */}
-        <div className="p-4 border-t border-gray-200 flex items-center justify-center">
-          <Dropdown
-            menu={userMenu}
-            placement="top"
-            trigger={["click"]}
-          >
-            <Avatar 
-              icon={<UserOutlined />} 
-              className="cursor-pointer bg-primary-600"
-            />
-          </Dropdown>
+        <div className="p-4 border-t border-gray-200 mt-auto mb-4">
+          <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-start'} gap-2`}>
+            <Dropdown
+              menu={userMenu}
+              placement="top"
+              trigger={["click"]}
+            >
+              <Avatar 
+                icon={<UserOutlined />} 
+                className="cursor-pointer bg-primary-600"
+              />
+            </Dropdown>
+
+            {/* 展开状态下显示用户名与邮箱 */}
+            {!collapsed && user && (
+              <div className="flex flex-col text-xs text-gray-500 leading-tight">
+                <span>{user.username || user.email?.split('@')[0]}</span>
+                <span>{user.email}</span>
+              </div>
+            )}
+          </div>
         </div>
       </Sider>
 

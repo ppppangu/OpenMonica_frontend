@@ -1,4 +1,5 @@
 import React from 'react'
+import yaml from 'js-yaml'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import AuthPage from './pages/AuthPage'
@@ -14,6 +15,21 @@ function App() {
   const { isAuthenticated, user } = useAuth()
 
   console.log('App.tsx - Auth state:', { isAuthenticated, user: user?.id })
+
+  // 加载 config.yaml 并注入全局变量，便于其他模块同步读取
+  React.useEffect(() => {
+    fetch('/config.yaml')
+      .then(res => res.text())
+      .then(text => {
+        try {
+          const data: any = yaml.load(text)
+          ;(window as any).__APP_CONFIG = data || {}
+        } catch (e) {
+          console.warn('解析 config.yaml 失败', e)
+        }
+      })
+      .catch(err => console.warn('加载 config.yaml 失败', err))
+  }, [])
 
   // Protected route wrapper
   const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {

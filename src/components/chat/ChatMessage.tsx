@@ -57,7 +57,10 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false 
   useEffect(() => {
     if (bubbleRef.current) {
       bubbleRef.current.querySelectorAll('pre code').forEach((block) => {
-        hljs.highlightElement(block as HTMLElement)
+        const element = block as HTMLElement
+        // 跳过 mermaid 代码块，避免控制台 WARN
+        if (element.classList.contains('language-mermaid')) return
+        hljs.highlightElement(element)
       })
 
       // 渲染 mermaid 图（确保唯一 ID，且全局仅初始化一次）
@@ -83,6 +86,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false 
     }
   }, [htmlContent])
 
+  // 读取全局配置
+  const hideToolName = (typeof window !== 'undefined' && (window as any).__APP_CONFIG?.hide_tool_name === true)
+
+  // 若需要隐藏工具名，则对 htmlContent 进行替换（回退方案，确保渲染结果符合要求）
+  const finalHtml = hideToolName ? htmlContent.replace(/🔧 调用工具:[^<]+/g, '🔧 调用工具') : htmlContent
+
   return (
     <div className={`flex gap-3 mb-4 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
       {/* Avatar */}
@@ -106,7 +115,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false 
           {textContent ? (
             <div 
               className="markdown-content"
-              dangerouslySetInnerHTML={{ __html: htmlContent }}
+              dangerouslySetInnerHTML={{ __html: finalHtml }}
             />
           ) : isStreaming ? (
             <div className="flex items-center gap-2 text-gray-500">

@@ -144,6 +144,27 @@
   .tool-call-block {
     transition: all 0.2s ease;
   }
+
+  .markdown-content img {
+    @apply max-w-full h-auto rounded;
+  }
+
+  .markdown-content table {
+    @apply block overflow-x-auto w-full my-4;
+  }
+
+  /* 空思考块隐藏 */
+  .thinking-content:empty {
+    display: none;
+  }
+
+  .code-block {
+    @apply mb-4;
+  }
+
+  .code-header {
+    @apply text-xs font-mono bg-gray-200 text-gray-600 px-3 py-1 rounded-t-lg border-b border-gray-300;
+  }
 }
 
 @layer utilities {
@@ -173,7 +194,7 @@
 
 /* Ant Design customizations */
 .ant-layout-sider {
-  background: #ffffff !important;
+  background: linear-gradient(to bottom, #faf5ff 0%, #ffffff 100%) !important;
   border-right: 1px solid #f0f0f0;
 }
 
@@ -229,4 +250,13 @@
   --color-primary-700: #0f865e;
   --color-primary-800: #046C4E;
   --color-primary-900: #03543F;
+}
+
+/* Sidebar beautification */
+.ant-menu-item-selected {
+  @apply bg-purple-100 text-purple-700;
+}
+
+.ant-menu-item:hover {
+  @apply bg-purple-50;
 }

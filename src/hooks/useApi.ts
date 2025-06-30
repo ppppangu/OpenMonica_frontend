@@ -262,16 +262,21 @@ export const useDocumentDeleteMutation = () => {
 
 // ----------------- 自定义提示 & 模型记忆 -----------------
 export const useCustomData = (userId: string, target: 'custom_personality' | 'custom_memory') => {
+  // 新增：根据 target 映射到后端实际路由
+  const endpoint =
+    target === 'custom_personality'
+      ? '/user/settings/get_user_prompt'
+      : '/user/settings/get_model_memory'
+
   return useQuery({
     queryKey: ['custom', userId, target],
     queryFn: async () => {
-      const response = await authenticatedFormPost('/user/custom', {
+      const response = await authenticatedFormPost(endpoint, {
         user_id: userId,
-        mode: 'get',
-        target
       })
       const result: any = await handleApiResponse(response)
-      return result?.data ?? ''
+      // 真实后端直接返回字符串，mock 服务器也保持一致
+      return result?.data ?? result ?? ''
     },
     enabled: !!userId && !!target,
   })
@@ -281,9 +286,15 @@ export const useUpdateCustomDataMutation = () => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (params: { user_id: string; target: 'custom_personality' | 'custom_memory'; new_text: string }) => {
-      const response = await authenticatedFormPost('/user/custom', {
-        ...params,
-        mode: 'update'
+      // 根据 target 选择更新端点
+      const endpoint =
+        params.target === 'custom_personality'
+          ? '/user/settings/update_user_prompt'
+          : '/user/settings/update_model_memory'
+
+      const response = await authenticatedFormPost(endpoint, {
+        user_id: params.user_id,
+        new_text: params.new_text,
       })
       return await handleApiResponse(response)
     },

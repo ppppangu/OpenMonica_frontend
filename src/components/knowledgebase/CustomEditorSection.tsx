@@ -97,7 +97,7 @@ const CustomEditorSection: React.FC<CustomEditorSectionProps> = ({ titleLabel, t
   return (
     <Card
       title={titleLabel}
-      className="h-full flex flex-col"
+      className="flex flex-col"
       extra={
         <Button
           type="primary"
@@ -117,7 +117,7 @@ const CustomEditorSection: React.FC<CustomEditorSectionProps> = ({ titleLabel, t
       <TextArea
         value={body}
         onChange={(e) => setBody(e.target.value)}
-        rows={14}
+        autoSize={{ minRows: 10, maxRows: 20 }}
         placeholder={bodyPlaceholder}
       />
     </Card>

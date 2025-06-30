@@ -40,7 +40,10 @@ const ChatPage: React.FC = () => {
   const [showHistory, setShowHistory] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
   const [lastMessage, setLastMessage] = useState<string>('')
+  const abortControllerRef = useRef<AbortController | null>(null)
   const sseRef = useRef<EventSource | null>(null)
+  // 标记本次 AbortError 是否由用户主动触发
+  const userStoppedRef = useRef<boolean>(false)
 
   // Fetch available models and chat history
   const { data: modelList, isLoading: modelsLoading, error: modelsError } = useModelList(user?.id || '')
@@ -120,6 +123,7 @@ const ChatPage: React.FC = () => {
 
       // 处理附件
       const imageAttachments = attachments.filter(a => a.category === 'image')
+      const documentAttachments = attachments.filter(a => a.category !== 'image')
 
       let userContentForStore: string | any[] = content
 
@@ -129,6 +133,15 @@ const ChatPage: React.FC = () => {
         imageAttachments.forEach(img => {
           contentArr.push({ type: 'image_url', image_url: { url: img.public_url } })
         })
+
+        // 如果同时还有文档类附件，将其以文本形式追加
+        if (documentAttachments.length > 0) {
+          const dictLines = documentAttachments.map(att => `${att.filename}: ${att.public_url}`)
+          contentArr.push({
+            type: 'text',
+            text: `\n\n[附件列表]\n${dictLines.join('\n')}`
+          })
+        }
         const messages = JSON.stringify([
           { role: 'user', content: contentArr }
         ])
@@ -161,6 +174,7 @@ const ChatPage: React.FC = () => {
       }
 
       const controller = new AbortController()
+      abortControllerRef.current = controller
       const response = await fetch('/user/chat', {
         method: 'POST',
         body: formData,
@@ -225,11 +239,18 @@ const ChatPage: React.FC = () => {
       }
     } catch (error: any) {
       if (error?.name === 'AbortError') {
-        console.warn('Fetch aborted due to idle timeout, retrying once')
-        message.warning('网络不稳定，正在重试…')
-        if (retryCount < 3) {
-          setTimeout(() => handleSendMessage(content, true), 500)
-          return
+        if (userStoppedRef.current) {
+          // 用户主动停止，不做重试和提示
+          console.info('Stream aborted by user.')
+          userStoppedRef.current = false // 重置标志位，供下次使用
+          return // 直接跳出 catch，进入 finally
+        } else {
+          console.warn('Fetch aborted due to idle timeout, retrying once')
+          message.warning('网络不稳定，正在重试…')
+          if (retryCount < 3) {
+            setTimeout(() => handleSendMessage(content, true), 500)
+            return
+          }
         }
       }
 
@@ -257,6 +278,15 @@ const ChatPage: React.FC = () => {
       finishStreamingResponse()
       setIsStreaming(false)
       setLoading(false)
+    } finally {
+      // 最后确保标志位被重置
+      userStoppedRef.current = false
+      // 流结束后清理 controller 引用
+      abortControllerRef.current = null
+      if (sseRef.current) {
+        sseRef.current.close()
+        sseRef.current = null
+      }
     }
   }
 
@@ -298,6 +328,11 @@ const ChatPage: React.FC = () => {
     finishStreamingResponse()
     setIsStreaming(false)
     setLoading(false)
+    // 确保请求已终止
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+    }
     if (sseRef.current) {
       sseRef.current.close()
       sseRef.current = null
@@ -305,6 +340,13 @@ const ChatPage: React.FC = () => {
   }
 
   const handleStopStreaming = () => {
+    // 用户已主动请求停止
+    userStoppedRef.current = true
+    // 主动中止 fetch 流
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+    }
     if (sseRef.current) {
       sseRef.current.close()
       sseRef.current = null

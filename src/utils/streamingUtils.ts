@@ -231,6 +231,11 @@ function markdownToHtml(text: string): string {
     return `<div class="mermaid">${escape(code)}</div>`
   })
 
+  // 将 cpolar 临时隧道 http 链接升级为 https，避免 Mixed-Content 警告
+  html = html.replace(/(href|src)="http:\/\/([\w.-]+\.cpolar\.cn[^"]*)"/g, (_: string, attr: string, rest: string) => {
+    return `${attr}="https://${rest}"`
+  })
+
   return html
 }
 

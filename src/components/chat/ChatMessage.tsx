@@ -60,11 +60,22 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false 
         hljs.highlightElement(block as HTMLElement)
       })
 
-      // 渲染 mermaid 图
-      if (bubbleRef.current.querySelector('.mermaid')) {
+      // 渲染 mermaid 图（确保唯一 ID，且全局仅初始化一次）
+      const mermaidNodes = bubbleRef.current.querySelectorAll('.mermaid')
+      if (mermaidNodes.length > 0) {
+        mermaidNodes.forEach((node) => {
+          if (!(node as HTMLElement).id) {
+            ;(node as HTMLElement).id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+          }
+        })
+
         try {
-          mermaid.initialize({ startOnLoad: false })
-          mermaid.init(undefined, bubbleRef.current.querySelectorAll('.mermaid'))
+          // 只初始化一次
+          if (!(mermaid as any)._initialized) {
+            mermaid.initialize({ startOnLoad: false })
+            ;(mermaid as any)._initialized = true
+          }
+          mermaid.init(undefined, mermaidNodes as any)
         } catch (e) {
           console.error('Mermaid render error:', e)
         }

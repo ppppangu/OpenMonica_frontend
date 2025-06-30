@@ -91,12 +91,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   return (
     <Layout className="min-h-screen">
-      <Sider 
-        trigger={null} 
-        collapsible 
+      <Sider
+        trigger={null}
+        collapsible
         collapsed={collapsed}
         className="bg-white border-r border-gray-200 flex flex-col overflow-y-auto"
         width={260}
+        style={{ position: 'fixed', top: 0, left: 0, height: '100vh', zIndex: 100 }}
       >
         {/* 顶部 Logo 与 折叠按钮 */}
         <div className="relative h-16 border-b border-gray-200 flex items-center justify-center">
@@ -140,14 +141,20 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         </div>
       </Sider>
 
-      <Layout>
-        <Header className="bg-white border-b border-gray-200 px-4 flex items-center">
+      <Layout style={{ marginLeft: collapsed ? 80 : 260, transition: 'margin-left 0.2s' }}>
+        <Header
+          className="bg-white border-b border-gray-200 px-4 flex items-center"
+          style={{ marginLeft: 0 }}
+        >
           <h1 className="text-lg font-medium text-gray-800 m-0">
             {menuItems.find(item => item.key === location.pathname)?.label || 'AI助手'}
           </h1>
         </Header>
 
-        <Content className="p-6 overflow-auto min-w-0">
+        <Content
+          className="p-6 overflow-auto min-w-0"
+          style={{ marginLeft: 0, minHeight: 'calc(100vh - 64px)' }}
+        >
           {children}
         </Content>
       </Layout>

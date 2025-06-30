@@ -98,7 +98,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'login' }) => {
         <Input
           prefix={<UserOutlined className="text-gray-400" />}
           placeholder="邮箱地址"
-          className="h-12 rounded-lg border-gray-200 hover:border-red-400 focus:border-red-500 auth-input transition-all duration-200"
+          className="h-10 rounded-md border-gray-300 focus:border-black focus:ring-1 focus:ring-black/40 transition-all duration-150"
         />
       </Form.Item>
 
@@ -109,7 +109,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'login' }) => {
         <Input.Password
           prefix={<LockOutlined className="text-gray-400" />}
           placeholder="密码"
-          className="h-12 rounded-lg border-gray-200 hover:border-red-400 focus:border-red-500 auth-input transition-all duration-200"
+          className="h-10 rounded-md border-gray-300 focus:border-black focus:ring-1 focus:ring-black/40 transition-all duration-150"
         />
       </Form.Item>
 
@@ -118,7 +118,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'login' }) => {
           type="primary"
           htmlType="submit"
           loading={isLoading}
-          className="w-full h-12 auth-button border-0 rounded-lg font-semibold text-white text-base shadow-lg"
+          className="w-full h-10 rounded-md bg-emerald-600 hover:bg-emerald-700 transition-colors duration-150 text-white font-medium"
         >
           登录
         </Button>
@@ -143,7 +143,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'login' }) => {
         <Input
           prefix={<UserOutlined className="text-gray-400" />}
           placeholder="用户名"
-          className="h-12 rounded-lg border-gray-200 hover:border-red-400 focus:border-red-500 auth-input transition-all duration-200"
+          className="h-10 rounded-md border-gray-300 focus:border-black focus:ring-1 focus:ring-black/40 transition-all duration-150"
         />
       </Form.Item>
 
@@ -157,7 +157,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'login' }) => {
         <Input
           prefix={<MailOutlined className="text-gray-400" />}
           placeholder="邮箱地址"
-          className="h-12 rounded-lg border-gray-200 hover:border-red-400 focus:border-red-500 auth-input transition-all duration-200"
+          className="h-10 rounded-md border-gray-300 focus:border-black focus:ring-1 focus:ring-black/40 transition-all duration-150"
         />
       </Form.Item>
 
@@ -171,7 +171,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'login' }) => {
         <Input.Password
           prefix={<LockOutlined className="text-gray-400" />}
           placeholder="密码"
-          className="h-12 rounded-lg border-gray-200 hover:border-red-400 focus:border-red-500 auth-input transition-all duration-200"
+          className="h-10 rounded-md border-gray-300 focus:border-black focus:ring-1 focus:ring-black/40 transition-all duration-150"
         />
       </Form.Item>
 
@@ -193,7 +193,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'login' }) => {
         <Input.Password
           prefix={<LockOutlined className="text-gray-400" />}
           placeholder="确认密码"
-          className="h-12 rounded-lg border-gray-200 hover:border-red-400 focus:border-red-500 auth-input transition-all duration-200"
+          className="h-10 rounded-md border-gray-300 focus:border-black focus:ring-1 focus:ring-black/40 transition-all duration-150"
         />
       </Form.Item>
 
@@ -202,7 +202,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'login' }) => {
           type="primary"
           htmlType="submit"
           loading={isLoading}
-          className="w-full h-12 auth-button border-0 rounded-lg font-semibold text-white text-base shadow-lg"
+          className="w-full h-10 rounded-md bg-emerald-600 hover:bg-emerald-700 transition-colors duration-150 text-white font-medium"
         >
           注册
         </Button>
@@ -211,31 +211,19 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'login' }) => {
   )
 
   return (
-    <div className="min-h-screen auth-gradient-bg flex items-center justify-center p-4 relative">
-      {/* Background decorative elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-white opacity-10 rounded-full"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white opacity-10 rounded-full"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white opacity-5 rounded-full"></div>
-      </div>
-
-      <Card className="w-full max-w-md auth-card shadow-2xl border-0 rounded-2xl overflow-hidden relative z-10">
-        <div className="text-center mb-8 pt-6">
-          <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-red-500 to-yellow-500 rounded-full flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform duration-200">
-            <div className="text-3xl text-white">🤖</div>
-          </div>
-          <Title level={2} className="mb-3 text-gray-800 font-bold text-2xl">AI聊天助手</Title>
-          <Text className="text-gray-600 text-base leading-relaxed">
-            {authMode === 'login' ? '欢迎回来，请登录您的账户' : '创建您的新账户，开始AI之旅'}
-          </Text>
-          <div className="w-16 h-1 bg-gradient-to-r from-red-500 to-yellow-500 mx-auto mt-4 rounded-full"></div>
+    <div className="min-h-screen bg-white flex items-center justify-center px-4">
+      <Card className="w-full max-w-sm border border-gray-200 rounded-xl p-8 shadow-none">
+        <div className="text-center mb-6">
+          <Title level={3} className="text-gray-900 font-semibold">
+            {authMode === 'login' ? '登录到 AI 聊天助手' : '创建您的 AI 账户'}
+          </Title>
         </div>
 
         {authMode === 'login' ? renderLoginForm() : renderSignupForm()}
 
-        <Divider className="border-gray-200 my-6" />
+        <Divider className="my-6" />
 
-        <div className="text-center pb-6">
+        <div className="text-center">
           <Text className="text-gray-600 text-sm">
             {authMode === 'login' ? '还没有账户？' : '已有账户？'}
           </Text>
@@ -243,7 +231,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode = 'login' }) => {
             type="link"
             onClick={toggleMode}
             disabled={isLoading}
-            className="p-0 ml-1 text-red-600 hover:text-red-700 font-medium text-sm hover:underline transition-all duration-200"
+            className="p-0 ml-1 text-emerald-600 hover:text-emerald-700 font-medium text-sm hover:underline transition-all duration-200"
           >
             {authMode === 'login' ? '立即注册' : '立即登录'}
           </Button>

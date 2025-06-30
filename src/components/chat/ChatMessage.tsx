@@ -1,11 +1,13 @@
 import React from 'react'
 import { Avatar } from 'antd'
-import { UserOutlined, RobotOutlined, DownloadOutlined } from '@ant-design/icons'
+import { UserOutlined, RobotOutlined } from '@ant-design/icons'
 import { ChatMessage as ChatMessageType } from '../../stores/chatStore'
 import { parseStreamingContent, renderSegmentsToHtml } from '../../utils/streamingUtils'
 import hljs from 'highlight.js'
 import mermaid from 'mermaid'
 import { useEffect, useRef } from 'react'
+import AttachmentToggle from '../file/AttachmentToggle'
+import { parseAttachmentBlock } from '../../utils/parseAttachments'
 
 interface ChatMessageProps {
   message: ChatMessageType
@@ -35,6 +37,15 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false 
   } else {
     textContent = message.content as string
   }
+
+  // 解析附件块
+  const { attachments: parsedAttachments, stripped } = parseAttachmentBlock(textContent)
+  textContent = stripped
+
+  // 将旧 fileLinks 转换为统一附件结构
+  const legacyAttachments = fileLinks.map(f => ({ name: f.filename, url: f.url }))
+
+  const attachments = parsedAttachments
 
   // Parse content for tool calls and thinking
   const segments = parseStreamingContent(textContent)
@@ -107,19 +118,14 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false 
               ))}
             </div>
           )}
-
-          {/* 文件附件 */}
-          {fileLinks.length > 0 && (
-            <ul className="mt-3 space-y-1 text-sm text-left">
-              {fileLinks.map((f, idx) => (
-                <li key={idx} className="flex items-center gap-2 text-blue-600 hover:underline">
-                  <DownloadOutlined />
-                  <a href={f.url} target="_blank" rel="noopener noreferrer">{f.filename}</a>
-                </li>
-              ))}
-            </ul>
-          )}
         </div>
+
+        {/* 附件列表：显示在气泡下方，靠右/左对齐 */}
+        {attachments.concat(legacyAttachments).length > 0 && (
+          <div className={`mt-1 ${isUser ? 'flex justify-end' : 'flex justify-start'}`}>
+            <AttachmentToggle attachments={attachments.concat(legacyAttachments)} />
+          </div>
+        )}
 
         {/* Timestamp */}
         <div className={`text-xs text-gray-400 mt-1 ${isUser ? 'text-right' : 'text-left'}`}>

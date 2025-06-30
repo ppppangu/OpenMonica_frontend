@@ -65,6 +65,10 @@ const ChatPage: React.FC = () => {
   }, [])
 
   const handleSendMessage = async (content: string, isRetry: boolean = false) => {
+    const IDLE_TIMEOUT = 20000 // 20s 无数据则认为断网
+    let lastChunkAt = Date.now()
+    let idleTimer: NodeJS.Timeout | null = null
+
     if (!user || isStreaming || selectedModelIds.length === 0) return
 
     // Clear any previous errors
@@ -156,10 +160,11 @@ const ChatPage: React.FC = () => {
         clearAllFiles()
       }
 
-      // Send request to start streaming
+      const controller = new AbortController()
       const response = await fetch('/user/chat', {
         method: 'POST',
-        body: formData
+        body: formData,
+        signal: controller.signal
       })
 
       if (!response.ok) {
@@ -175,9 +180,22 @@ const ChatPage: React.FC = () => {
       const decoder = new TextDecoder()
       let buffer = ''
 
+      const resetIdle = () => {
+        lastChunkAt = Date.now()
+        if (idleTimer) clearTimeout(idleTimer)
+        idleTimer = setTimeout(() => {
+          console.warn('Detected idle stream, aborting & retry')
+          controller.abort()
+        }, IDLE_TIMEOUT)
+      }
+
+      resetIdle()
+
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
+
+        resetIdle()
 
         buffer += decoder.decode(value, { stream: true })
 
@@ -205,7 +223,16 @@ const ChatPage: React.FC = () => {
           }
         }
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.name === 'AbortError') {
+        console.warn('Fetch aborted due to idle timeout, retrying once')
+        message.warning('网络不稳定，正在重试…')
+        if (retryCount < 3) {
+          setTimeout(() => handleSendMessage(content, true), 500)
+          return
+        }
+      }
+
       console.error('Failed to send message:', error)
       const errorMessage = error instanceof Error ? error.message : '发送消息失败'
 

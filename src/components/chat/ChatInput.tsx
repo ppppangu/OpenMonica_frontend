@@ -1,10 +1,11 @@
 import React, { useState, useRef } from 'react'
-import { Input, Button, Upload, App, Select } from 'antd'
+import { Input, Button, Upload, App, Select, Switch } from 'antd'
 import { SendOutlined, PaperClipOutlined, AudioOutlined, StopOutlined, HistoryOutlined, PlusCircleFilled } from '@ant-design/icons'
 import { useFileStore } from '../../stores/fileStore'
 import { useFileUploadMutation } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
 import yaml from 'js-yaml'
+import KnowledgeSourceSelect from './KnowledgeSourceSelect'
 
 const { TextArea } = Input
 
@@ -40,6 +41,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const [inputValue, setInputValue] = useState('')
   const [isComposing, setIsComposing] = useState(false)
   const [promptButtons, setPromptButtons] = useState<Record<string, string>>({})
+  const [activePrompts, setActivePrompts] = useState<{ key: string; text: string }[]>([])
+  const [knowledgeSource, setKnowledgeSource] = useState<string>('smart')
+  const [deepResearch, setDeepResearch] = useState<boolean>(false)
   const textAreaRef = useRef<any>(null)
   
   const { addAttachment, isUploading, attachments, removeAttachment } = useFileStore()
@@ -64,11 +68,19 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
   const handleSend = () => {
     const trimmedValue = inputValue.trim()
-    if (!trimmedValue || disabled) return
 
-    onSend(trimmedValue)
+    if (!trimmedValue && activePrompts.length === 0) return
+
+    // 合并 prompt chips 与输入内容
+    const promptText = activePrompts.map(p => p.text).join('，')
+    const finalContent = promptText ? `${promptText} • ${trimmedValue}` : trimmedValue
+
+    onSend(finalContent)
+
+    // 重置输入与已选 prompt
     setInputValue('')
-    
+    setActivePrompts([])
+
     // Focus back to input
     setTimeout(() => {
       textAreaRef.current?.focus()
@@ -170,25 +182,75 @@ const ChatInput: React.FC<ChatInputProps> = ({
     )
   }
 
+  const renderPromptChips = () => {
+    if (activePrompts.length === 0) return null
+
+    return (
+      <div className="flex flex-wrap gap-2 mb-2">
+        {activePrompts.map(p => (
+          <span
+            key={p.key}
+            className="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-200 text-sm text-gray-800 cursor-pointer hover:bg-gray-300"
+            onClick={() => setActivePrompts(prev => prev.filter(item => item.key !== p.key))}
+            title="点击移除"
+          >
+            {p.key} ✕
+          </span>
+        ))}
+      </div>
+    )
+  }
+
+  // 工具按钮标签集合（不显示 chips，只需高亮切换）
+  const TOOL_LABELS = [
+    '思维导图', 'Mind Map',
+    '邮件', 'Email',
+    '代码执行', 'Code Execution',
+    '每日新闻', 'Daily News'
+  ]
+  const [activeTools, setActiveTools] = useState<string[]>([])
+
   return (
     <div className="border-t border-gray-200 bg-white p-4 sticky bottom-0 space-y-2">
       {/* 行 1：快捷提示 & 会话控制 */}
       <div className="flex items-center justify-between max-w-4xl mx-auto">
         {/* 左：预设提示词 */}
         <div className="flex items-center gap-1 flex-wrap">
-          {Object.entries(promptButtons).slice(0,4).map(([label, prompt]) => (
-            <Button
-              key={label}
-              size="small"
-              className="!bg-purple-600 !border-none !text-white hover:!bg-purple-700"
-              onClick={() => {
-                setInputValue(prev => prev ? `${prompt}，${prev}` : prompt)
-                setTimeout(() => textAreaRef.current?.focus(), 50)
-              }}
-            >
-              {label}
-            </Button>
-          ))}
+          {Object.entries(promptButtons).map(([label, prompt]) => {
+            const isTool = TOOL_LABELS.includes(label)
+            const isActive = isTool
+              ? activeTools.includes(label)
+              : activePrompts.some(p => p.key === label)
+            return (
+              <Button
+                key={label}
+                size="small"
+                className={`${['!border !border-gray-300', isActive ? '!bg-gray-300' : '!bg-gray-100', '!text-gray-800', 'hover:!bg-gray-200', 'transition-colors duration-150'].join(' ')}`}
+                onClick={() => {
+                  if (isTool) {
+                    // 处理工具按钮
+                    setActiveTools(prev => {
+                      if (prev.includes(label)) {
+                        return prev.filter(l => l !== label)
+                      }
+                      return [...prev, label]
+                    })
+                  } else {
+                    // 非工具，作为 prompt chip
+                    setActivePrompts(prev => {
+                      if (prev.some(p => p.key === label)) {
+                        return prev.filter(p => p.key !== label)
+                      }
+                      return [...prev, { key: label, text: prompt }]
+                    })
+                  }
+                  setTimeout(() => textAreaRef.current?.focus(), 50)
+                }}
+              >
+                {label}
+              </Button>
+            )
+          })}
         </div>
 
         {/* 右：会话列表 & 新建会话 */}
@@ -222,6 +284,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
         {/* 输入与附件预览 */}
         <div className="flex-1">
+          {renderPromptChips()}
           {renderAttachmentPreview()}
           <TextArea
             ref={textAreaRef}
@@ -267,7 +330,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
       </div>
 
       {/* 行 3：模型选择 */}
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto flex items-center gap-2">
         <Select
           placeholder={modelsError ? '模型加载失败' : '选择AI模型'}
           value={selectedModelId}
@@ -295,6 +358,24 @@ const ChatInput: React.FC<ChatInputProps> = ({
             </Select.Option>
           ))}
         </Select>
+
+        {/* 知识来源单选 */}
+        <KnowledgeSourceSelect
+          value={knowledgeSource}
+          onChange={setKnowledgeSource}
+          disabled={isStreaming || disabled}
+        />
+
+        {/* DeepResearch Toggle */}
+        <div className="flex items-center gap-1">
+          <span className="text-sm text-gray-600">DeepResearch</span>
+          <Switch
+            checked={deepResearch}
+            onChange={setDeepResearch}
+            disabled={isStreaming || disabled}
+            size="small"
+          />
+        </div>
       </div>
     </div>
   )

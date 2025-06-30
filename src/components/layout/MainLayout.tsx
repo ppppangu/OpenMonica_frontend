@@ -109,7 +109,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             className="absolute -right-3 top-1/2 -translate-y-1/2 bg-white border border-gray-200 shadow-sm rounded-full"
           />
           <div className="flex items-center space-x-2">
-            <div className="text-2xl">🤖</div>
+            <img src="/icons/logo.svg" alt="logo" className="w-6 h-6" />
             {!collapsed && (
               <span className="text-lg font-semibold text-gray-800">AI助手</span>
             )}
@@ -147,7 +147,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           </h1>
         </Header>
 
-        <Content className="p-6 overflow-auto">
+        <Content className="p-6 overflow-auto min-w-0">
           {children}
         </Content>
       </Layout>

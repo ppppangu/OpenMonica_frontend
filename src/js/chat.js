@@ -345,6 +345,21 @@ function createChatStreamHandler(config, upload) {
                 'Access-Control-Allow-Headers': 'Cache-Control'
             });
 
+            // === 新增：SSE 心跳，防止空闲超时 ===
+            const heartbeatInterval = setInterval(() => {
+                try {
+                    // 发送注释行作为心跳，不影响客户端解析
+                    res.write(':\n\n');
+                } catch (e) {
+                    clearInterval(heartbeatInterval);
+                }
+            }, 10000); // 10s
+
+            // 连接关闭时清理心跳定时器
+            res.on('close', () => {
+                clearInterval(heartbeatInterval);
+            });
+
             // 尝试连接后端服务获取流式响应
             try {
                 console.log('正在发送请求到模型聊天服务...');
@@ -395,12 +410,16 @@ function createChatStreamHandler(config, upload) {
                     console.log('Backend stream ended');
                     res.write('data: [DONE]\n\n');
                     res.end();
+
+                    clearInterval(heartbeatInterval);
                 });
 
                 response.data.on('error', (error) => {
                     console.error('Backend stream error:', error);
                     res.write(`data: {"error": "Stream error"}\n\n`);
                     res.end();
+
+                    clearInterval(heartbeatInterval);
                 });
 
             } catch (backendError) {

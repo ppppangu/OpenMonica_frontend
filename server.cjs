@@ -114,7 +114,7 @@ app.use((req, res) => {
 });
 
 // 启动主服务器
-app.listen(PORT, () => {
+const serverInstance = app.listen(PORT, () => {
     console.log(`🚀 服务器运行在 http://localhost:${PORT}`);
     console.log(`📁 静态文件目录: ${__dirname}`);
     console.log(`🔗 配置信息:`);
@@ -132,6 +132,10 @@ app.listen(PORT, () => {
     console.log(`   - http://localhost:${PORT}/knowledgebase (知识库)`);
     console.log(`   - http://localhost:${PORT}/home (用户账户)`);
     console.log(`🔧 API端点: 通过模块化路由提供`);
+
+    // 调整 Node.js 服务器超时设置，防止 60s 空闲断开
+    serverInstance.keepAliveTimeout = 61_000; // 61s > 常见 60s idle timeout
+    serverInstance.headersTimeout = 65_000;
 });
 
 // 优雅关闭

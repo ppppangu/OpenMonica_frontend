@@ -14,6 +14,7 @@ import {
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import { SidebarContext } from '../../context/SidebarContext'
 
 const { Header, Sider, Content } = Layout
 
@@ -98,90 +99,92 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   }
 
   return (
-    <Layout className="min-h-screen">
-      <Sider
-        trigger={null}
-        collapsible
-        collapsed={collapsed}
-        className="bg-white border-r border-gray-200 flex flex-col overflow-y-auto"
-        width={260}
-        style={{ position: 'fixed', top: 0, left: 0, height: '100vh', zIndex: 100 }}
-      >
-        {/* 顶部 Logo 与 折叠按钮 */}
-        <div className="relative h-16 border-b border-gray-200 flex items-center justify-center">
-          {/* 折叠按钮仅在展开状态下可见 */}
-          {!collapsed && (
-            <Button
-              type="text"
-              size="small"
-              icon={<MenuFoldOutlined />}
-              onClick={() => setCollapsed(true)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-50 border border-gray-300 shadow-sm rounded-full"
-            />
-          )}
-          <div className="flex items-center space-x-2">
-            {/* logo 可点击，在折叠状态下点击可展开侧边栏 */}
-            <img
-              src="/icons/logo.svg"
-              alt="logo"
-              className="w-6 h-6 cursor-pointer"
-              onClick={() => collapsed && setCollapsed(false)}
-            />
-          </div>
-        </div>
-
-        {/* 主菜单始终渲染（Ant Menu 会在折叠状态下自动仅显示图标）*/}
-        <Menu
-          mode="inline"
-          selectedKeys={[location.pathname]}
-          items={menuItems}
-          onClick={handleMenuClick}
-          className="border-r-0 flex-1 overflow-y-auto"
-        />
-
-        {/* 侧边栏底部用户信息始终渲染（折叠时仅保留头像）*/}
-        <div className="p-4 border-t border-gray-200 mt-auto mb-4">
-          <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-start'} gap-2`}>
-            <Dropdown
-              menu={userMenu}
-              placement="top"
-              trigger={["click"]}
-            >
-              <Avatar 
-                icon={<UserOutlined />} 
-                className="cursor-pointer bg-primary-600"
+    <SidebarContext.Provider value={{ siderWidth: collapsed ? 80 : 260 }}>
+      <Layout className="min-h-screen">
+        <Sider
+          trigger={null}
+          collapsible
+          collapsed={collapsed}
+          className="bg-white border-r border-gray-200 flex flex-col overflow-y-auto"
+          width={260}
+          style={{ position: 'fixed', top: 0, left: 0, height: '100vh', zIndex: 100 }}
+        >
+          {/* 顶部 Logo 与 折叠按钮 */}
+          <div className="relative h-16 border-b border-gray-200 flex items-center justify-center">
+            {/* 折叠按钮仅在展开状态下可见 */}
+            {!collapsed && (
+              <Button
+                type="text"
+                size="small"
+                icon={<MenuFoldOutlined />}
+                onClick={() => setCollapsed(true)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-50 border border-gray-300 shadow-sm rounded-full"
               />
-            </Dropdown>
-
-            {/* 展开状态下显示用户名与邮箱 */}
-            {!collapsed && user && (
-              <div className="flex flex-col text-xs text-gray-500 leading-tight">
-                <span>{user.username || user.email?.split('@')[0]}</span>
-                <span>{user.email}</span>
-              </div>
             )}
+            <div className="flex items-center space-x-2">
+              {/* logo 可点击，在折叠状态下点击可展开侧边栏 */}
+              <img
+                src="/icons/logo.svg"
+                alt="logo"
+                className="w-6 h-6 cursor-pointer"
+                onClick={() => collapsed && setCollapsed(false)}
+              />
+            </div>
           </div>
-        </div>
-      </Sider>
 
-      <Layout style={{ marginLeft: collapsed ? 80 : 260, transition: 'margin-left 0.2s' }}>
-        <Header
-          className="bg-white border-b border-gray-200 px-4 flex items-center"
-          style={{ marginLeft: 0 }}
-        >
-          <h1 className="text-lg font-medium text-gray-800 m-0">
-            {headerTitleMapping[location.pathname] || menuItems.find(item => item.key === location.pathname)?.label || 'AgentNexus'}
-          </h1>
-        </Header>
+          {/* 主菜单始终渲染（Ant Menu 会在折叠状态下自动仅显示图标）*/}
+          <Menu
+            mode="inline"
+            selectedKeys={[location.pathname]}
+            items={menuItems}
+            onClick={handleMenuClick}
+            className="border-r-0 flex-1 overflow-y-auto"
+          />
 
-        <Content
-          className="p-6 overflow-auto min-w-0"
-          style={{ marginLeft: 0, minHeight: 'calc(100vh - 64px)' }}
-        >
-          {children}
-        </Content>
+          {/* 侧边栏底部用户信息始终渲染（折叠时仅保留头像）*/}
+          <div className="p-4 border-t border-gray-200 mt-auto mb-4">
+            <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-start'} gap-2`}>
+              <Dropdown
+                menu={userMenu}
+                placement="top"
+                trigger={["click"]}
+              >
+                <Avatar 
+                  icon={<UserOutlined />} 
+                  className="cursor-pointer bg-primary-600"
+                />
+              </Dropdown>
+
+              {/* 展开状态下显示用户名与邮箱 */}
+              {!collapsed && user && (
+                <div className="flex flex-col text-xs text-gray-500 leading-tight">
+                  <span>{user.username || user.email?.split('@')[0]}</span>
+                  <span>{user.email}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </Sider>
+
+        <Layout style={{ marginLeft: collapsed ? 80 : 260, transition: 'margin-left 0.2s' }}>
+          <Header
+            className="bg-white border-b border-gray-200 px-4 flex items-center"
+            style={{ marginLeft: 0 }}
+          >
+            <h1 className="text-lg font-medium text-gray-800 m-0">
+              {headerTitleMapping[location.pathname] || menuItems.find(item => item.key === location.pathname)?.label || 'AgentNexus'}
+            </h1>
+          </Header>
+
+          <Content
+            className="p-6 overflow-auto min-w-0 bg-white"
+            style={{ marginLeft: 0, minHeight: 'calc(100vh - 64px)' }}
+          >
+            {children}
+          </Content>
+        </Layout>
       </Layout>
-    </Layout>
+    </SidebarContext.Provider>
   )
 }
 

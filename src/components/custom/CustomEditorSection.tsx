@@ -4,7 +4,7 @@ import { useAuthStore } from '../../stores/authStore'
 import { useCustomData, useUpdateCustomDataMutation } from '../../hooks/useApi'
 
 interface Props {
-  titleLabel: string
+  titleLabel: React.ReactNode
   target: 'custom_personality' | 'custom_memory'
   bodyPlaceholder?: string
   /**
@@ -45,6 +45,7 @@ export default function CustomEditorSection({ titleLabel, target, bodyPlaceholde
       bordered={false}
       extra={<Button type="primary" loading={updateMutation.isPending} onClick={handleSave}>保存</Button>}
       style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+      bodyStyle={{ display: 'flex', flex: 1, flexDirection: 'column' }}
     >
       {/* Optional description */}
       {description && <p className="text-gray-500 text-sm mb-2 leading-relaxed">{description}</p>}
@@ -59,7 +60,7 @@ export default function CustomEditorSection({ titleLabel, target, bodyPlaceholde
           value={text}
           onChange={e => setText(e.target.value)}
           autoSize={false}
-          style={{ height: '100%', flex: 1, minHeight: 0 }}
+          style={{ height: '100%', flex: 1, minHeight: 0, overflow: 'auto' }}
           className="flex-1 resize-none rounded-md border border-gray-300"
         />
       )}

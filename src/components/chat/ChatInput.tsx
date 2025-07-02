@@ -6,6 +6,7 @@ import { useFileUploadMutation } from '../../hooks/useApi'
 import { useAuth } from '../../hooks/useAuth'
 import yaml from 'js-yaml'
 import KnowledgeSourceSelect from './KnowledgeSourceSelect'
+import { SidebarContext } from '../../context/SidebarContext'
 
 const { TextArea } = Input
 
@@ -55,6 +56,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const { message } = App.useApp()
 
   const MAX_SIZE = 300 * 1024 * 1024 // 300MB
+
+  // 侧边栏宽度，用于计算输入框 left/width
+  const { siderWidth } = React.useContext(SidebarContext)
 
   // 读取 config.yaml 的 prompt_buttons
   React.useEffect(() => {
@@ -287,179 +291,188 @@ const ChatInput: React.FC<ChatInputProps> = ({
   }
 
   return (
-    /*
-     * 固定到底部，带圆角阴影的输入栏
-     * 使用 z-10 保证覆盖在页面内容之上
-     */
-    <div className="fixed bottom-0 left-0 w-full bg-gray-50 p-4 md:px-6 space-y-2 shadow-[0_-2px_6px_rgba(0,0,0,0.04)] border-t border-gray-200 z-10">
-      {/* 行 1：快捷提示 & 会话控制 */}
-      <div className="flex items-center justify-between max-w-4xl mx-auto">
-        {/* 左：预设提示词 */}
-        <div className="flex items-center gap-1 flex-wrap">
-          {Object.entries(promptButtons).map(([label, prompt]) => {
-            const isTool = TOOL_LABELS.includes(label)
-            const isActive = isTool
-              ? activeTools.includes(label)
-              : activePrompts.some(p => p.key === label)
-            return (
-              <Button
-                key={label}
-                size="small"
-                className={`${['!border !border-gray-300', isActive ? '!bg-gray-300' : '!bg-gray-100', '!text-gray-800', 'hover:!bg-gray-200', 'transition-colors duration-150'].join(' ')}`}
-                onClick={() => {
-                  if (isTool) {
-                    // 处理工具按钮
-                    setActiveTools(prev => {
-                      if (prev.includes(label)) {
-                        return prev.filter(l => l !== label)
+    <>
+      {/* 底部输入栏外层定位容器：负责 left 偏移 & 占满剩余宽度 */}
+      <div
+        className="fixed bottom-4 left-0 right-0 z-50"
+        style={{ left: siderWidth, right: 0, transition: 'left 0.2s' }}
+      >
+        {/* 内层实际可见容器：宽度限制在 4xl，并使用 mx-auto 居中 */}
+        <div className="bg-white p-4 md:px-6 space-y-2 shadow-[0_-6px_16px_rgba(0,0,0,0.08)] rounded-t-2xl backdrop-blur-sm max-w-4xl mx-auto">
+          {/* 行 1：快捷提示 & 会话控制 */}
+          <div className="flex items-center justify-between max-w-4xl mx-auto">
+            {/* 左：预设提示词 */}
+            <div className="flex items-center gap-1 flex-wrap">
+              {Object.entries(promptButtons).map(([label, prompt]) => {
+                const isTool = TOOL_LABELS.includes(label)
+                const isActive = isTool
+                  ? activeTools.includes(label)
+                  : activePrompts.some(p => p.key === label)
+                return (
+                  <Button
+                    key={label}
+                    size="small"
+                    className={`${['!border !border-gray-300', isActive ? '!bg-gray-300' : '!bg-gray-100', '!text-gray-800', 'hover:!bg-gray-200', 'transition-colors duration-150'].join(' ')}`}
+                    onClick={() => {
+                      if (isTool) {
+                        // 处理工具按钮
+                        setActiveTools(prev => {
+                          if (prev.includes(label)) {
+                            return prev.filter(l => l !== label)
+                          }
+                          return [...prev, label]
+                        })
+                      } else {
+                        // 非工具，作为 prompt chip
+                        setActivePrompts(prev => {
+                          if (prev.some(p => p.key === label)) {
+                            return prev.filter(p => p.key !== label)
+                          }
+                          return [...prev, { key: label, text: prompt }]
+                        })
                       }
-                      return [...prev, label]
-                    })
-                  } else {
-                    // 非工具，作为 prompt chip
-                    setActivePrompts(prev => {
-                      if (prev.some(p => p.key === label)) {
-                        return prev.filter(p => p.key !== label)
-                      }
-                      return [...prev, { key: label, text: prompt }]
-                    })
-                  }
-                  setTimeout(() => textAreaRef.current?.focus(), 50)
-                }}
-              >
-                {label}
-              </Button>
-            )
-          })}
-        </div>
-
-        {/* 右：会话列表 & 新建会话 */}
-        <div className="flex items-center gap-1">
-          <Button
-            type="text"
-            icon={<HistoryOutlined />}
-            title="会话列表"
-            onClick={onShowHistory}
-          />
-          <Button
-            type="text"
-            icon={<PlusCircleFilled style={{ color: '#7c3aed', fontSize: 20 }} />}
-            title="新建对话"
-            onClick={onNewConversation}
-          />
-        </div>
-      </div>
-
-      {/* 行 2：附件 + 输入框 + 语音/发送 */}
-      <div className="flex items-end gap-2 max-w-4xl mx-auto">
-        {/* 文件上传 */}
-        <Upload {...uploadProps}>
-          <Button
-            icon={<PaperClipOutlined />}
-            disabled={disabled || isUploading}
-            loading={isUploading}
-            title="上传文件"
-          />
-        </Upload>
-
-        {/* 输入与附件预览 */}
-        <div className="flex-1">
-          {renderPromptChips()}
-          {renderAttachmentPreview()}
-          <TextArea
-            ref={textAreaRef}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyPress}
-            onPaste={handlePaste}
-            onCompositionStart={() => setIsComposing(true)}
-            onCompositionEnd={() => setIsComposing(false)}
-            placeholder={placeholder}
-            disabled={disabled}
-            autoSize={{ minRows: 1, maxRows: 4 }}
-            className="resize-none rounded-xl border border-gray-300 shadow-sm !px-3 !py-2"
-          />
-        </div>
-
-        {/* 语音输入 */}
-        <Button
-          icon={<AudioOutlined className={isListening ? 'animate-pulse text-red-500' : ''} />}
-          disabled={disabled}
-          type={isListening ? 'primary' : 'default'}
-          danger={isListening}
-          title={isListening ? '点击停止语音输入' : '语音输入'}
-          onClick={startVoiceRecognition}
-        />
-
-        {/* 发送/停止 */}
-        {isStreaming ? (
-          <Button
-            type="primary"
-            danger
-            icon={<StopOutlined />}
-            onClick={onStop}
-            title="停止生成"
-          />
-        ) : (
-          <Button
-            type="primary"
-            icon={<SendOutlined />}
-            onClick={handleSend}
-            disabled={disabled || !inputValue.trim()}
-            title="发送消息 (Enter)"
-          />
-        )}
-      </div>
-
-      {/* 行 3：模型选择 */}
-      <div className="max-w-4xl mx-auto flex items-center gap-2">
-        <Select
-          placeholder={modelsError ? '模型加载失败' : '选择AI模型'}
-          value={selectedModelId}
-          onChange={val => onModelChange?.(val)}
-          loading={modelsLoading}
-          style={{ minWidth: 200 }}
-          disabled={isStreaming || disabled}
-          status={modelsError ? 'error' : undefined}
-          placement="topLeft"
-          popupRender={(menu) => (
-            <div>
-              {modelsError ? (
-                <div className="p-3 text-center">
-                  <span className="text-red-500 text-sm block mb-2">加载模型失败</span>
-                </div>
-              ) : (
-                menu
-              )}
+                      setTimeout(() => textAreaRef.current?.focus(), 50)
+                    }}
+                  >
+                    {label}
+                  </Button>
+                )
+              })}
             </div>
-          )}
-        >
-          {modelList?.map((model: any) => (
-            <Select.Option key={model.model_id} value={model.model_id}>
-              {model.model_name}
-            </Select.Option>
-          ))}
-        </Select>
 
-        {/* 知识来源单选 */}
-        <KnowledgeSourceSelect
-          value={knowledgeSource}
-          onChange={setKnowledgeSource}
-          disabled={isStreaming || disabled}
-        />
+            {/* 右：会话列表 & 新建会话 */}
+            <div className="flex items-center gap-1">
+              <Button
+                type="text"
+                icon={<HistoryOutlined />}
+                title="会话列表"
+                onClick={onShowHistory}
+              />
+              <Button
+                type="text"
+                icon={<PlusCircleFilled style={{ color: '#7c3aed', fontSize: 20 }} />}
+                title="新建对话"
+                onClick={onNewConversation}
+              />
+            </div>
+          </div>
 
-        {/* DeepResearch Toggle */}
-        <div className="flex items-center gap-1">
-          <span className="text-sm text-gray-600">DeepResearch</span>
-          <Switch
-            checked={deepResearch}
-            onChange={setDeepResearch}
-            disabled={isStreaming || disabled}
-            size="small"
-          />
+          {/* 行 2：附件 + 输入框 + 语音/发送 */}
+          <div className="flex items-end gap-2 max-w-4xl mx-auto">
+            {/* 文件上传 */}
+            <Upload {...uploadProps}>
+              <Button
+                size="large"
+                icon={<PaperClipOutlined />}
+                disabled={disabled || isUploading}
+                loading={isUploading}
+                title="上传文件"
+              />
+            </Upload>
+
+            {/* 输入与附件预览 */}
+            <div className="flex-1">
+              {renderPromptChips()}
+              {renderAttachmentPreview()}
+              <TextArea
+                ref={textAreaRef}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleKeyPress}
+                onPaste={handlePaste}
+                onCompositionStart={() => setIsComposing(true)}
+                onCompositionEnd={() => setIsComposing(false)}
+                placeholder={placeholder}
+                disabled={disabled}
+                autoSize={{ minRows: 1, maxRows: 4 }}
+                className="resize-none rounded-xl border border-gray-300 shadow-sm !px-3 !py-2"
+              />
+            </div>
+
+            {/* 语音输入 */}
+            <Button
+              size="large"
+              icon={<AudioOutlined className={isListening ? 'animate-pulse text-red-500' : ''} />}
+              disabled={disabled}
+              type={isListening ? 'primary' : 'default'}
+              danger={isListening}
+              title={isListening ? '点击停止语音输入' : '语音输入'}
+              onClick={startVoiceRecognition}
+            />
+
+            {/* 发送/停止 */}
+            {isStreaming ? (
+              <Button
+                size="large"
+                type="primary"
+                danger
+                icon={<StopOutlined />}
+                onClick={onStop}
+                title="停止生成"
+              />
+            ) : (
+              <Button
+                size="large"
+                type="primary"
+                icon={<SendOutlined />}
+                onClick={handleSend}
+                disabled={disabled || !inputValue.trim()}
+                title="发送消息 (Enter)"
+              />
+            )}
+          </div>
+
+          {/* 行 3：模型选择 */}
+          <div className="max-w-4xl mx-auto flex items-center gap-2">
+            <Select
+              placeholder={modelsError ? '模型加载失败' : '选择AI模型'}
+              value={selectedModelId}
+              onChange={val => onModelChange?.(val)}
+              loading={modelsLoading}
+              style={{ minWidth: 200 }}
+              disabled={isStreaming || disabled}
+              status={modelsError ? 'error' : undefined}
+              placement="topLeft"
+              popupRender={(menu) => (
+                <div>
+                  {modelsError ? (
+                    <div className="p-3 text-center">
+                      <span className="text-red-500 text-sm block mb-2">加载模型失败</span>
+                    </div>
+                  ) : (
+                    menu
+                  )}
+                </div>
+              )}
+            >
+              {modelList?.map((model: any) => (
+                <Select.Option key={model.model_id} value={model.model_id}>
+                  {model.model_name}
+                </Select.Option>
+              ))}
+            </Select>
+
+            {/* 知识来源单选 */}
+            <KnowledgeSourceSelect
+              value={knowledgeSource}
+              onChange={setKnowledgeSource}
+              disabled={isStreaming || disabled}
+            />
+
+            {/* DeepResearch Toggle */}
+            <div className="flex items-center gap-1">
+              <span className="text-sm text-gray-600">DeepResearch</span>
+              <Switch
+                checked={deepResearch}
+                onChange={setDeepResearch}
+                disabled={isStreaming || disabled}
+                size="small"
+              />
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
 

@@ -126,7 +126,21 @@ export async function handleApiResponse<T>(response: Response): Promise<T> {
 
   const contentType = response.headers.get('content-type')
   if (contentType && contentType.includes('application/json')) {
-    return response.json()
+    // 若后端返回 204 或 Content-Length 为 0，直接返回 undefined
+    const rawText = await response.text()
+
+    if (!rawText) {
+      // 空响应体
+      return undefined as any
+    }
+
+    try {
+      return JSON.parse(rawText) as any
+    } catch (err) {
+      // 非法 JSON 时回退为纯文本
+      console.warn('JSON 解析失败，回退为文本:', err)
+      return rawText as any
+    }
   }
 
   return response.text() as any
@@ -200,10 +214,12 @@ export async function updateUserInfo(
     user_id: userId
   })
 
-  const result = await handleApiResponse<{ status: string; message: string }>(response)
+  const result = await handleApiResponse<{ status?: string; success?: boolean; message?: string }>(response)
 
-  if (result.status !== 'success') {
-    throw new Error(result.message || '更新用户信息失败')
+  const isSuccess = (result && (result.status === 'success' || result.success === true))
+
+  if (!isSuccess) {
+    throw new Error(result?.message || '更新用户信息失败')
   }
 }
 

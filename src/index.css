@@ -26,12 +26,14 @@
   }
   
   .chat-bubble-user {
-    /* 浅灰色气泡，文字深灰，与背景形成对比 */
-    @apply bg-gray-200 text-gray-900 ml-auto;
+    /* 调整为更浅的浅灰色气泡背景，颜色为 rgb(244, 244, 244) */
+    @apply text-gray-900 ml-auto;
+    background-color: rgb(244 244 244);
   }
   
   .chat-bubble-assistant {
-    @apply bg-white border border-gray-200 mr-auto;
+    /* 移除边框，仅保留白色背景 */
+    @apply bg-white mr-auto;
   }
   
   .sidebar-nav {

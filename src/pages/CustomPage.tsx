@@ -21,13 +21,44 @@ const CustomPage: React.FC = () => {
     </span>
   )
 
+  // Header with tooltip: 个性化助手设置
+  const personalityHeader = (
+    <span className="flex items-center gap-1">
+      个性化助手设置
+      <Tooltip
+        title={
+          <span className="whitespace-pre-line">
+            {`您可以告诉您的智能代理做以下事情...\n使用正式、专业的语气。\n随意、健谈。\n要有主见。如果一个问题可能有多个答案尽量只给出最好的答案。\n称呼您为 任何 称呼。`}
+          </span>
+        }
+      >
+        <QuestionCircleOutlined className="text-gray-400" />
+      </Tooltip>
+    </span>
+  )
+
+  const memoryHeader = (
+    <span className="flex items-center gap-1">
+      模型记忆
+      <Tooltip
+        title={
+          <span className="whitespace-pre-line">
+            {`您可以分享以下内容...\n喜欢徒步旅行和爵士乐。\n喜欢吃素。\n正在努力学习法语。`}
+          </span>
+        }
+      >
+        <QuestionCircleOutlined className="text-gray-400" />
+      </Tooltip>
+    </span>
+  )
+
   return (
     <div className="w-full h-full flex flex-col">
       <Row gutter={[24, 24]} className="flex-1" style={{ height: '100%' }}>
         {/* 个性化助手设置 */}
         <Col xs={24} md={8} style={{ display: 'flex' }}>
           <CustomEditorSection
-            titleLabel="个性化助手设置"
+            titleLabel={personalityHeader}
             target="custom_personality"
             bodyPlaceholder="输入自定义提示词内容"
             description={
@@ -44,7 +75,7 @@ const CustomPage: React.FC = () => {
         {/* 模型记忆 */}
         <Col xs={24} md={8} style={{ display: 'flex' }}>
           <CustomEditorSection
-            titleLabel="模型记忆"
+            titleLabel={memoryHeader}
             target="custom_memory"
             bodyPlaceholder="输入模型专属记忆内容"
             description={`AI助手会在与您交流过程中自动学习您的偏好和需求，形成"记忆"。在这里，您可以查看这些记忆内容，删除不需要的信息，或添加您希望AI记住的重要细节，确保助手始终以您期望的方式为您服务。`}

@@ -107,6 +107,25 @@ app.post('/user/account', upload.none(), (req, res) => {
     
     console.log('登录请求:', { email, mode });
     
+    // ================= 新增: 账号信息更新 ================= //
+    if (mode === 'update') {
+        const { target, new_value, user_id } = req.body;
+
+        // 简单校验
+        if (!target || !new_value || !user_id) {
+            return res.status(400).json({ status: 'fail', message: '缺少必要参数' });
+        }
+
+        // 额外密码规则校验
+        if (target === 'password' && String(new_value).length < 6) {
+            return res.status(400).json({ status: 'fail', message: '密码长度需≥6位' });
+        }
+
+        console.log(`更新用户(${user_id}) ${target} => ${new_value}`);
+        return res.json({ status: 'success', message: `update user ${user_id} ${target} success` });
+    }
+    // ================= 新增逻辑结束 ================= //
+
     if (mode === 'check') {
         // 验证token
         const { token } = req.body;

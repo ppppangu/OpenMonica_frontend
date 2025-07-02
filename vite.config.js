@@ -32,6 +32,16 @@ export default defineConfig({
       '/process': {
         target: 'http://localhost:3001',
         changeOrigin: true
+      },
+      '/proxy': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false
+      },
+      '/file': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false
       }
     },
     allowedHosts: ['localhost', '127.0.0.1', '0.0.0.0', 'v2fronend.cpolar.cn']

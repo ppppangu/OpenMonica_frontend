@@ -1,10 +1,8 @@
-# HTTP Iframe Proxy Handling – Checklist
+# HTTPS Iframe 代理支持 cpolar 域名 Checklist
 
-| 步骤 | 描述                                                         | 状态   |
-| ---- | ------------------------------------------------------------ | ------ |
-| 1    | 设计文档撰写                                                 | ✅ 完成 |
-| 2    | 服务器端 `/proxy` 路由实现（server.cjs & simple-server.cjs） | ✅ 完成 |
-| 3    | 前端 `ChatMessage.tsx` 修改（自动代理 & UI 链接更新）        | ✅ 完成 |
-| 4    | 手动测试：HTTP/HTTPS/MindMap 文件                            | ⬜ 待办 |
-| 5    | 修复部分 upstream 返回 application/octet-stream 导致下载     | ✅ 完成 |
-| 6    | 更新 README & 文档                                           | ⬜ 待办 |
+| 序号 | 任务                                              | 负责人 | 状态 |
+| ---- | ------------------------------------------------- | ------ | ---- |
+| 1    | 编写设计文档                                      | AI     | ✅    |
+| 2    | 修改 `ChatMessage.tsx`，添加 cpolar 域名检测      | AI     | ✅    |
+| 3    | 本地 `npm run dev`，Edge 浏览器验证 iframe 可加载 | AI     | ⬜    |
+| 4    | 更新 Checklist 状态                               | AI     | ⬜    |

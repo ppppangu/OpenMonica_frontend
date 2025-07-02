@@ -183,7 +183,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false 
       // 创建 iframe
       const iframe = document.createElement('iframe')
       iframe.src = resolvedSrc
-      iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin')
       iframe.setAttribute('referrerpolicy', 'no-referrer')
       iframe.style.width = '100%'
       iframe.style.height = '100%'

@@ -132,7 +132,6 @@ app.get('/proxy', async (req, res) => {
         res.set('Access-Control-Allow-Origin', '*');
         res.set('X-Proxy-By', 'mindmap-proxy');
         res.set('X-Content-Type-Options', 'nosniff');
-        res.set('Content-Security-Policy', "sandbox allow-scripts allow-same-origin");
 
         // 管道传输
         response.data.pipe(res);

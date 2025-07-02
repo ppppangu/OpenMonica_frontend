@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const yaml = require('js-yaml');
 const multer = require('multer');
+const axios = require('axios');
 
 // Import modular components
 const { setupHealthRoutes } = require('./src/js/health');
@@ -98,6 +99,50 @@ function setupModularRoutes() {
 // ==================== API端点 ====================
 // 所有API端点现在通过模块化路由设置
 setupModularRoutes();
+
+// ==================== 代理路由 ====================
+
+// 统一最大代理文件大小（50MB，与文件上传一致）
+const MAX_PROXY_SIZE = 50 * 1024 * 1024;
+
+app.get('/proxy', async (req, res) => {
+    try {
+        const target = req.query.url;
+        if (!target || !(target.startsWith('http://') || target.startsWith('https://'))) {
+            return res.status(400).send('Invalid url parameter');
+        }
+
+        // 使用 axios 以 stream 方式获取内容
+        const response = await axios.get(target, {
+            responseType: 'stream',
+            maxContentLength: MAX_PROXY_SIZE,
+            maxBodyLength: MAX_PROXY_SIZE,
+            validateStatus: () => true, // 我们自行处理状态码
+        });
+
+        if (response.status >= 400) {
+            return res.status(502).send(`Upstream responded with status ${response.status}`);
+        }
+
+        // 透传重要头部
+        res.set('Content-Type', response.headers['content-type'] || 'application/octet-stream');
+        if (response.headers['content-length']) {
+            res.set('Content-Length', response.headers['content-length']);
+        }
+        res.set('Access-Control-Allow-Origin', '*');
+        res.set('X-Proxy-By', 'mindmap-proxy');
+        res.set('X-Content-Type-Options', 'nosniff');
+        res.set('Content-Security-Policy', "sandbox allow-scripts allow-same-origin");
+
+        // 管道传输
+        response.data.pipe(res);
+    } catch (err) {
+        console.error('Proxy error:', err.message);
+        res.status(502).send('Proxy fetch failed');
+    }
+});
+
+// ==================== 路由设置 ====================
 
 // Favicon处理
 app.get('/favicon.ico', (req, res) => {

@@ -244,7 +244,7 @@ function markdownToHtml(text: string): string {
   const urlRe = /<(https?:\/\/[^>]+)>/g
   const preProcessed = text.replace(urlRe, (_: string, url: string) => {
     const safeUrl = escape(url)
-    return `<iframe src="${safeUrl}" sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer" style="width:100%;height:300px;"></iframe>`
+    return `<div class="safe-iframe-wrapper" data-src="${safeUrl}"><div class="safe-iframe-loading">加载中...</div></div>`
   })
 
   // 使用 markdown-it 对剩余文本进行渲染
@@ -252,18 +252,13 @@ function markdownToHtml(text: string): string {
 
   html = html.replace(/&lt;(https?:\/\/[^&]+)&gt;/g, (_: string, url: string) => {
     const safeUrl = escape(url)
-    return `<iframe src="${safeUrl}" sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer" style="width:100%;height:300px;"></iframe>`
+    return `<div class="safe-iframe-wrapper" data-src="${safeUrl}"><div class="safe-iframe-loading">加载中...</div></div>`
   })
 
   // Mermaid 代码块 → 保留源码，交由 mermaid.js 解析
   // 兼容前方新增的 figure.wrap
   html = html.replace(/<pre[^>]*><code[^>]*class="[^"]*language-mermaid[^"]*"[^>]*>([\s\S]*?)<\/code><\/pre>/g, (_m, code) => {
     return `<div class="mermaid">${code}</div>`
-  })
-
-  // 将 cpolar 临时隧道 http 链接升级为 https，避免 Mixed-Content 警告
-  html = html.replace(/(href|src)="http:\/\/([\w.-]+\.cpolar\.cn[^"]*)"/g, (_: string, attr: string, rest: string) => {
-    return `${attr}="https://${rest}"`
   })
 
   // 为所有图片标签添加 referrerpolicy 与 crossorigin，放宽 CSP 并减小跨源限制

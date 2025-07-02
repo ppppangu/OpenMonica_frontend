@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const yaml = require('js-yaml');
 const multer = require('multer');
+const axios = require('axios');
 
 // 创建Express应用
 const app = express();
@@ -46,6 +47,44 @@ app.use((req, res, next) => {
         res.sendStatus(200);
     } else {
         next();
+    }
+});
+
+// ==================== 代理路由 ====================
+
+const MAX_PROXY_SIZE = 50 * 1024 * 1024;
+
+app.get('/proxy', async (req, res) => {
+    try {
+        const target = req.query.url;
+        if (!target || !(target.startsWith('http://') || target.startsWith('https://'))) {
+            return res.status(400).send('Invalid url parameter');
+        }
+
+        const response = await axios.get(target, {
+            responseType: 'stream',
+            maxContentLength: MAX_PROXY_SIZE,
+            maxBodyLength: MAX_PROXY_SIZE,
+            validateStatus: () => true,
+        });
+
+        if (response.status >= 400) {
+            return res.status(502).send(`Upstream responded with status ${response.status}`);
+        }
+
+        res.set('Content-Type', response.headers['content-type'] || 'application/octet-stream');
+        if (response.headers['content-length']) {
+            res.set('Content-Length', response.headers['content-length']);
+        }
+        res.set('Access-Control-Allow-Origin', '*');
+        res.set('X-Proxy-By', 'mindmap-proxy');
+        res.set('X-Content-Type-Options', 'nosniff');
+        res.set('Content-Security-Policy', 'sandbox allow-scripts allow-same-origin');
+
+        response.data.pipe(res);
+    } catch (err) {
+        console.error('Proxy error:', err.message);
+        res.status(502).send('Proxy fetch failed');
     }
 });
 

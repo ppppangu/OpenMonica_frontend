@@ -86,6 +86,87 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false 
     }
   }, [htmlContent])
 
+  /* ----------------------------
+   * Safe Iframe 注入与错误处理
+   * --------------------------*/
+  useEffect(() => {
+    if (!bubbleRef.current) return
+
+    const wrappers = bubbleRef.current.querySelectorAll('.safe-iframe-wrapper') as NodeListOf<HTMLElement>
+
+    wrappers.forEach((wrapper) => {
+      // 避免重复初始化
+      if (wrapper.getAttribute('data-initialized') === 'true') return
+      wrapper.setAttribute('data-initialized', 'true')
+
+      const rawSrc = wrapper.getAttribute('data-src') || ''
+      let resolvedSrc = rawSrc
+
+      // 处理 https 页面嵌入 http 产生的 Mixed-Content
+      if (window.location.protocol === 'https:' && rawSrc.startsWith('http:')) {
+        // 通过同源代理避免 Mixed-Content
+        resolvedSrc = `/proxy?url=${encodeURIComponent(rawSrc)}`
+      }
+
+      // 创建 iframe
+      const iframe = document.createElement('iframe')
+      iframe.src = resolvedSrc
+      iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin')
+      iframe.setAttribute('referrerpolicy', 'no-referrer')
+      iframe.style.width = '100%'
+      iframe.style.height = '100%'
+
+      // 在加载前插入，保持 DOM 顺序
+      wrapper.appendChild(iframe)
+
+      const loadingEl = wrapper.querySelector('.safe-iframe-loading') as HTMLElement | null
+
+      const showError = (msg: string) => {
+        if (loadingEl) {
+          loadingEl.remove()
+        }
+
+        // 若已存在错误元素则跳过
+        if (wrapper.querySelector('.safe-iframe-error')) return
+
+        const err = document.createElement('div')
+        err.className = 'safe-iframe-error'
+        const encoded = encodeURIComponent(rawSrc)
+        err.innerHTML = `${msg}，<a href="${rawSrc}" target="_blank" rel="noopener noreferrer" class="underline">新标签页打开</a> | <a href="/proxy?url=${encoded}" target="_blank" rel="noopener noreferrer" class="underline">代理访问</a>`
+        wrapper.appendChild(err)
+      }
+
+      // 超时处理：由于部分大型静态 HTML 首次加载较慢，放宽到 45s
+      const SAFE_IFRAME_TIMEOUT = 45_000 // 45 秒
+      const timeoutId = window.setTimeout(() => {
+        showError('加载超时（45s）')
+      }, SAFE_IFRAME_TIMEOUT)
+
+      iframe.addEventListener('load', () => {
+        clearTimeout(timeoutId)
+        if (loadingEl) {
+          loadingEl.remove()
+        }
+
+        // SAMEORIGIN / DENY 检测
+        try {
+          // 若跨域访问会抛错，捕获忽略
+          const loc = iframe.contentWindow?.location.href
+          if (!loc || loc === 'about:blank') {
+            showError('站点拒绝内嵌')
+          }
+        } catch (e) {
+          // 无法访问意味着跨域，但不一定错误，忽略即可
+        }
+      })
+
+      iframe.addEventListener('error', () => {
+        clearTimeout(timeoutId)
+        showError('加载失败')
+      })
+    })
+  }, [htmlContent])
+
   // 读取全局配置
   const hideToolName = (typeof window !== 'undefined' && (window as any).__APP_CONFIG?.hide_tool_name === true)
 

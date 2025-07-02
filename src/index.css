@@ -165,6 +165,24 @@
   .code-header {
     @apply text-xs font-mono bg-gray-200 text-gray-600 px-3 py-1 rounded-t-lg border-b border-gray-300;
   }
+
+  /* ========== Safe Iframe ========= */
+  .safe-iframe-wrapper {
+    @apply relative w-full h-[300px] border border-gray-200 rounded overflow-hidden bg-white;
+  }
+
+  .safe-iframe-wrapper iframe {
+    @apply w-full h-full border-none;
+  }
+
+  .safe-iframe-loading,
+  .safe-iframe-error {
+    @apply absolute inset-0 flex items-center justify-center text-gray-600 text-sm bg-white/70 backdrop-blur-sm;
+  }
+
+  .safe-iframe-error {
+    @apply bg-red-50 text-red-600;
+  }
 }
 
 @layer utilities {

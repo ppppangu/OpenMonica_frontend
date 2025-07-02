@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
-import { Empty } from 'antd'
 import { useChatStore } from '../../stores/chatStore'
 import ChatMessage from './ChatMessage'
 
@@ -39,13 +38,18 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({ className = '' }) => 
     }
   }, [handleScroll])
 
+  // 欢迎页：在没有任何聊天记录时展示
   if (currentMessages.length === 0) {
     return (
       <div className={`flex items-center justify-center h-full ${className}`}>
-        <Empty
-          description="开始新的对话"
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-        />
+        <div className="flex flex-col items-center select-none text-center">
+          <img
+            src="/icons/logo.svg"
+            alt="logo"
+            className="w-20 h-20 mb-4 opacity-80"
+          />
+          <p className="text-lg text-gray-600">您的智能代理</p>
+        </div>
       </div>
     )
   }

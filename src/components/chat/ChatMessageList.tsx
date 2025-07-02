@@ -57,7 +57,8 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({ className = '' }) => 
   return (
     <div
       ref={containerRef}
-      className={`flex-1 overflow-y-auto overflow-x-hidden break-words p-4 ${className}`}
+      /* 预留底部空间，避免被固定输入栏遮挡（约 120px，高度随输入栏可能变化） */
+      className={`flex-1 overflow-y-auto overflow-x-hidden break-words p-4 pb-40 ${className}`}
     >
       <div className="max-w-4xl mx-auto">
         {currentMessages.map((message) => (

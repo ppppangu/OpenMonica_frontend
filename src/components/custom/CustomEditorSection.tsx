@@ -55,10 +55,12 @@ export default function CustomEditorSection({ titleLabel, target, bodyPlaceholde
         <p className="text-red-500">加载失败</p>
       ) : (
         <Input.TextArea
-          autoSize={{ minRows: 12, maxRows: 20 }}
           placeholder={bodyPlaceholder}
           value={text}
           onChange={e => setText(e.target.value)}
+          autoSize={false}
+          style={{ height: '100%', flex: 1, minHeight: 0 }}
+          className="flex-1 resize-none rounded-md border border-gray-300"
         />
       )}
     </Card>

@@ -287,7 +287,11 @@ const ChatInput: React.FC<ChatInputProps> = ({
   }
 
   return (
-    <div className="border-t border-gray-200 bg-white p-4 sticky bottom-0 space-y-2">
+    /*
+     * 固定到底部，带圆角阴影的输入栏
+     * 使用 z-10 保证覆盖在页面内容之上
+     */
+    <div className="fixed bottom-0 left-0 w-full bg-gray-50 p-4 md:px-6 space-y-2 shadow-[0_-2px_6px_rgba(0,0,0,0.04)] border-t border-gray-200 z-10">
       {/* 行 1：快捷提示 & 会话控制 */}
       <div className="flex items-center justify-between max-w-4xl mx-auto">
         {/* 左：预设提示词 */}
@@ -373,7 +377,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
             placeholder={placeholder}
             disabled={disabled}
             autoSize={{ minRows: 1, maxRows: 4 }}
-            className="resize-none"
+            className="resize-none rounded-xl border border-gray-300 shadow-sm !px-3 !py-2"
           />
         </div>
 

@@ -63,26 +63,88 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false 
         hljs.highlightElement(element)
       })
 
-      // 渲染 mermaid 图（确保唯一 ID，且全局仅初始化一次）
+      // -------------------------------
+      // 改进的 Mermaid 渲染逻辑：
+      // 1. 初始阶段显示占位骨架，防止闪烁
+      // 2. 渲染完成后替换占位并展示 svg
+      // 3. 点击组件可在"预览模式 (svg)"与"源码模式 (mermaid 语法)"之间切换
+      // -------------------------------
       const mermaidNodes = bubbleRef.current.querySelectorAll('.mermaid')
-      if (mermaidNodes.length > 0) {
-        mermaidNodes.forEach((node) => {
-          if (!(node as HTMLElement).id) {
-            ;(node as HTMLElement).id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-          }
-        })
+      mermaidNodes.forEach((node) => {
+        const srcCode = node.textContent || ''
 
+        // 若已包装过则跳过
+        if (node.parentElement?.classList.contains('mermaid-wrapper')) return
+
+        // 创建包裹器
+        const wrapper = document.createElement('div')
+        wrapper.className = 'mermaid-wrapper my-2 border border-gray-200 rounded-md shadow-sm bg-white overflow-hidden'
+
+        // 占位骨架
+        const placeholder = document.createElement('div')
+        placeholder.className = 'mermaid-placeholder flex items-center justify-center text-gray-400 h-40 animate-pulse select-none cursor-pointer'
+        placeholder.innerText = '图表生成中...'
+
+        // 预览容器（svg 渲染后插入）
+        const previewContainer = document.createElement('div')
+        previewContainer.className = 'mermaid-preview hidden w-full overflow-x-auto cursor-pointer'
+
+        // 源码容器
+        const codeContainer = document.createElement('pre')
+        codeContainer.className = 'mermaid-source hidden p-3 text-sm bg-gray-50 overflow-x-auto'
+        const codeEl = document.createElement('code')
+        codeEl.textContent = srcCode
+        codeContainer.appendChild(codeEl)
+
+        // 组装结构
+        wrapper.appendChild(placeholder)
+        wrapper.appendChild(previewContainer)
+        wrapper.appendChild(codeContainer)
+
+        // 替换原始 mermaid 节点为 wrapper
+        node.replaceWith(wrapper)
+        // 将原节点移入 previewContainer 供 mermaid 处理
+        previewContainer.appendChild(node)
+
+        // 生成唯一 ID
+        if (!(node as HTMLElement).id) {
+          ;(node as HTMLElement).id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+        }
+
+        // 初始化 mermaid（全局仅一次）
         try {
-          // 只初始化一次
           if (!(mermaid as any)._initialized) {
             mermaid.initialize({ startOnLoad: false })
             ;(mermaid as any)._initialized = true
           }
-          mermaid.init(undefined, mermaidNodes as any)
+
+          // 渲染当前节点 —— mermaid.render 返回 svg 字符串（但更简洁，本处直接使用 mermaid.init 通用渲染）
+          mermaid.init(undefined, [node as any])
+
+          // 容错：渲染可能是异步的，这里给一个微小延迟再显示
+          window.setTimeout(() => {
+            placeholder.classList.add('hidden')
+            previewContainer.classList.remove('hidden')
+          }, 100)
         } catch (e) {
           console.error('Mermaid render error:', e)
+          placeholder.innerText = '图表渲染失败'
         }
-      }
+
+        // 点击切换视图：preview <-> source
+        const toggleView = () => {
+          const isPreviewVisible = !previewContainer.classList.contains('hidden')
+          if (isPreviewVisible) {
+            previewContainer.classList.add('hidden')
+            codeContainer.classList.remove('hidden')
+          } else {
+            codeContainer.classList.add('hidden')
+            previewContainer.classList.remove('hidden')
+          }
+        }
+
+        wrapper.addEventListener('click', toggleView)
+      })
     }
   }, [htmlContent])
 

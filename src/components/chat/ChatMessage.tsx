@@ -66,14 +66,31 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false 
         try {
           const obj = JSON.parse(td.json.tool_response)
           if (obj && obj.thought) {
-            if (Array.isArray(obj.thought)) {
-              list.push(...obj.thought)
-            } else if (typeof obj.thought === 'string') {
-              // 按换行拆分
-              list.push(...obj.thought.split(/\\n+/).filter(Boolean))
+            const pushLines = (val: string | string[]) => {
+              const arr = Array.isArray(val) ? val : val.split(/\n+/)
+              arr.forEach(line => {
+                const cleaned = line.replace(/^\s*-\s*/, '').trim()
+                if (cleaned) list.push(cleaned)
+              })
             }
+            pushLines(obj.thought)
           }
         } catch {/* ignore parse error */}
+      } else if (seg.type === 'toolUsing') {
+        const tu = seg as any
+        if (tu.json?.tool === 'sequentialthinking' && tu.json.arguments) {
+          const thoughtVal = tu.json.arguments.thought
+          if (thoughtVal) {
+            const pushLines = (val: string | string[]) => {
+              const arr = Array.isArray(val) ? val : val.split(/\n+/)
+              arr.forEach(line => {
+                const cleaned = line.replace(/^\s*-\s*/, '').trim()
+                if (cleaned) list.push(cleaned)
+              })
+            }
+            pushLines(thoughtVal)
+          }
+        }
       }
     })
     return list

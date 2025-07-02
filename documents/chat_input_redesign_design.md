@@ -24,20 +24,6 @@
 * `TextArea` 添加 `rounded-xl border border-gray-300 shadow-sm`。
 * 通过 `!px-3 !py-2` 覆盖 Ant Design 默认 padding。
 
-### 2.5 输入框容器
-
-* 使用一个额外的容器包裹 `TextArea` 与麦克风按钮，容器属性：
-  * `display:flex` `items-center` `gap-2`
-  * `bg-white` `border border-[#E4E4E7]` `rounded-[24px]`
-  * `shadow-[0_0_8px_rgba(0,0,0,.04)]`
-  * `px-3 py-2`
-  * `focus-within:border-[#10A37F]` —— 当内部任意元素聚焦时，高亮边框颜色
-* 内部元素顺序：
-  1. 可自适应高度的 `TextArea`（`flex-1`，`min-h-[36px]`，`max-h-[240px]`，`resize-none`，`overflow-y-auto`，去除默认边框/背景）
-  2. 圆形麦克风按钮（`shape="circle"`），非录音状态下为灰色 `text` 类型，录音中变 `primary danger` 并添加脉冲动画
-
-> 发送按钮保持在容器外侧，避免过度拥挤；文件上传及其它旧有功能保持兼容。
-
 ### 3. 适配内容高度
 
 * `ChatMessageList` 追加 `pb-40`（≈160px）底部内边距，留出输入栏高度。

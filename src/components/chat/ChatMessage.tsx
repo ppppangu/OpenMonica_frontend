@@ -1,13 +1,14 @@
-import React from 'react'
+import React, { useEffect, useRef, useState, useMemo } from 'react'
 import { Avatar } from 'antd'
 import { UserOutlined, RobotOutlined } from '@ant-design/icons'
 import { ChatMessage as ChatMessageType } from '../../stores/chatStore'
 import { parseStreamingContent, renderSegmentsToHtml } from '../../utils/streamingUtils'
 import hljs from 'highlight.js'
 import mermaid from 'mermaid'
-import { useEffect, useRef } from 'react'
 import AttachmentToggle from '../file/AttachmentToggle'
 import { parseAttachmentBlock } from '../../utils/parseAttachments'
+import ThoughtPanel from './ThoughtPanel'
+import type { Segment, ToolDoneSegment } from '../../utils/streamingUtils'
 
 interface ChatMessageProps {
   message: ChatMessageType
@@ -53,6 +54,34 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false 
 
   // ref for message bubble to apply syntax highlighting after render
   const bubbleRef = useRef<HTMLDivElement>(null)
+
+  // ---------------------------
+  // 提取 deepresearch 思维路径
+  // ---------------------------
+  const extractThoughts = (segs: Segment[]): string[] => {
+    const list: string[] = []
+    segs.forEach(seg => {
+      if (seg.type === 'toolDone') {
+        const td = seg as ToolDoneSegment
+        try {
+          const obj = JSON.parse(td.json.tool_response)
+          if (obj && obj.thought) {
+            if (Array.isArray(obj.thought)) {
+              list.push(...obj.thought)
+            } else if (typeof obj.thought === 'string') {
+              // 按换行拆分
+              list.push(...obj.thought.split(/\\n+/).filter(Boolean))
+            }
+          }
+        } catch {/* ignore parse error */}
+      }
+    })
+    return list
+  }
+
+  const thoughts = useMemo(() => extractThoughts(segments as Segment[]), [segments])
+
+  const [showThoughtPanel, setShowThoughtPanel] = useState(false)
 
   useEffect(() => {
     if (bubbleRef.current) {
@@ -263,6 +292,16 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false 
             ${isUser ? 'chat-bubble-user' : 'chat-bubble-assistant'}
           `}
         >
+          {/* 思维路径按钮 */}
+          {isAssistant && thoughts.length > 0 && (
+            <button
+              className="rounded-2xl bg-gray-100 hover:bg-gray-200 px-3 py-1 text-sm mb-2 cursor-pointer transition"
+              onClick={() => setShowThoughtPanel(prev => !prev)}
+            >
+              agent思维路径
+            </button>
+          )}
+
           {/* Main Content */}
           {textContent ? (
             <div 
@@ -304,6 +343,15 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false 
           {new Date(message.timestamp).toLocaleTimeString()}
         </div>
       </div>
+
+      {/* Thought Panel */}
+      {thoughts.length > 0 && (
+        <ThoughtPanel
+          thoughts={thoughts}
+          visible={showThoughtPanel}
+          onClose={() => setShowThoughtPanel(false)}
+        />
+      )}
     </div>
   )
 }

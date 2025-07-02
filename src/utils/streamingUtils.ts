@@ -47,11 +47,8 @@ const md = new MarkdownIt({
     const safeLang = (lang || '').trim().toLowerCase()
 
     // 渲染核心函数：去除语言标签，保持简洁结构
-    const renderPlain = (codeHtml: string) => {
-      return `
-        <pre class="hljs"><code class="language-${escape(safeLang || 'text')}">${codeHtml}</code></pre>
-      `
-    }
+    const renderPlain = (codeHtml: string) =>
+      `<pre class="hljs"><code class="language-${escape(safeLang || 'text')}">${codeHtml}</code></pre>`
 
     try {
       // highlight.js 原生支持

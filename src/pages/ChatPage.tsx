@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Button, Drawer, List, Typography, Popconfirm, App } from 'antd'
-import { SettingOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { useChatStore } from '../stores/chatStore'
 import { useAuth } from '../hooks/useAuth'
 import { useModelList, useChatHistory, useChatHistoryContent, useChatHistoryDeleteMutation } from '../hooks/useApi'
@@ -50,6 +50,14 @@ const ChatPage: React.FC = () => {
   const { data: chatHistory, refetch: refetchHistory, isLoading: historyLoading } = useChatHistory(user?.id || '')
   const { data: sessionContent } = useChatHistoryContent(user?.id || '', currentSessionId || '')
   const deleteChatMutation = useChatHistoryDeleteMutation()
+
+  // 初次进入页面时，如未存在会话，则创建一个隐藏的新会话
+  useEffect(() => {
+    if (!currentSessionId) {
+      createNewSession()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // 当模型列表加载完成且尚未选择模型时，默认选中第一个模型
   useEffect(() => {
@@ -246,7 +254,6 @@ const ChatPage: React.FC = () => {
           return // 直接跳出 catch，进入 finally
         } else {
           console.warn('Fetch aborted due to idle timeout, retrying once')
-          message.warning('网络不稳定，正在重试…')
           if (retryCount < 3) {
             setTimeout(() => handleSendMessage(content, true), 500)
             return
@@ -431,26 +438,6 @@ const ChatPage: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
-        <div className="flex items-center gap-4">
-          {currentSessionId && (
-            <Text type="secondary" className="text-sm">
-              当前会话: {currentSessionId}
-            </Text>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            icon={<SettingOutlined />}
-            onClick={() => message.info('设置功能开发中...')}
-          >
-            设置
-          </Button>
-        </div>
-      </div>
-
       {/* Chat Area */}
       <div className="flex-1 flex flex-col min-h-0">
         {error && (

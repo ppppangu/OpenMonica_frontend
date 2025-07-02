@@ -45,6 +45,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const [knowledgeSource, setKnowledgeSource] = useState<string>('smart')
   const [deepResearch, setDeepResearch] = useState<boolean>(false)
   const [deepResearchPrompt, setDeepResearchPrompt] = useState<string>('')
+  const [isListening, setIsListening] = useState(false)
+  const recognitionRef = useRef<any>(null)
   const textAreaRef = useRef<any>(null)
   
   const { addAttachment, isUploading, attachments, removeAttachment } = useFileStore()
@@ -226,6 +228,64 @@ const ChatInput: React.FC<ChatInputProps> = ({
   ]
   const [activeTools, setActiveTools] = useState<string[]>([])
 
+  /**
+   * 初始化并开始语音识别
+   */
+  const startVoiceRecognition = () => {
+    // 判断浏览器兼容性
+    const SpeechRecognition: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      message.error('当前浏览器不支持语音输入')
+      return
+    }
+
+    // 如果已经在监听，则停止
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop()
+      return
+    }
+
+    try {
+      const recognition = new SpeechRecognition()
+      recognition.lang = 'zh-CN'
+      recognition.continuous = false
+      recognition.interimResults = false
+
+      recognition.onstart = () => {
+        setIsListening(true)
+        message.info({ content: '正在听… 请开始说话', key: 'voice_rec' })
+      }
+
+      recognition.onresult = (event: any) => {
+        const transcript = Array.from(event.results)
+          .map((r: any) => r[0]?.transcript)
+          .join('')
+
+        if (transcript) {
+          setInputValue(prev => (prev ? prev + ' ' + transcript : transcript))
+        }
+      }
+
+      recognition.onerror = (event: any) => {
+        console.error('Speech recognition error:', event)
+        message.error({ content: '语音识别出错', key: 'voice_rec' })
+        setIsListening(false)
+      }
+
+      recognition.onend = () => {
+        setIsListening(false)
+        message.destroy('voice_rec')
+        textAreaRef.current?.focus()
+      }
+
+      recognition.start()
+      recognitionRef.current = recognition
+    } catch (e) {
+      console.error('Failed to start speech recognition:', e)
+      message.error('启动语音识别失败')
+    }
+  }
+
   return (
     <div className="border-t border-gray-200 bg-white p-4 sticky bottom-0 space-y-2">
       {/* 行 1：快捷提示 & 会话控制 */}
@@ -319,10 +379,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
         {/* 语音输入 */}
         <Button
-          icon={<AudioOutlined />}
+          icon={<AudioOutlined className={isListening ? 'animate-pulse text-red-500' : ''} />}
           disabled={disabled}
-          title="语音输入"
-          onClick={() => message.info('语音输入功能开发中...')}
+          type={isListening ? 'primary' : 'default'}
+          danger={isListening}
+          title={isListening ? '点击停止语音输入' : '语音输入'}
+          onClick={startVoiceRecognition}
         />
 
         {/* 发送/停止 */}

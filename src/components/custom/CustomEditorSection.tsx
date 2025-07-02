@@ -1,5 +1,5 @@
 import { Card, Input, Button, message, Spin } from 'antd'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { useAuthStore } from '../../stores/authStore'
 import { useCustomData, useUpdateCustomDataMutation } from '../../hooks/useApi'
 
@@ -7,9 +7,13 @@ interface Props {
   titleLabel: string
   target: 'custom_personality' | 'custom_memory'
   bodyPlaceholder?: string
+  /**
+   * Description text displayed under the section title (optional)
+   */
+  description?: ReactNode
 }
 
-export default function CustomEditorSection({ titleLabel, target, bodyPlaceholder }: Props) {
+export default function CustomEditorSection({ titleLabel, target, bodyPlaceholder, description }: Props) {
   const userId = useAuthStore(state => state.user?.id) || ''
   const { data, isLoading, isError, refetch } = useCustomData(userId, target)
   const updateMutation = useUpdateCustomDataMutation()
@@ -36,14 +40,22 @@ export default function CustomEditorSection({ titleLabel, target, bodyPlaceholde
   }
 
   return (
-    <Card title={titleLabel} bordered={false} extra={<Button type="primary" loading={updateMutation.isPending} onClick={handleSave}>保存</Button>}>
+    <Card
+      title={titleLabel}
+      bordered={false}
+      extra={<Button type="primary" loading={updateMutation.isPending} onClick={handleSave}>保存</Button>}
+      style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+    >
+      {/* Optional description */}
+      {description && <p className="text-gray-500 text-sm mb-2 leading-relaxed">{description}</p>}
+
       {isLoading ? (
         <div className="flex justify-center items-center h-40"><Spin /></div>
       ) : isError ? (
         <p className="text-red-500">加载失败</p>
       ) : (
         <Input.TextArea
-          autoSize={{ minRows: 8, maxRows: 16 }}
+          autoSize={{ minRows: 12, maxRows: 20 }}
           placeholder={bodyPlaceholder}
           value={text}
           onChange={e => setText(e.target.value)}

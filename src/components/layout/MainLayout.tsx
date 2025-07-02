@@ -8,8 +8,9 @@ import {
   UserOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  BulbOutlined
+  BulbOutlined,
+  TeamOutlined,
+  ExperimentOutlined
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
@@ -24,9 +25,11 @@ interface MainLayoutProps {
 // 模块级常量：侧边栏菜单配置
 // --------------------
 const MENU_CONFIG = [
-  { key: '/chat', icon: MessageOutlined, label: '智能对话' },
-  { key: '/custom', icon: BulbOutlined, label: '自定义' },
+  { key: '/chat', icon: MessageOutlined, label: '聊天' },
+  { key: '/custom', icon: BulbOutlined, label: '个性化' },
   { key: '/knowledge', icon: BookOutlined, label: '知识库' },
+  { key: '/organization', icon: TeamOutlined, label: '我的组织' },
+  { key: '/training', icon: ExperimentOutlined, label: '智能助手训练室' },
   { key: '/settings', icon: SettingOutlined, label: '设置' },
   { key: '/help', icon: QuestionCircleOutlined, label: '帮助' },
 ]
@@ -89,6 +92,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     return '晚上好'
   }, [])
 
+  // 自定义页面标题映射，解决侧边栏标签与顶部标题不同的问题
+  const headerTitleMapping: Record<string, string> = {
+    '/custom': '助手个性化',
+  }
+
   return (
     <Layout className="min-h-screen">
       <Sider
@@ -101,22 +109,28 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       >
         {/* 顶部 Logo 与 折叠按钮 */}
         <div className="relative h-16 border-b border-gray-200 flex items-center justify-center">
-          <Button
-            type="text"
-            size="small"
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={() => setCollapsed(!collapsed)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-50 border border-gray-300 shadow-sm rounded-full"
-          />
+          {/* 折叠按钮仅在展开状态下可见 */}
+          {!collapsed && (
+            <Button
+              type="text"
+              size="small"
+              icon={<MenuFoldOutlined />}
+              onClick={() => setCollapsed(true)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-50 border border-gray-300 shadow-sm rounded-full"
+            />
+          )}
           <div className="flex items-center space-x-2">
-            <img src="/icons/logo.svg" alt="logo" className="w-6 h-6" />
-            {!collapsed && (
-              <span className="text-lg font-semibold text-gray-800">AI助手</span>
-            )}
+            {/* logo 可点击，在折叠状态下点击可展开侧边栏 */}
+            <img
+              src="/icons/logo.svg"
+              alt="logo"
+              className="w-6 h-6 cursor-pointer"
+              onClick={() => collapsed && setCollapsed(false)}
+            />
           </div>
         </div>
 
-        {/* 主菜单，占满可伸缩空间 */}
+        {/* 主菜单始终渲染（Ant Menu 会在折叠状态下自动仅显示图标）*/}
         <Menu
           mode="inline"
           selectedKeys={[location.pathname]}
@@ -125,7 +139,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           className="border-r-0 flex-1 overflow-y-auto"
         />
 
-        {/* 侧边栏底部用户信息 */}
+        {/* 侧边栏底部用户信息始终渲染（折叠时仅保留头像）*/}
         <div className="p-4 border-t border-gray-200 mt-auto mb-4">
           <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-start'} gap-2`}>
             <Dropdown
@@ -156,7 +170,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           style={{ marginLeft: 0 }}
         >
           <h1 className="text-lg font-medium text-gray-800 m-0">
-            {menuItems.find(item => item.key === location.pathname)?.label || 'AI助手'}
+            {headerTitleMapping[location.pathname] || menuItems.find(item => item.key === location.pathname)?.label || 'AgentNexus'}
           </h1>
         </Header>
 

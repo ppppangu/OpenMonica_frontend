@@ -102,9 +102,19 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false 
       const rawSrc = wrapper.getAttribute('data-src') || ''
       let resolvedSrc = rawSrc
 
-      // 处理 https 页面嵌入 http 产生的 Mixed-Content
-      if (window.location.protocol === 'https:' && rawSrc.startsWith('http:')) {
-        // 通过同源代理避免 Mixed-Content
+      // 处理以下两类情况需使用同源代理：
+      // 1) 当前页面为 https，待嵌入资源为 http（避免 Mixed-Content）
+      // 2) 目标域名为 cpolar 隧道 (*.cpolar.*)，可能被 Edge SmartScreen 阻断
+
+      const needProxyByProtocol = window.location.protocol === 'https:' && rawSrc.startsWith('http:')
+
+      let needProxyByDomain = false
+      try {
+        const host = new URL(rawSrc).hostname
+        needProxyByDomain = /\.cpolar\./i.test(host)
+      } catch {/* invalid url => ignore */}
+
+      if (needProxyByProtocol || needProxyByDomain) {
         resolvedSrc = `/proxy?url=${encodeURIComponent(rawSrc)}`
       }
 

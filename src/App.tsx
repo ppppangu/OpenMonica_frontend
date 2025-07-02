@@ -8,6 +8,8 @@ import KnowledgeBasePageV2 from './pages/KnowledgeBasePageV2'
 import SettingsPage from './pages/SettingsPage'
 import HelpPage from './pages/HelpPage'
 import CustomPage from './pages/CustomPage'
+import OrganizationPage from './pages/OrganizationPage'
+import AssistantTrainingPage from './pages/AssistantTrainingPage'
 import MainLayout from './components/layout/MainLayout'
 import ReactAppTest from './test-samples/ReactAppTest'
 
@@ -62,6 +64,8 @@ function App() {
                   <Route path="/chat" element={<ChatPage />} />
                   <Route path="/knowledge" element={<KnowledgeBasePageV2 />} />
                   <Route path="/custom" element={<CustomPage />} />
+                  <Route path="/organization" element={<OrganizationPage />} />
+                  <Route path="/training" element={<AssistantTrainingPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/help" element={<HelpPage />} />
                   <Route path="/test" element={<ReactAppTest />} />

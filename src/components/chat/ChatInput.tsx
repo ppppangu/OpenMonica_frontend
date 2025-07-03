@@ -295,11 +295,20 @@ const ChatInput: React.FC<ChatInputProps> = ({
   /**
    * 初始化并开始语音识别
    */
-  const startVoiceRecognition = () => {
+  const startVoiceRecognition = async () => {
     // 判断浏览器兼容性
     const SpeechRecognition: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     if (!SpeechRecognition) {
       message.error('当前浏览器不支持语音输入')
+      return
+    }
+
+    // 主动请求麦克风权限，避免 "not-allowed" 错误
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true })
+    } catch (err) {
+      console.error('无法获取麦克风权限', err)
+      message.error('无法访问麦克风，请检查浏览器权限设置')
       return
     }
 
@@ -332,7 +341,21 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
       recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event)
-        message.error({ content: '语音识别出错', key: 'voice_rec' })
+        let errorMsg = '语音识别出错'
+        switch ((event as any).error) {
+          case 'not-allowed':
+            errorMsg = '麦克风权限未授予，请允许浏览器访问麦克风'
+            break
+          case 'audio-capture':
+            errorMsg = '未检测到麦克风，请检查设备'
+            break
+          case 'no-speech':
+            errorMsg = '未检测到语音，请重试'
+            break
+          default:
+            break
+        }
+        message.error({ content: errorMsg, key: 'voice_rec' })
         setIsListening(false)
       }
 
@@ -466,7 +489,10 @@ const ChatInput: React.FC<ChatInputProps> = ({
               type={isListening ? 'primary' : 'default'}
               danger={isListening}
               title={isListening ? '点击停止语音输入' : '语音输入'}
-              onClick={startVoiceRecognition}
+              onClick={() => {
+                // 调用异步函数但不关心其返回值
+                startVoiceRecognition()
+              }}
             />
 
             {/* 发送/停止 */}

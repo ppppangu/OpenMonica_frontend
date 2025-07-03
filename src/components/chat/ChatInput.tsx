@@ -293,9 +293,33 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const [activeTools, setActiveTools] = useState<string[]>([])
 
   /**
+   * 将 SpeechRecognition 错误码映射为友好的中文提示
+   */
+  const getSpeechRecognitionErrorMessage = (code: string): string => {
+    switch (code) {
+      case 'not-allowed':
+        return '浏览器已拒绝麦克风权限。请点击地址栏或浏览器设置中的麦克风图标，选择"允许"后刷新页面重试。'
+      case 'service-not-allowed':
+        return '浏览器全局语音服务被禁用，请在浏览器设置中启用语音识别功能。'
+      case 'audio-capture':
+        return '未检测到麦克风，请检查设备连接或系统设置。'
+      case 'no-speech':
+        return '未检测到语音，请确认麦克风正常工作后重试。'
+      default:
+        return '语音识别出错，请稍后再试。'
+    }
+  }
+
+  /**
    * 初始化并开始语音识别
    */
   const startVoiceRecognition = async () => {
+    // 仅允许在安全上下文(HTTPS 或 localhost)下使用语音识别
+    if (!window.isSecureContext) {
+      message.error('语音识别功能需要在 HTTPS 环境下运行，请使用 https:// 协议访问此页面。')
+      return
+    }
+
     // 判断浏览器兼容性
     const SpeechRecognition: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     if (!SpeechRecognition) {
@@ -306,9 +330,15 @@ const ChatInput: React.FC<ChatInputProps> = ({
     // 主动请求麦克风权限，避免 "not-allowed" 错误
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true })
-    } catch (err) {
+    } catch (err: any) {
       console.error('无法获取麦克风权限', err)
-      message.error('无法访问麦克风，请检查浏览器权限设置')
+      let errorMsg = '无法访问麦克风，请检查浏览器权限设置'
+      if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
+        errorMsg = '麦克风权限被拒绝，请点击地址栏麦克风图标并选择"允许"后重试'
+      } else if (err?.name === 'NotFoundError') {
+        errorMsg = '未检测到麦克风设备，请检查硬件连接'
+      }
+      message.error(errorMsg)
       return
     }
 
@@ -341,20 +371,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
       recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event)
-        let errorMsg = '语音识别出错'
-        switch ((event as any).error) {
-          case 'not-allowed':
-            errorMsg = '麦克风权限未授予，请允许浏览器访问麦克风'
-            break
-          case 'audio-capture':
-            errorMsg = '未检测到麦克风，请检查设备'
-            break
-          case 'no-speech':
-            errorMsg = '未检测到语音，请重试'
-            break
-          default:
-            break
-        }
+        const errorMsg = getSpeechRecognitionErrorMessage((event as any).error)
         message.error({ content: errorMsg, key: 'voice_rec' })
         setIsListening(false)
       }

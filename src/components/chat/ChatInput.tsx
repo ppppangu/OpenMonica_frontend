@@ -65,6 +65,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
   // 侧边栏宽度，用于计算输入框 left/width
   const { siderWidth } = React.useContext(SidebarContext)
 
+  const [annotations, setAnnotations] = useState<Record<string, string>>({})
+
   // 读取 config.yaml 的 prompt_buttons（支持 direct_send / attach_send）
   React.useEffect(() => {
     fetch('/config.yaml')
@@ -107,6 +109,11 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
         if (data && typeof data.deep_research_prompt === 'string') {
           setDeepResearchPrompt(data.deep_research_prompt)
+        }
+
+        // 提取 annotation
+        if (data && typeof data.annotation === 'object') {
+          setAnnotations(data.annotation as Record<string, string>)
         }
       })
       .catch(err => console.warn('加载 prompt_buttons 失败', err))
@@ -413,6 +420,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                       size="small"
                       className="!border !border-gray-300 !bg-gray-100 !text-gray-800 hover:!bg-gray-200 transition-colors duration-150"
                       onClick={() => handleDirectSend(btn.prompt)}
+                      title={annotations[btn.label]}
                     >
                       {btn.label}
                     </Button>
@@ -440,6 +448,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                           }
                           setTimeout(() => textAreaRef.current?.focus(), 50)
                         }}
+                        title={annotations[btn.label]}
                       >
                         {btn.label}
                       </Button>

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react'
 import { Avatar } from 'antd'
-import { UserOutlined, RobotOutlined } from '@ant-design/icons'
+import { UserOutlined } from '@ant-design/icons'
 import { ChatMessage as ChatMessageType } from '../../stores/chatStore'
 import { parseStreamingContent, renderSegmentsToHtml } from '../../utils/streamingUtils'
 import hljs from 'highlight.js'
@@ -254,6 +254,20 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false 
         resolvedSrc = rawSrc
       }
 
+      // -----------------------------
+      // 基础样式 & 宽高比辅助函数 (需在后续使用之前定义)
+      // -----------------------------
+      wrapper.style.position = 'relative'
+      wrapper.style.width = '100%'
+
+      const applyAspectRatio = (w: number, h: number) => {
+        if (w > 0 && h > 0) {
+          wrapper.style.aspectRatio = `${w} / ${h}`
+          wrapper.style.height = 'auto'
+          wrapper.style.minHeight = '0'
+        }
+      }
+
       // 创建 iframe
       const iframe = document.createElement('iframe')
       iframe.src = resolvedSrc
@@ -325,6 +339,23 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false 
         showError('加载超时（45s）')
       }, SAFE_IFRAME_TIMEOUT)
 
+      // ------ 监听 iframe 加载完成，尝试检测内容尺寸 ------
+      const tryDetectAspect = () => {
+        try {
+          const doc = iframe.contentWindow?.document
+          if (doc) {
+            const { scrollWidth, scrollHeight } = doc.documentElement
+            if (scrollWidth && scrollHeight) {
+              applyAspectRatio(scrollWidth, scrollHeight)
+              return true
+            }
+          }
+        } catch {
+          // 跨域或访问失败
+        }
+        return false
+      }
+
       iframe.addEventListener('load', () => {
         clearTimeout(timeoutId)
         if (loadingEl) {
@@ -333,13 +364,27 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false 
 
         // SAMEORIGIN / DENY 检测
         try {
-          // 若跨域访问会抛错，捕获忽略
           const loc = iframe.contentWindow?.location.href
           if (!loc || loc === 'about:blank') {
             showError('站点拒绝内嵌')
           }
-        } catch (e) {
-          // 无法访问意味着跨域，但不一定错误，忽略即可
+        } catch {
+          /* ignore */
+        }
+
+        // 尝试检测宽高比
+        const detected = tryDetectAspect()
+        if (!detected) {
+          // 降级策略：根据文件扩展名设置常见比例
+          if (['.ppt', '.pptx', '.pptm'].includes(ext)) {
+            applyAspectRatio(16, 9)
+          } else if (['.doc', '.docx', '.pdf'].includes(ext)) {
+            // 绝大多数简历与 A4 文档使用接近 3:4 的比例
+            applyAspectRatio(3, 4)
+          } else {
+            // 默认回退为方形
+            applyAspectRatio(1, 1)
+          }
         }
       })
 
@@ -358,8 +403,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false 
       {/* Avatar */}
       <Avatar
         size="default"
-        icon={isUser ? <UserOutlined /> : <RobotOutlined />}
-        className={isUser ? 'bg-blue-600' : 'bg-gray-500'}
+        src={isAssistant ? '/icons/logo.svg' : undefined}
+        icon={isUser ? <UserOutlined /> : undefined}
+        className={isUser ? 'bg-blue-600' : ''}
       />
 
       {/* Message Content */}

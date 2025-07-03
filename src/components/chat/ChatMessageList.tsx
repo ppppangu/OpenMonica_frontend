@@ -48,7 +48,7 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({ className = '' }) => 
             alt="logo"
             className="w-20 h-20 mb-4 opacity-80"
           />
-          <p className="text-lg text-gray-600">您的智能代理</p>
+          <p className="text-lg text-gray-600">super agent for everyone</p>
         </div>
       </div>
     )

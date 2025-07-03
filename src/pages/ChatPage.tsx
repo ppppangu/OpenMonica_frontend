@@ -42,6 +42,7 @@ const ChatPage: React.FC = () => {
   const [showHistory, setShowHistory] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
   const [lastMessage, setLastMessage] = useState<string>('')
+  const sendingRef = useRef<boolean>(false)
   const abortControllerRef = useRef<AbortController | null>(null)
   const sseRef = useRef<EventSource | null>(null)
   // 标记本次 AbortError 是否由用户主动触发
@@ -78,11 +79,21 @@ const ChatPage: React.FC = () => {
   }, [])
 
   const handleSendMessage = async (content: string | ChatMessage[], isRetry: boolean = false) => {
+    // 如果正在发送中，则直接忽略本次调用，防止重复触发
+    if (sendingRef.current) return
+
+    // 立刻置为 true（同步），确保后续快速的再次调用被挡住
+    sendingRef.current = true
+
     const IDLE_TIMEOUT = 20000 // 20s 无数据则认为断网
     let lastChunkAt = Date.now()
     let idleTimer: NodeJS.Timeout | null = null
 
-    if (!user || isStreaming || selectedModelIds.length === 0) return
+    if (!user || isStreaming || selectedModelIds.length === 0) {
+      // 进入这里说明不满足发送条件，释放锁并退出
+      sendingRef.current = false
+      return
+    }
 
     // Clear any previous errors
     clearError()
@@ -309,6 +320,8 @@ const ChatPage: React.FC = () => {
       setIsStreaming(false)
       setLoading(false)
     } finally {
+      // 重置发送锁，允许下一条消息
+      sendingRef.current = false
       // 最后确保标志位被重置
       userStoppedRef.current = false
       // 流结束后清理 controller 引用
@@ -358,6 +371,8 @@ const ChatPage: React.FC = () => {
     finishStreamingResponse()
     setIsStreaming(false)
     setLoading(false)
+    // 结束时确保释放发送锁
+    sendingRef.current = false
     // 确保请求已终止
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()

@@ -171,7 +171,9 @@
 
   /* ========== Safe Iframe ========= */
   .safe-iframe-wrapper {
-    @apply relative w-full h-[300px] border border-gray-200 rounded overflow-hidden bg-white;
+    @apply relative w-full border border-gray-200 rounded overflow-hidden bg-white;
+    /* 默认使用 3:4 比例作为降级方案，后续脚本可覆盖 aspect-ratio */
+    aspect-ratio: 3 / 4;
   }
 
   /* 移除默认缩放，保持 iframe 原始比例显示，提升可读性 */

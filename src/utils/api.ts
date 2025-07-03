@@ -120,8 +120,20 @@ export async function authenticatedGet(url: string): Promise<Response> {
  */
 export async function handleApiResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorText}`)
+    const rawText = await response.text()
+
+    // 尝试从 JSON 中提取 message 字段
+    let friendlyMsg = rawText
+    try {
+      const parsed = JSON.parse(rawText)
+      if (parsed && typeof parsed.message === 'string') {
+        friendlyMsg = parsed.message
+      }
+    } catch {
+      /* rawText 不是 JSON，保持原样 */
+    }
+
+    throw new Error(`API Error: ${response.status} ${response.statusText} - ${friendlyMsg}`)
   }
 
   const contentType = response.headers.get('content-type')
@@ -214,12 +226,32 @@ export async function updateUserInfo(
     user_id: userId
   })
 
-  const result = await handleApiResponse<{ status?: string; success?: boolean; message?: string }>(response)
+  const result = await handleApiResponse<{ status?: string; success?: boolean; message?: string } | string | undefined>(response)
 
-  const isSuccess = (result && (result.status === 'success' || result.success === true))
+  // =====================
+  // 统一成功判断逻辑
+  // =====================
+  let isSuccess = false
+
+  if (result === undefined) {
+    // 204 No Content 或空响应体视为成功
+    isSuccess = true
+  } else if (typeof result === 'string') {
+    // 处理纯文本 "success" / "ok" / "updated" 等
+    const lower = result.trim().toLowerCase()
+    isSuccess = ['success', 'ok', 'updated', 'done'].includes(lower) || lower.startsWith('update success')
+  } else if (typeof result === 'object' && result !== null) {
+    const statusStr = typeof (result as any).status === 'string' ? (result as any).status.toLowerCase() : ''
+    const messageStr = typeof (result as any).message === 'string' ? (result as any).message : ''
+    isSuccess =
+      statusStr === 'success' ||
+      (result as any).success === true ||
+      /更新成功|success|ok/i.test(messageStr)
+  }
 
   if (!isSuccess) {
-    throw new Error(result?.message || '更新用户信息失败')
+    const errMsg = typeof result === 'string' ? result : result?.message || '更新用户信息失败'
+    throw new Error(errMsg)
   }
 }
 

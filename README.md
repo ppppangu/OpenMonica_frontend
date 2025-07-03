@@ -1,6 +1,6 @@
 # AI Chat Interface - React版本
 
-这是一个现代化的AI聊天界面，使用React 18 + TypeScript + Vite技术栈构建，提供完整的聊天、知识库管理和文件处理功能。
+这是一个现代化的AI聊天界面，使用React 18 + TypeScript + Vite技术栈构建，提供完整的聊天、知识库管理和文件处理功能。node 20.14.0
 
 ## 📁 项目结构
 

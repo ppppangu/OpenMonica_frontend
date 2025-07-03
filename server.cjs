@@ -124,14 +124,46 @@ app.get('/proxy', async (req, res) => {
             return res.status(502).send(`Upstream responded with status ${response.status}`);
         }
 
-        // 透传重要头部
-        res.set('Content-Type', response.headers['content-type'] || 'application/octet-stream');
+        // -------------------- 统一头部处理，防止浏览器自动下载 --------------------
+        // 1. 删除上游强制下载的 Content-Disposition
+        if (response.headers['content-disposition']) {
+            delete response.headers['content-disposition'];
+        }
+        // 额外移除安全相关的响应头，避免iframe被阻止
+        ['x-frame-options', 'content-security-policy'].forEach((h) => {
+            if (response.headers[h]) {
+                delete response.headers[h];
+            }
+        });
+
+        // 2. 根据扩展名补全 / 修正 Content-Type
+        const ext = path.extname(new URL(target).pathname).toLowerCase();
+        const mimeMap = {
+            '.pdf': 'application/pdf',
+            '.html': 'text/html; charset=utf-8',
+            '.htm': 'text/html; charset=utf-8',
+            '.svg': 'image/svg+xml',
+            '.png': 'image/png',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.gif': 'image/gif',
+            '.webp': 'image/webp'
+        };
+        const resolvedType = mimeMap[ext] || response.headers['content-type'] || 'application/octet-stream';
+
+        // 3. 透传内容
+        res.set('Content-Type', resolvedType);
         if (response.headers['content-length']) {
             res.set('Content-Length', response.headers['content-length']);
         }
+        // 强制 inline 展示，阻止下载
+        res.set('Content-Disposition', 'inline');
+        res.set('X-Frame-Options', 'ALLOWALL');
+        res.set('Content-Security-Policy', "frame-ancestors *");
         res.set('Access-Control-Allow-Origin', '*');
         res.set('X-Proxy-By', 'mindmap-proxy');
         res.set('X-Content-Type-Options', 'nosniff');
+        res.set('Cache-Control', 'public, max-age=3600');
 
         // 管道传输
         response.data.pipe(res);

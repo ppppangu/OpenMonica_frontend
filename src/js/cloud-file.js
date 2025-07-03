@@ -1,6 +1,7 @@
 const axios = require('axios');
 const FormData = require('form-data');
 const { check_token_valid } = require('./token');
+const path = require('path');
 
 /**
  * Cloud file management module
@@ -288,21 +289,46 @@ function createFileProxyHandler(config) {
                 }
             });
 
+            // ------------------------- 新增: 规范化响应头 -------------------------
+            // 1. 移除上游强制下载头，避免浏览器自动下载
+            if (response.headers['content-disposition']) {
+                delete response.headers['content-disposition'];
+            }
+
+            // 额外移除可能阻止 iframe 渲染的安全相关响应头
+            ['x-frame-options', 'content-security-policy'].forEach((h) => {
+                if (response.headers[h]) {
+                    delete response.headers[h];
+                }
+            });
+
+            // 2. 根据文件扩展名补全 / 修正 Content-Type
+            const ext = path.extname(new URL(fileUrl).pathname).toLowerCase();
+            const mimeMap = {
+                '.pdf': 'application/pdf',
+                '.html': 'text/html; charset=utf-8',
+                '.htm': 'text/html; charset=utf-8',
+                '.svg': 'image/svg+xml',
+                '.png': 'image/png',
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.gif': 'image/gif',
+                '.webp': 'image/webp'
+            };
+            const resolvedContentType = mimeMap[ext] || response.headers['content-type'] || 'application/octet-stream';
+
             // 设置响应头
             res.set({
-                'Content-Type': response.headers['content-type'] || 'application/octet-stream',
+                'Content-Type': resolvedContentType,
                 'Content-Length': response.headers['content-length'],
-                'Content-Disposition': 'inline', // 优先内联显示而不是下载
-                'Cache-Control': 'public, max-age=3600', // 缓存1小时
+                'Content-Disposition': 'inline',
+                'X-Frame-Options': 'ALLOWALL',
+                'Content-Security-Policy': "frame-ancestors *",
+                'Cache-Control': 'public, max-age=3600',
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET',
                 'Access-Control-Allow-Headers': 'Content-Type'
             });
-
-            // 如果是PDF文件，确保正确的Content-Type
-            if (fileUrl.toLowerCase().includes('.pdf')) {
-                res.set('Content-Type', 'application/pdf');
-            }
 
             // 流式传输文件内容
             response.data.pipe(res);

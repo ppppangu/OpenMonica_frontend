@@ -48,14 +48,33 @@ file_upload:
 
 # 快捷提示词按钮配置
 prompt_buttons:
-  思维导图: "请用思维导图的方式回答下面的问题"
-  邮件: "请把最终的结果发到我的邮箱"
-  代码执行: "请分析并给出可执行代码示例"
-  每日新闻: "搜索今日新闻，并给出详细的新闻内容"
-  测试: "请以测试的形式回答"
+  direct_send:
+    - 每日新闻: "搜索今日新闻，并给出详细的新闻内容"
+  attach_send:
+    - 思维导图: "请用思维导图的方式回答下面的问题"
+    - 邮件: "请把最终的结果发到我的邮箱"
+    - 代码执行: "请分析并给出可执行代码示例"
 
 # DeepResearch 单独提示词
 deep_research_prompt: "请对下面的主题进行深入研究，并给出详尽的参考资料，需要使用链式思考，并给出详细的推理过程以确保信息的准确性"
 
 hide_tool_name: 
-  sequentialthinking
+  - sequentialthinking
+  - await
+tool_mapping:
+  sequentialthinking: 链式思考
+  await: 等待
+  mail: 邮件
+  daily_news: 每日新闻
+  websearch_tavily: 联网搜索
+  generate_artifact: 生成文件
+  mindmap: 生成思维导图
+  translate: 翻译
+  execute_code: 代码执行
+  get_knowledge_base_list: 获取知识库列表
+  get_documents_content: 查看具体文档内容
+  upload_file: 上传文件到知识库
+  update_knowledge_base_info: 更新知识库信息
+  create_knowledge_base: 创建知识库
+  delete_knowledge_base: 删除知识库
+  submit_video_generation: 提交视频生成任务

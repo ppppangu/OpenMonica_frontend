@@ -50,7 +50,8 @@
 
   /* Chat message content styling */
   .thinking-content {
-    @apply bg-gray-50 border-l-4 border-gray-300 pl-3 py-2 mb-3 text-gray-600 italic;
+    /* 背景改为更深的灰色，整体高度 +20%（通过上下内边距增加实现）*/
+    @apply bg-gray-100 text-gray-700 italic border-l-4 border-gray-300 pl-4 py-4 my-2;
   }
 
   .normal-content {
@@ -173,8 +174,14 @@
     @apply relative w-full h-[300px] border border-gray-200 rounded overflow-hidden bg-white;
   }
 
+  /* 移除默认缩放，保持 iframe 原始比例显示，提升可读性 */
   .safe-iframe-wrapper iframe {
-    @apply w-full h-full border-none;
+    @apply w-full h-full border-none; /* 占满容器 */
+    /* 删除 transform 缩放，改为原始尺寸 */
+  }
+  /* 进入全屏模式后同样保持原始比例 */
+  iframe:fullscreen {
+    transform: none !important;
   }
 
   .safe-iframe-loading,
@@ -184,6 +191,16 @@
 
   .safe-iframe-error {
     @apply bg-red-50 text-red-600;
+  }
+
+  /* iframe 控制按钮（尺寸 & 颜色加深） */
+  .safe-iframe-controls button {
+    @apply text-gray-800 hover:text-gray-900 bg-gray-300 bg-opacity-80 text-sm leading-none px-2 py-1 rounded cursor-pointer;
+  }
+
+  /* 新增：当父元素拥有 .hide-thinking 类时，隐藏内部的思考内容 */
+  .hide-thinking .thinking-content {
+    display: none;
   }
 }
 
@@ -253,11 +270,6 @@
   @apply border-gray-300 bg-gray-50;
 }
 
-/* Thinking content styling */
-.thinking-content {
-  @apply text-gray-500 italic border-l-4 border-gray-300 pl-4 my-2;
-}
-
 /* Primary color overrides (OpenAI 绿色) */
 :root {
   --color-primary-50: #ecfdf5;
@@ -270,6 +282,8 @@
   --color-primary-700: #0f865e;
   --color-primary-800: #046C4E;
   --color-primary-900: #03543F;
+  /* Thought panel width (0 by default, 400px when panel opens on >=sm) */
+  --thought-panel-width: 0px;
 }
 
 /* Sidebar beautification */

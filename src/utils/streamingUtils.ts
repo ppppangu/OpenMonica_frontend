@@ -187,45 +187,79 @@ function splitThinkNormal(text: string): Segment[] {
 
 // Render segments to HTML
 export function renderSegmentsToHtml(segments: Segment[]): string {
-  const htmlParts: string[] = []
+  // === 新增: 收集已完成的工具调用 (type-4) ===
+  const doneKeySet = new Set<string>()
+  const stableStringify = (obj: any): string => {
+    if (obj === null || typeof obj !== 'object') return JSON.stringify(obj)
+    const sortedKeys = Object.keys(obj).sort()
+    const ordered: Record<string, any> = {}
+    sortedKeys.forEach((k) => {
+      ordered[k] = obj[k]
+    })
+    return JSON.stringify(ordered)
+  }
 
-  // 收集已完成的工具调用，用于隐藏对应调用块
-  const completedSet = new Set<string>()
   segments.forEach((seg) => {
-    if (seg.type === 'toolDone' && (seg as ToolDoneSegment).parsedParams) {
-      completedSet.add(JSON.stringify((seg as ToolDoneSegment).parsedParams))
+    if (seg.type === 'toolDone') {
+      const td = seg as ToolDoneSegment
+      if (td.parsedParams && td.parsedParams.tool) {
+        const key = `${td.parsedParams.tool}:${stableStringify(td.parsedParams.arguments)}`
+        doneKeySet.add(key)
+      }
     }
   })
 
-  // 读取全局隐藏配置（由 ChatInput/页面加载时注入 window）
-  const hideToolName = (typeof window !== 'undefined' && (window as any).__APP_CONFIG?.hide_tool_name === true)
+  const htmlParts: string[] = []
 
+  // 读取全局隐藏工具列表
+  const hideToolList: string[] =
+    typeof window !== 'undefined' && Array.isArray((window as any).__APP_CONFIG?.hide_tool_name)
+      ? (window as any).__APP_CONFIG.hide_tool_name
+      : []
+  // 读取工具名称映射表
+  const toolMapping: Record<string, string> =
+    typeof window !== 'undefined' && (window as any).__APP_CONFIG?.tool_mapping
+      ? (window as any).__APP_CONFIG.tool_mapping
+      : {}
+
+  // 第二遍渲染
   segments.forEach((segment) => {
     if (segment.type === 'think' || segment.type === 'normal') {
-      // 过滤空文本，避免渲染空占位块
       if (!segment.content || segment.content.trim() === '') return
       const className = segment.type === 'think' ? 'thinking-content' : 'normal-content'
       htmlParts.push(`<div class="${className}">${markdownToHtml(segment.content)}</div>`)
     } else if (segment.type === 'toolUsing') {
-      // 若已完成，跳过渲染调用块
-      const key = JSON.stringify((segment as ToolUsingSegment).json)
-      if (completedSet.has(key)) return
+      const tu = segment as ToolUsingSegment
+      const toolName = tu.json.tool
+      // 隐藏列表跳过
+      if (hideToolList.includes(toolName)) return
 
+      // 若已存在对应结果，隐藏调用块
+      const key = `${toolName}:${stableStringify(tu.json.arguments)}`
+      if (doneKeySet.has(key)) return
+
+      const displayName = toolMapping[toolName] || toolName
       htmlParts.push(
         `<details class="tool-call-block tool-call-loading">
-           <summary class="tool-call-header cursor-pointer select-none">🔧 调用工具${hideToolName ? '' : ': ' + escape((segment as ToolUsingSegment).json.tool)}</summary>
+           <summary class="tool-call-header cursor-pointer select-none">🔧 调用工具: ${escape(displayName)}</summary>
            <pre class="tool-call-content">${escape(segment.content)}</pre>
          </details>`
       )
     } else if (segment.type === 'toolDone') {
       const toolDone = segment as ToolDoneSegment
+      const toolNameForCheck = toolDone.parsedParams?.tool
+      if (toolNameForCheck && hideToolList.includes(toolNameForCheck)) return
+
       const isError = toolDone.json.is_error === true || toolDone.json.is_error === 'true'
       const statusClass = isError ? 'tool-call-error' : 'tool-call-success'
       const statusIcon = isError ? '❌' : '✅'
+      // 解析工具名称并做映射，若无法解析则回退为"工具"
+      const rawToolName = toolDone.parsedParams?.tool || ''
+      const displayToolName = rawToolName ? (toolMapping[rawToolName] || rawToolName) : '工具'
 
       htmlParts.push(
         `<details class="tool-call-block ${statusClass}">
-           <summary class="tool-call-header cursor-pointer select-none">${statusIcon} 工具执行${isError ? '失败' : '完成'}</summary>
+           <summary class="tool-call-header cursor-pointer select-none">${statusIcon} ${escape(displayToolName)}工具执行${isError ? '失败' : '完成'}</summary>
            <div class="tool-call-result">${escape(toolDone.json.tool_response)}</div>
          </details>`
       )

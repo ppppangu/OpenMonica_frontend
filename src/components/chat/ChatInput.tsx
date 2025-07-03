@@ -25,6 +25,9 @@ interface ChatInputProps {
   placeholder?: string
 }
 
+// 新增统一消息类型定义（简化处理）
+type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: any }
+
 const ChatInput: React.FC<ChatInputProps> = ({
   onSend,
   onStop,
@@ -43,6 +46,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const [isComposing, setIsComposing] = useState(false)
   const [promptButtons, setPromptButtons] = useState<Record<string, string>>({})
   const [activePrompts, setActivePrompts] = useState<{ key: string; text: string }[]>([])
+  const [directButtons, setDirectButtons] = useState<{ label: string; prompt: string }[]>([])
+  const [attachButtons, setAttachButtons] = useState<{ label: string; prompt: string }[]>([])
   const [knowledgeSource, setKnowledgeSource] = useState<string>('smart')
   const [deepResearch, setDeepResearch] = useState<boolean>(false)
   const [deepResearchPrompt, setDeepResearchPrompt] = useState<string>('')
@@ -60,19 +65,44 @@ const ChatInput: React.FC<ChatInputProps> = ({
   // 侧边栏宽度，用于计算输入框 left/width
   const { siderWidth } = React.useContext(SidebarContext)
 
-  // 读取 config.yaml 的 prompt_buttons
+  // 读取 config.yaml 的 prompt_buttons（支持 direct_send / attach_send）
   React.useEffect(() => {
     fetch('/config.yaml')
       .then(res => res.text())
       .then(text => {
         const data: any = yaml.load(text)
         if (data && data.prompt_buttons) {
-          // 过滤 value 非字符串的情况
-          const buttons: Record<string, string> = {}
-          Object.entries<any>(data.prompt_buttons).forEach(([k, v]) => {
-            if (typeof v === 'string') buttons[k] = v
-          })
-          setPromptButtons(buttons)
+          const dArr: { label: string; prompt: string }[] = []
+          const aArr: { label: string; prompt: string }[] = []
+
+          const directRaw = data.prompt_buttons.direct_send || []
+          const attachRaw = data.prompt_buttons.attach_send || []
+
+          // direct_send: array of map
+          if (Array.isArray(directRaw)) {
+            directRaw.forEach((item: any) => {
+              if (item && typeof item === 'object') {
+                const [k, v] = Object.entries(item)[0] || []
+                if (typeof k === 'string' && typeof v === 'string') {
+                  dArr.push({ label: k, prompt: v })
+                }
+              }
+            })
+          }
+
+          if (Array.isArray(attachRaw)) {
+            attachRaw.forEach((item: any) => {
+              if (item && typeof item === 'object') {
+                const [k, v] = Object.entries(item)[0] || []
+                if (typeof k === 'string' && typeof v === 'string') {
+                  aArr.push({ label: k, prompt: v })
+                }
+              }
+            })
+          }
+
+          setDirectButtons(dArr)
+          setAttachButtons(aArr)
         }
 
         if (data && typeof data.deep_research_prompt === 'string') {
@@ -81,6 +111,29 @@ const ChatInput: React.FC<ChatInputProps> = ({
       })
       .catch(err => console.warn('加载 prompt_buttons 失败', err))
   }, [])
+
+  /**
+   * 直接发送类型按钮行为
+   */
+  const handleDirectSend = (prompt: string) => {
+    let sendContent = prompt
+    const trimmed = inputValue.trim()
+    if (trimmed) {
+      sendContent = `${prompt} • ${trimmed}`
+    }
+
+    // DeepResearch 注入（保持与普通 send 一致）
+    if (deepResearch && deepResearchPrompt) {
+      sendContent = `${deepResearchPrompt} • ${sendContent}`
+    }
+
+    // 直接调用 onSend，并重置
+    onSend(sendContent as any)
+
+    setInputValue('')
+    setActivePrompts([])
+    setTimeout(() => textAreaRef.current?.focus(), 100)
+  }
 
   const handleSend = () => {
     const trimmedValue = inputValue.trim()
@@ -92,12 +145,16 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
     let finalContent = promptText ? `${promptText} • ${trimmedValue}` : trimmedValue
 
-    // DeepResearch 注入
+    // DeepResearch 集成：若开启则按 messagesArray 发送
     if (deepResearch && deepResearchPrompt) {
-      finalContent = `${deepResearchPrompt} • ${finalContent}`
+      const messages: ChatMessage[] = [
+        { role: 'system', content: deepResearchPrompt },
+        { role: 'user', content: finalContent }
+      ]
+      onSend(messages as any)
+    } else {
+      onSend(finalContent as any)
     }
-
-    onSend(finalContent)
 
     // 重置输入与已选 prompt
     setInputValue('')
@@ -223,6 +280,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
     )
   }
 
+  // 判断 DeepResearch 是否启用；启用则不显示按钮区域
+  const shouldShowPromptButtons = !deepResearch
+
   // 工具按钮标签集合（不显示 chips，只需高亮切换）
   const TOOL_LABELS = [
     '思维导图', 'Mind Map',
@@ -294,50 +354,59 @@ const ChatInput: React.FC<ChatInputProps> = ({
     <>
       {/* 底部输入栏外层定位容器：负责 left 偏移 & 占满剩余宽度 */}
       <div
-        className="fixed bottom-4 left-0 right-0 z-50"
-        style={{ left: siderWidth, right: 0, transition: 'left 0.2s' }}
+        className="fixed bottom-4 left-0 z-50"
+        /* 使用 --thought-panel-width 变量动态调整右侧间距，避免被思维面板遮挡 */
+        style={{ left: siderWidth, right: 'var(--thought-panel-width)', transition: 'left 0.2s, right 0.2s' }}
       >
         {/* 内层实际可见容器：宽度限制在 4xl，并使用 mx-auto 居中 */}
-        <div className="bg-white p-4 md:px-6 space-y-2 shadow-[0_-6px_16px_rgba(0,0,0,0.08)] rounded-t-2xl backdrop-blur-sm max-w-4xl mx-auto">
+        <div className="bg-white p-4 md:px-6 space-y-2 shadow-[0_-6px_16px_rgba(0,0,0,0.08),0_6px_12px_rgba(0,0,0,0.04)] rounded-t-2xl backdrop-blur-sm max-w-4xl mx-auto">
           {/* 行 1：快捷提示 & 会话控制 */}
           <div className="flex items-center justify-between max-w-4xl mx-auto">
             {/* 左：预设提示词 */}
             <div className="flex items-center gap-1 flex-wrap">
-              {Object.entries(promptButtons).map(([label, prompt]) => {
-                const isTool = TOOL_LABELS.includes(label)
-                const isActive = isTool
-                  ? activeTools.includes(label)
-                  : activePrompts.some(p => p.key === label)
-                return (
-                  <Button
-                    key={label}
-                    size="small"
-                    className={`${['!border !border-gray-300', isActive ? '!bg-gray-300' : '!bg-gray-100', '!text-gray-800', 'hover:!bg-gray-200', 'transition-colors duration-150'].join(' ')}`}
-                    onClick={() => {
-                      if (isTool) {
-                        // 处理工具按钮
-                        setActiveTools(prev => {
-                          if (prev.includes(label)) {
-                            return prev.filter(l => l !== label)
+              {shouldShowPromptButtons && (
+                <>
+                  {/* direct send buttons */}
+                  {directButtons.map(btn => (
+                    <Button
+                      key={btn.label}
+                      size="small"
+                      className="!border !border-gray-300 !bg-gray-100 !text-gray-800 hover:!bg-gray-200 transition-colors duration-150"
+                      onClick={() => handleDirectSend(btn.prompt)}
+                    >
+                      {btn.label}
+                    </Button>
+                  ))}
+
+                  {/* attach send buttons (chips) */}
+                  {attachButtons.map(btn => {
+                    const isTool = TOOL_LABELS.includes(btn.label)
+                    const isActive = isTool
+                      ? activeTools.includes(btn.label)
+                      : activePrompts.some(p => p.key === btn.label)
+                    return (
+                      <Button
+                        key={btn.label}
+                        size="small"
+                        className={`${['!border !border-gray-300', isActive ? '!bg-gray-300' : '!bg-gray-100', '!text-gray-800', 'hover:!bg-gray-200', 'transition-colors duration-150'].join(' ')}`}
+                        onClick={() => {
+                          if (isTool) {
+                            setActiveTools(prev => prev.includes(btn.label) ? prev.filter(l => l !== btn.label) : [...prev, btn.label])
+                          } else {
+                            setActivePrompts(prev => prev.some(p => p.key === btn.label)
+                              ? prev.filter(p => p.key !== btn.label)
+                              : [...prev, { key: btn.label, text: btn.prompt }]
+                            )
                           }
-                          return [...prev, label]
-                        })
-                      } else {
-                        // 非工具，作为 prompt chip
-                        setActivePrompts(prev => {
-                          if (prev.some(p => p.key === label)) {
-                            return prev.filter(p => p.key !== label)
-                          }
-                          return [...prev, { key: label, text: prompt }]
-                        })
-                      }
-                      setTimeout(() => textAreaRef.current?.focus(), 50)
-                    }}
-                  >
-                    {label}
-                  </Button>
-                )
-              })}
+                          setTimeout(() => textAreaRef.current?.focus(), 50)
+                        }}
+                      >
+                        {btn.label}
+                      </Button>
+                    )
+                  })}
+                </>
+              )}
             </div>
 
             {/* 右：会话列表 & 新建会话 */}

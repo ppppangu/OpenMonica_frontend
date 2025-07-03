@@ -60,45 +60,66 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false 
   // ---------------------------
   const extractThoughts = (segs: Segment[]): string[] => {
     const list: string[] = []
+
+    const appConfig: any = typeof window !== 'undefined' ? (window as any).__APP_CONFIG || {} : {}
+    const toolMapping: Record<string, string> = appConfig.tool_mapping || {}
+    const hideToolList: string[] = Array.isArray(appConfig.hide_tool_name) ? appConfig.hide_tool_name : []
+
+    const pushLines = (val: string | string[]) => {
+      const arr = Array.isArray(val) ? val : val.split(/\n+/)
+      arr.forEach(line => {
+        const cleaned = line.replace(/^\s*-\s*/, '').trim()
+        if (cleaned) list.push(cleaned)
+      })
+    }
+
     segs.forEach(seg => {
       if (seg.type === 'toolDone') {
         const td = seg as ToolDoneSegment
         try {
           const obj = JSON.parse(td.json.tool_response)
           if (obj && obj.thought) {
-            const pushLines = (val: string | string[]) => {
-              const arr = Array.isArray(val) ? val : val.split(/\n+/)
-              arr.forEach(line => {
-                const cleaned = line.replace(/^\s*-\s*/, '').trim()
-                if (cleaned) list.push(cleaned)
-              })
-            }
             pushLines(obj.thought)
           }
-        } catch {/* ignore parse error */}
-      } else if (seg.type === 'toolUsing') {
+        } catch { /* ignore parse error */ }
+      }
+
+      if (seg.type === 'toolUsing') {
         const tu = seg as any
+
+        // 1. 解析 sequentialthinking 内部思考
         if (tu.json?.tool === 'sequentialthinking' && tu.json.arguments) {
           const thoughtVal = tu.json.arguments.thought
           if (thoughtVal) {
-            const pushLines = (val: string | string[]) => {
-              const arr = Array.isArray(val) ? val : val.split(/\n+/)
-              arr.forEach(line => {
-                const cleaned = line.replace(/^\s*-\s*/, '').trim()
-                if (cleaned) list.push(cleaned)
-              })
-            }
             pushLines(thoughtVal)
+          }
+        }
+
+        // 2. 添加工具调用提示行
+        if (tu.json?.tool) {
+          const rawName: string = tu.json.tool
+          if (!hideToolList.includes(rawName)) {
+            const mappedName = toolMapping[rawName] || rawName
+            list.push(`agent调用\`${mappedName}\`工具`)
           }
         }
       }
     })
+
     return list
   }
 
   const thoughts = useMemo(() => extractThoughts(segments as Segment[]), [segments])
 
-  const [showThoughtPanel, setShowThoughtPanel] = useState(false)
+  // 初始时若存在思维内容则自动展开
+  const [showThoughtPanel, setShowThoughtPanel] = useState(thoughts.length > 0)
+
+  // 当新的思维内容出现时自动展开
+  useEffect(() => {
+    if (thoughts.length > 0) {
+      setShowThoughtPanel(true)
+    }
+  }, [thoughts])
 
   useEffect(() => {
     if (bubbleRef.current) {
@@ -208,33 +229,79 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false 
       wrapper.setAttribute('data-initialized', 'true')
 
       const rawSrc = wrapper.getAttribute('data-src') || ''
-      let resolvedSrc = rawSrc
-
-      // 处理以下两类情况需使用同源代理：
-      // 1) 当前页面为 https，待嵌入资源为 http（避免 Mixed-Content）
-      // 2) 目标域名为 cpolar 隧道 (*.cpolar.*)，可能被 Edge SmartScreen 阻断
-
-      const needProxyByProtocol = window.location.protocol === 'https:' && rawSrc.startsWith('http:')
-
-      let needProxyByDomain = false
+      // ===== 文件类型白名单判断 =====
+      const allowedExt = ['.html', '.htm', '.pdf', '.svg', '.png', '.jpg', '.jpeg', '.gif', '.webp']
+      let ext = ''
       try {
-        const host = new URL(rawSrc).hostname
-        needProxyByDomain = /\.cpolar\./i.test(host)
-      } catch {/* invalid url => ignore */}
+        ext = rawSrc ? new URL(rawSrc).pathname.split('.').pop()?.toLowerCase() || '' : ''
+        if (ext) ext = '.' + ext
+      } catch { /* ignore */ }
 
-      if (needProxyByProtocol || needProxyByDomain) {
-        resolvedSrc = `/proxy?url=${encodeURIComponent(rawSrc)}`
+      if (ext && !allowedExt.includes(ext)) {
+        // 不允许内嵌，改为提示链接
+        wrapper.innerHTML = `<a href="${rawSrc}" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline">点击打开文件</a>`
+        return
+      }
+
+      // 若为跨域资源，则走同源代理以修正响应头；同源或以 / 开头的路径保持不变
+      let resolvedSrc: string
+      try {
+        const urlObj = new URL(rawSrc, window.location.href)
+        const isSameOrigin = urlObj.origin === window.location.origin
+        resolvedSrc = isSameOrigin ? urlObj.href : `/file/proxy?url=${encodeURIComponent(urlObj.href)}`
+      } catch {
+        // 无法解析 (可能是相对路径)，直接使用原始地址
+        resolvedSrc = rawSrc
       }
 
       // 创建 iframe
       const iframe = document.createElement('iframe')
       iframe.src = resolvedSrc
       iframe.setAttribute('referrerpolicy', 'no-referrer')
+      iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture')
       iframe.style.width = '100%'
       iframe.style.height = '100%'
 
+      // === 新增: 控制按钮(全屏 / 新窗口) ===
+      const controls = document.createElement('div')
+      controls.className = 'safe-iframe-controls flex gap-1'
+      controls.style.position = 'absolute'
+      controls.style.top = '4px'
+      controls.style.right = '4px'
+      controls.style.zIndex = '10'
+
+      // 全屏按钮
+      const btnFull = document.createElement('button')
+      btnFull.title = '全屏显示'
+      btnFull.innerText = '⛶'
+      btnFull.className = 'safe-iframe-btn'
+      btnFull.addEventListener('click', (e) => {
+        e.stopPropagation()
+        if (iframe.requestFullscreen) {
+          iframe.requestFullscreen().catch(() => {
+            window.open(rawSrc, '_blank')
+          })
+        } else {
+          window.open(rawSrc, '_blank')
+        }
+      })
+
+      // 新窗口按钮
+      const btnNew = document.createElement('button')
+      btnNew.title = '在新窗口打开'
+      btnNew.innerText = '↗'
+      btnNew.className = 'safe-iframe-btn'
+      btnNew.addEventListener('click', (e) => {
+        e.stopPropagation()
+        window.open(rawSrc, '_blank')
+      })
+
+      controls.appendChild(btnFull)
+      controls.appendChild(btnNew)
+
       // 在加载前插入，保持 DOM 顺序
       wrapper.appendChild(iframe)
+      wrapper.appendChild(controls)
 
       const loadingEl = wrapper.querySelector('.safe-iframe-loading') as HTMLElement | null
 
@@ -248,8 +315,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false 
 
         const err = document.createElement('div')
         err.className = 'safe-iframe-error'
-        const encoded = encodeURIComponent(rawSrc)
-        err.innerHTML = `${msg}，<a href="${rawSrc}" target="_blank" rel="noopener noreferrer" class="underline">新标签页打开</a> | <a href="/proxy?url=${encoded}" target="_blank" rel="noopener noreferrer" class="underline">代理访问</a>`
+        err.innerHTML = `${msg}，<a href="${rawSrc}" target="_blank" rel="noopener noreferrer" class="underline">在新标签页打开</a>`
         wrapper.appendChild(err)
       }
 
@@ -284,14 +350,11 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false 
     })
   }, [htmlContent])
 
-  // 读取全局配置
-  const hideToolName = (typeof window !== 'undefined' && (window as any).__APP_CONFIG?.hide_tool_name === true)
-
-  // 若需要隐藏工具名，则对 htmlContent 进行替换（回退方案，确保渲染结果符合要求）
-  const finalHtml = hideToolName ? htmlContent.replace(/🔧 调用工具:[^<]+/g, '🔧 调用工具') : htmlContent
+  // 渲染后的 HTML 直接使用（工具显示过滤已在 streamingUtils 处理）
+  const finalHtml = htmlContent
 
   return (
-    <div className={`flex gap-3 mb-4 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+    <div className={`flex gap-3 ${isUser ? 'mb-4 flex-row-reverse' : 'mb-2 flex-row'}`}>
       {/* Avatar */}
       <Avatar
         size="default"
@@ -307,12 +370,13 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false 
           className={`
             chat-bubble
             ${isUser ? 'chat-bubble-user' : 'chat-bubble-assistant'}
+            ${!showThoughtPanel ? 'hide-thinking' : ''}
           `}
         >
           {/* 思维路径按钮 */}
           {isAssistant && thoughts.length > 0 && (
             <button
-              className="rounded-2xl bg-gray-100 hover:bg-gray-200 px-3 py-1 text-sm mb-2 cursor-pointer transition"
+              className="rounded-2xl bg-gray-100 hover:bg-gray-200 px-4 py-2 text-sm mb-2 cursor-pointer transition"
               onClick={() => setShowThoughtPanel(prev => !prev)}
             >
               agent思维路径
@@ -374,3 +438,4 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false 
 }
 
 export default ChatMessage
+

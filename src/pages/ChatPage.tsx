@@ -12,6 +12,8 @@ import { useFileStore } from '../stores/fileStore'
 // const { Sider, Content } = Layout
 const { Text } = Typography
 
+type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: any }
+
 const ChatPage: React.FC = () => {
   const { message } = App.useApp()
   const { user } = useAuth()
@@ -75,7 +77,7 @@ const ChatPage: React.FC = () => {
     }
   }, [])
 
-  const handleSendMessage = async (content: string, isRetry: boolean = false) => {
+  const handleSendMessage = async (content: string | ChatMessage[], isRetry: boolean = false) => {
     const IDLE_TIMEOUT = 20000 // 20s 无数据则认为断网
     let lastChunkAt = Date.now()
     let idleTimer: NodeJS.Timeout | null = null
@@ -86,7 +88,7 @@ const ChatPage: React.FC = () => {
     clearError()
 
     // Store message for retry
-    setLastMessage(content)
+    setLastMessage(typeof content === 'string' ? content : '')
 
     // addUserMessage 调用将在确定最终 content 形式后再执行（支持多模态数组）
     if (!isRetry) {
@@ -111,13 +113,12 @@ const ChatPage: React.FC = () => {
       let currentModelId = selectedModelIds[0]
       if (!currentModelId && modelList && modelList.length > 0) {
         currentModelId = modelList[0].model_id
-        // 更新到 store，防止后续继续为空
         setSelectedModels([currentModelId])
         message.warning('未检测到已选模型，已自动为您选择默认模型')
       }
 
-      const currentModelInfo = modelList?.find((m: any) => m.model_id === currentModelId)
-      const isMultimodal = currentModelInfo?.owned_by?.includes('multimodal') || false
+      // 新逻辑：只要存在图片附件就是多模态
+      const isMultimodal = attachments.some(att => att.category === 'image')
 
       // 准备请求数据
       const formData = new FormData()
@@ -133,45 +134,67 @@ const ChatPage: React.FC = () => {
       const imageAttachments = attachments.filter(a => a.category === 'image')
       const documentAttachments = attachments.filter(a => a.category !== 'image')
 
-      let userContentForStore: string | any[] = content
+      // ---------------- 新的构造逻辑 ----------------
+      let userContentForStore: string | any[] = ''
 
-      if (isMultimodal && imageAttachments.length > 0) {
-        // 按 OpenAI 多模态格式发送
-        const contentArr: any[] = [{ type: 'text', text: content }]
-        imageAttachments.forEach(img => {
-          contentArr.push({ type: 'image_url', image_url: { url: img.public_url } })
-        })
+      if (Array.isArray(content)) {
+        const messagesArr: ChatMessage[] = JSON.parse(JSON.stringify(content))
+        const userIdx = messagesArr.findIndex(m => m.role === 'user')
 
-        // 如果同时还有文档类附件，将其以文本形式追加
-        if (documentAttachments.length > 0) {
-          const dictLines = documentAttachments.map(att => `${att.filename}: ${att.public_url}`)
-          contentArr.push({
-            type: 'text',
-            text: `\n\n[附件列表]\n${dictLines.join('\n')}`
-          })
+        if (userIdx !== -1) {
+          const originalUserContent = messagesArr[userIdx].content as string
+
+          if (isMultimodal && imageAttachments.length > 0) {
+            const arr: any[] = [{ type: 'text', text: originalUserContent }]
+            imageAttachments.forEach(img => arr.push({ type: 'image_url', image_url: { url: img.public_url } }))
+            if (documentAttachments.length > 0) {
+              const dictLines = documentAttachments.map(att => `${att.filename}: ${att.public_url}`)
+              arr.push({ type: 'text', text: `\n\n[附件列表]\n${dictLines.join('\n')}` })
+            }
+            messagesArr[userIdx].content = arr
+            userContentForStore = arr
+          } else {
+            let txt = originalUserContent
+            if (attachments.length > 0) {
+              const dictLines = attachments.map(att => `${att.filename}: ${att.public_url}`)
+              txt += `\n\n[附件列表]\n` + dictLines.join('\n')
+            }
+            messagesArr[userIdx].content = txt
+            userContentForStore = txt
+          }
         }
-        const messages = JSON.stringify([
-          { role: 'user', content: contentArr }
-        ])
-        formData.append('user_message_list', messages)
 
-        userContentForStore = contentArr
+        formData.append('user_message_list', JSON.stringify(messagesArr))
+        if (!isRetry && userContentForStore) {
+          addUserMessage(userContentForStore)
+        }
       } else {
-        // 非多模态或无图片，拼接附件描述到文本
-        let finalText = content
-        if (attachments.length > 0) {
-          const dictLines = attachments.map(att => `${att.filename}: ${att.public_url}`)
-          finalText += `\n\n[附件列表]\n` + dictLines.join('\n')
+        const textInput = content as string
+
+        if (isMultimodal && imageAttachments.length > 0) {
+          const arr: any[] = [{ type: 'text', text: textInput }]
+          imageAttachments.forEach(img => arr.push({ type: 'image_url', image_url: { url: img.public_url } }))
+          if (documentAttachments.length > 0) {
+            const dictLines = documentAttachments.map(att => `${att.filename}: ${att.public_url}`)
+            arr.push({ type: 'text', text: `\n\n[附件列表]\n${dictLines.join('\n')}` })
+          }
+          formData.append('user_message_list', JSON.stringify([{ role: 'user', content: arr }]))
+          userContentForStore = arr
+        } else {
+          let finalText = textInput
+          if (attachments.length > 0) {
+            const dictLines = attachments.map(att => `${att.filename}: ${att.public_url}`)
+            finalText += `\n\n[附件列表]\n` + dictLines.join('\n')
+          }
+          formData.append('text', finalText)
+          userContentForStore = finalText
         }
-        formData.append('text', finalText)
 
-        userContentForStore = finalText
+        if (!isRetry) {
+          addUserMessage(userContentForStore)
+        }
       }
-
-      // 发送之前，将用户消息添加到 UI（仅首次发送时）
-      if (!isRetry) {
-        addUserMessage(userContentForStore)
-      }
+      // ---------------- 逻辑结束 ----------------
 
       // 现在开始初始化 assistant 气泡，保证顺序在用户消息之后
       startStreamingResponse()

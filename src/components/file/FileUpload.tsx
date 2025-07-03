@@ -117,7 +117,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
       window.open(attachment.public_url, '_blank')
     } else {
       // For documents, could open in iframe or download
-      window.open(`/user/file/proxy?url=${encodeURIComponent(attachment.public_url)}`, '_blank')
+      window.open(`/file/proxy?url=${encodeURIComponent(attachment.public_url)}`, '_blank')
     }
   }
 

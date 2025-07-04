@@ -1,15 +1,27 @@
-import { apiRequest } from './api'
 import {
   KnowledgeBaseSummary,
   KnowledgeBaseDetail,
   KnowledgeGraph,
 } from '../types/knowledgeBase'
+import { loadConfig } from './configLoader'
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-const ENV = (import.meta as any).env || {}
-const USER_SERVICE_BASE = ENV.VITE_USER_SERVICE_URL || 'http://120.46.208.202:8006'
-const FILE_SERVICE_BASE = ENV.VITE_FILE_SERVICE_URL || 'http://120.46.208.202:8087'
+/**
+ * 帮助方法：向用户管理服务发送请求
+ */
+async function userServiceFetch(path: string, options: RequestInit) {
+  const cfg = await loadConfig()
+  const base = cfg.user_manage_url || ''
+  return fetch(`${base}${path}`, options)
+}
 
+/**
+ * 帮助方法：向文件管理服务发送请求
+ */
+async function fileServiceFetch(path: string, options: RequestInit) {
+  const cfg = await loadConfig()
+  const base = cfg.file_manage_url || ''
+  return fetch(`${base}${path}`, options)
+}
 // ---------------- 知识库核心接口 ---------------- //
 export async function fetchKnowledgeBaseList(userId: string): Promise<KnowledgeBaseSummary[]> {
   const body = new FormData()
@@ -17,7 +29,7 @@ export async function fetchKnowledgeBaseList(userId: string): Promise<KnowledgeB
   body.append('user_id', userId)
   body.append('target', 'list')
 
-  const res = await fetch(`${USER_SERVICE_BASE}/user/knowledgebase`, {
+  const res = await userServiceFetch('/user/knowledgebase', {
     method: 'POST',
     body,
   })
@@ -33,7 +45,7 @@ export async function fetchKnowledgeBaseDetail(userId: string, kbId: string): Pr
   body.append('knowledgebase_id', kbId)
   body.append('target', 'detail')
 
-  const res = await fetch(`${USER_SERVICE_BASE}/user/knowledgebase`, {
+  const res = await userServiceFetch('/user/knowledgebase', {
     method: 'POST',
     body,
   })
@@ -60,7 +72,7 @@ export async function createOrUpdateKnowledgeBase(params: {
   body.append('name', params.name)
   body.append('description', params.description)
 
-  const res = await fetch(`${USER_SERVICE_BASE}/user/knowledgebase`, {
+  const res = await userServiceFetch('/user/knowledgebase', {
     method: 'POST',
     body,
   })
@@ -74,7 +86,7 @@ export async function deleteKnowledgeBase(userId: string, kbId: string): Promise
   body.append('user_id', userId)
   body.append('knowledgebase_id', kbId)
 
-  const res = await fetch(`${USER_SERVICE_BASE}/user/knowledgebase`, {
+  const res = await userServiceFetch('/user/knowledgebase', {
     method: 'POST',
     body,
   })
@@ -84,7 +96,9 @@ export async function deleteKnowledgeBase(userId: string, kbId: string): Promise
 
 // ---------------- 文件与文档 ---------------- //
 export async function getSupportedFileTypes(): Promise<string[]> {
-  const res = await fetch(`${FILE_SERVICE_BASE}/get_supported_file_types`)
+  const res = await fileServiceFetch('/get_supported_file_types', {
+    method: 'GET',
+  })
   const json = await res.json()
   return json.data.supported_file_types as string[]
 }
@@ -94,7 +108,7 @@ export async function uploadFileToMinio(userId: string, file: File): Promise<{ p
   formData.append('user_id', userId)
   formData.append('upload_file', file)
 
-  const res = await fetch(`${FILE_SERVICE_BASE}/upload_minio`, {
+  const res = await fileServiceFetch('/upload_minio', {
     method: 'POST',
     body: formData,
   })
@@ -115,7 +129,7 @@ export async function processFileToKnowledgeBase(params: {
   formData.append('knowledge_base_id', params.kbId)
   formData.append('mode', params.mode ?? 'simple')
 
-  const res = await fetch(`${FILE_SERVICE_BASE}/process`, {
+  const res = await fileServiceFetch('/process', {
     method: 'POST',
     body: formData,
   })
@@ -129,7 +143,7 @@ export async function deleteFileFromKnowledgeBase(params: { userId: string; file
   formData.append('file_id', params.fileId)
   formData.append('knowledge_base_id', params.kbId)
 
-  const res = await fetch(`${FILE_SERVICE_BASE}/delete_file`, {
+  const res = await fileServiceFetch('/delete_file', {
     method: 'POST',
     body: formData,
   })
@@ -144,7 +158,7 @@ export async function produceKnowledgeGraph(userId: string, kbId: string): Promi
   formData.append('knowledge_base_id', kbId)
   formData.append('level', 'document')
 
-  const res = await fetch(`${FILE_SERVICE_BASE}/graph/knowledge_base`, {
+  const res = await fileServiceFetch('/graph/knowledge_base', {
     method: 'POST',
     body: formData,
   })
@@ -158,7 +172,7 @@ export async function fetchKnowledgeGraph(userId: string, kbId: string): Promise
   formData.append('knowledge_base_id', kbId)
   formData.append('level', 'document')
 
-  const res = await fetch(`${FILE_SERVICE_BASE}/graph/knowledge_base`, {
+  const res = await fileServiceFetch('/graph/knowledge_base', {
     method: 'POST',
     body: formData,
   })

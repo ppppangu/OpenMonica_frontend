@@ -1,6 +1,6 @@
-user_manage_url: "http://120.46.208.202:8006"
-file_manage_url: "http://120.46.208.202:8087"
-model_chat_url: "http://120.46.208.202:8030"
+user_manage_url: "http://127.0.0.1:8006"
+file_manage_url: "http://127.0.0.1:8087"
+model_chat_url: "http://127.0.0.1:8030"
 # model_chat_url: "http://127.0.0.1:12356"
 
 # 知识图谱可视化配置

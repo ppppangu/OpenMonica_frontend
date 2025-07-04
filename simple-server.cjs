@@ -9,6 +9,9 @@ const axios = require('axios');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// ==================== 新增: 统一上传大小限制 ====================
+const MAX_UPLOAD_SIZE = (process.env.MAX_UPLOAD_SIZE_MB || 300) * 1024 * 1024; // Bytes
+
 // 读取配置文件
 let config = {};
 try {
@@ -24,16 +27,16 @@ try {
 }
 
 // 中间件设置
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: MAX_UPLOAD_SIZE + 'b' }));
+app.use(express.urlencoded({ extended: true, limit: MAX_UPLOAD_SIZE + 'b' }));
 
 // 配置multer用于文件上传
 const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
     limits: {
-        fileSize: 50 * 1024 * 1024, // 50MB
-        fieldSize: 50 * 1024 * 1024  // 50MB
+        fileSize: MAX_UPLOAD_SIZE,
+        fieldSize: MAX_UPLOAD_SIZE
     }
 });
 

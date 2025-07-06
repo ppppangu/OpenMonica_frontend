@@ -287,11 +287,8 @@ const ChatPage: React.FC = () => {
           userStoppedRef.current = false // 重置标志位，供下次使用
           return // 直接跳出 catch，进入 finally
         } else {
-          console.warn('Fetch aborted due to idle timeout, retrying once')
-          if (retryCount < 3) {
-            setTimeout(() => handleSendMessage(content, true), 500)
-            return
-          }
+          // 连接因空闲超时被中断，提示用户手动重试
+          console.warn('Fetch aborted due to idle timeout')
         }
       }
 
@@ -300,19 +297,7 @@ const ChatPage: React.FC = () => {
 
       setRetryCount(prev => prev + 1)
 
-      // Auto retry up to 2 times for network errors
-      if (retryCount < 2 && (
-        errorMessage.includes('网络') ||
-        errorMessage.includes('连接') ||
-        errorMessage.includes('timeout') ||
-        errorMessage.includes('Failed to fetch')
-      )) {
-        console.log(`Retrying message send (attempt ${retryCount + 1})...`)
-        setTimeout(() => {
-          handleSendMessage(content, true)
-        }, 1000 * (retryCount + 1)) // Exponential backoff
-        return
-      }
+      // 取消自动重试，改为提示用户手动点击“重试发送”按钮，避免出现重复回复
 
       setError(errorMessage)
       message.error(errorMessage)

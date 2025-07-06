@@ -15,7 +15,17 @@ export function KBDetail() {
 
   if (!currentKB) return null
 
+  const SHOW_OCR_OPTION = false // 控制是否显示 OCR 上传模式选择，未来可通过修改该常量重新启用
+  const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'] // 不支持的图片扩展名列表
+
   const handleUpload = async (file: RcFile) => {
+    // 1. 过滤图片格式文件
+    const ext = file.name.split('.').pop()?.toLowerCase() || ''
+    if (imageExtensions.includes(ext)) {
+      message.warning('不支持图片格式文件上传，请选择其他类型的文档')
+      return false // 阻止上传
+    }
+
     setUploading(true)
     try {
       if (mode === 'normal') {
@@ -66,15 +76,17 @@ export function KBDetail() {
       <KBDetailHeader />
 
       {/* 上传模式选择 */}
-      <div className="flex items-center gap-3 my-2">
-        <span>上传模式:</span>
-        <Radio.Group value={mode} onChange={e => setMode(e.target.value)}>
-          <Radio.Button value="simple">简单</Radio.Button>
-          <Radio.Button value="normal">OCR</Radio.Button>
-        </Radio.Group>
-      </div>
+      {SHOW_OCR_OPTION && (
+        <div className="flex items-center gap-3 my-2">
+          <span>上传模式:</span>
+          <Radio.Group value={mode} onChange={e => setMode(e.target.value)}>
+            <Radio.Button value="simple">简单</Radio.Button>
+            <Radio.Button value="normal">OCR</Radio.Button>
+          </Radio.Group>
+        </div>
+      )}
 
-      <Upload beforeUpload={handleUpload} showUploadList={false} disabled={uploading}>
+      <Upload beforeUpload={handleUpload} showUploadList={false} disabled={uploading} accept=".pdf,.doc,.docx,.txt,.md,.ppt,.pptx,.xls,.xlsx,.csv">
         <Button type="primary" icon={<UploadOutlined />} loading={uploading} className="my-1">上传文档</Button>
       </Upload>
 

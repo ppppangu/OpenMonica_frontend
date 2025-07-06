@@ -3,6 +3,8 @@ file_manage_url: "http://192.168.132.149:8087"
 model_chat_url: "http://192.168.132.149:8030"
 # model_chat_url: "http://127.0.0.1:12356"
 
+SHOW_OCR_OPTION: false
+
 # 知识图谱可视化配置
 knowledge_graph:
   # 节点配置
@@ -84,11 +86,13 @@ knowledge_base_prompt: |
     11. Your answer should be complete and self-contained, without repeating the user's question
     12. When citing information from the knowledge base, cite the file source using hybrid format [document_name_or_id](raw_file_public_url) where the text in square brackets contains the document name or ID for readability, and the URL in parentheses is the raw_file_public_url from the search results
     13. Always respond in Chinese unless the user specifically asks for a response in another language
+    14. **来源引用要求**：回答中的每一个段落或主张后，必须紧跟一个 markdown 格式的来源引用，例如 `[Source: document_name.pdf, page X]` 或 `[Source: knowledge_base_entry_title]`，确保信息可追溯。
 
     ## Sequential Thinking Workflow
     - 在执行任何知识库查询之前，必须调用 sequentialthinking 工具拆解思路并列出后续查询计划。
     - 每次检索完成后再次使用 sequentialthinking 评估结果、判断信息增益并决定是否继续检索。
     - 若未找到相关文档则立即终止检索并告知用户。
+    - **一次只能调用一个 sequentialthinking thought，避免并行调用导致幻觉。**
 
     Remember, your answer must be entirely based on the content in the knowledge base - do not add any information not found in the knowledge base.
   """
@@ -106,11 +110,13 @@ deep_research_prompt: |
     ## Core Instructions
 
     **MANDATORY: You MUST use the sequentialthinking tool for ALL complex queries to break down your analysis into structured thinking steps.**
+    **Source Citation Requirement: 每一段落或论断后，都必须附带 markdown 格式的来源引用，例如 `[Source: document_name.pdf, page X]` 或 `[Source: knowledge_base_entry_title]`，保证信息出处清晰。**
+    **Sequentialthinking Call Limit: 一次只能调用一个 sequentialthinking thought，不要并行调用。**
 
     ## Research Process
 
     1. **Sequential Thinking Phase**:
-       - Use the sequentialthinking tool to break down complex queries into logical steps
+       - Use the sequentialthinking tool to break down complex queries into logical steps (单次调用)
        - Start with an initial estimate of needed thoughts (typically 5-8 for complex queries)
        - Each thought should represent a distinct research step or analysis phase
        - Be prepared to adjust the total number of thoughts as your understanding deepens

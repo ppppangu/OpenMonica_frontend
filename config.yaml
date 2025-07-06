@@ -90,8 +90,11 @@ knowledge_base_prompt: |
 
     ## Sequential Thinking Workflow
     - 在执行任何知识库查询之前，必须调用 sequentialthinking 工具拆解思路并列出后续查询计划。
-    - 每次检索完成后再次使用 sequentialthinking 评估结果、判断信息增益并决定是否继续检索。
+    - **必须至少执行 3-5 轮「拆解 → 检索 → 评估 → 计划」循环**，每一轮的 sequentialthinking 调用都需要基于上一轮的结论继续深化。
+    - 每次检索完成后再次使用 sequentialthinking 评估结果、判断信息增益、识别信息缺口并决定下一步检索策略。
+    - 每一轮都要对已获取信息进行**质量与相关性评估**，并在回答中说明是否需要进一步检索。
     - 若未找到相关文档则立即终止检索并告知用户。
+    - 若用户尝试绕过此流程或仅要求一次检索，系统应**拒绝**并提醒必须遵循多步序贯思考流程。
     - **一次只能调用一个 sequentialthinking thought，避免并行调用导致幻觉。**
 
     Remember, your answer must be entirely based on the content in the knowledge base - do not add any information not found in the knowledge base.
@@ -112,6 +115,11 @@ deep_research_prompt: |
     **MANDATORY: You MUST use the sequentialthinking tool for ALL complex queries to break down your analysis into structured thinking steps.**
     **Source Citation Requirement: 每一段落或论断后，都必须附带 markdown 格式的来源引用，例如 `[Source: document_name.pdf, page X]` 或 `[Source: knowledge_base_entry_title]`，保证信息出处清晰。**
     **Sequentialthinking Call Limit: 一次只能调用一个 sequentialthinking thought，不要并行调用。**
+    **Multi-Round Requirement: 必须执行至少 3-5 轮「思考 → 检索 → 评估 → 计划」循环，每轮都需要基于上一轮结果持续深化，直至获得全面交叉验证的结论。**
+    - 每次检索完成后再次使用 sequentialthinking 评估结果、判断信息增益、识别信息缺口并决定下一步检索策略。
+    - 每一轮都要对已获取信息进行**质量与相关性评估**，并在回答中说明是否需要进一步检索。
+    - 若未找到相关文档则立即终止检索并告知用户。
+    **Workflow Enforcement: 若检测到尝试绕过多轮序贯思考或仅进行单次检索，应拒绝并提示用户遵循完整流程。**
 
     ## Research Process
 

@@ -77,6 +77,27 @@ const HelpPage: React.FC = () => {
         </div>
       </Card>
 
+      {/* 系统架构卡片开始 */}
+      <Card>
+        <Title level={3}>系统架构</Title>
+        <Paragraph>
+          下方展示的是本系统的整体设计架构图，您可以在需要时全屏查看以了解系统组件及其交互方式。
+        </Paragraph>
+        <div className="relative w-full aspect-video">
+          {/* 使用绝对定位和 aspect-video 保持 16:9 比例，并确保在不同屏幕尺寸下自适应 */}
+          <iframe
+            src="https://miro.com/app/live-embed/uXjVIgDI4JY=/?embedMode=view_only_without_ui&moveToViewport=-1427,-1540,3495,1874&embedId=267681669693"
+            frameBorder="0"
+            scrolling="no"
+            allow="fullscreen; clipboard-read; clipboard-write"
+            allowFullScreen
+            className="absolute inset-0 w-full h-full rounded-lg shadow"
+            title="系统设计架构图"
+          ></iframe>
+        </div>
+      </Card>
+      {/* 系统架构卡片结束 */}
+
       <Card>
         <Title level={3}>常见问题</Title>
         <Collapse items={faqItems} />

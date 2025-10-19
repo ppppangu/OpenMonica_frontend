@@ -22,3 +22,6 @@ yarn-error.log
 Thumbs.db
 
 /meidi/
+
+# Claude Code 目录
+.claude/

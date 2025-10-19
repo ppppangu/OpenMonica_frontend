@@ -1,5 +1,0 @@
-- [x] 设计文档创建 (`iframe_loading_timeout_analysis_design.md`)
-- [ ] 前端：根据域名/端口强制走 `/proxy`
-- [ ] 后端：优化 `/proxy`（超时、CSP、文件大小）
-- [ ] 集成测试：Playwright 用例验证 (cpolar 资源)
-- [ ] 文档更新：README & 部署指南 

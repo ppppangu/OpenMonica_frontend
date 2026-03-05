@@ -67,7 +67,21 @@ const pages = ['/', '/login', '/signin', '/signup', '/index', '/settings', '/hel
 pages.forEach(route => {
     app.get(route, (req, res) => {
         const filePath = route === '/' ? '/login.html' : `${route}.html`;
-        res.sendFile(path.join(__dirname, filePath));
+        const pageFile = path.join(__dirname, filePath);
+        const spaEntry = path.join(__dirname, 'dist', 'index.html');
+
+        if (fs.existsSync(pageFile)) {
+            res.sendFile(pageFile);
+            return;
+        }
+
+        // Fallback for SPA builds where legacy html files are absent.
+        if (fs.existsSync(spaEntry)) {
+            res.sendFile(spaEntry);
+            return;
+        }
+
+        res.status(404).json({ error: `Page not found: ${filePath}` });
     });
 });
 
@@ -216,6 +230,9 @@ const serverInstance = app.listen(PORT, () => {
     // 调整 Node.js 服务器超时设置，防止 60s 空闲断开
     serverInstance.keepAliveTimeout = 61_000; // 61s > 常见 60s idle timeout
     serverInstance.headersTimeout = 65_000;
+    // 长流式响应（SSE）场景下，避免被默认 request timeout 终止
+    serverInstance.requestTimeout = 0;
+    serverInstance.timeout = 0;
 });
 
 // 优雅关闭

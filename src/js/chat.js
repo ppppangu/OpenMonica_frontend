@@ -363,9 +363,10 @@ function createChatStreamHandler(config, upload) {
             // 尝试连接后端服务获取流式响应
             try {
                 console.log('正在发送请求到模型聊天服务...');
+                const streamTimeoutMs = Number(process.env.CHAT_STREAM_TIMEOUT_MS || 1_200_000); // 默认20分钟
                 const response = await axios.post(`${config.model_chat_url}/v1/chat/completions`, formData, {
                     headers: formData.getHeaders(),
-                    timeout: 30000,
+                    timeout: streamTimeoutMs,
                     responseType: 'stream'
                 });
                 console.log('模型聊天服务响应状态:', response.status);

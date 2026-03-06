@@ -45,12 +45,11 @@ export async function uploadFileToStorage(file: File, userId: string): Promise<F
     method: 'POST',
     body: formData
   })
-
+  const result = await response.json().catch(() => ({} as any))
   if (!response.ok) {
-    throw new Error(`Upload failed: ${response.status} ${response.statusText}`)
+    throw new Error(result?.detail || result?.message || `Upload failed: ${response.status} ${response.statusText}`)
   }
-
-  return await response.json()
+  return result
 }
 
 /**
@@ -68,12 +67,11 @@ export async function processFileToKnowledgeBase(
     knowledge_base_id: knowledgeBaseId,
     mode
   })
-
+  const result = await response.json().catch(() => ({} as any))
   if (!response.ok) {
-    throw new Error(`Process failed: ${response.status} ${response.statusText}`)
+    throw new Error(result?.detail || result?.message || `Process failed: ${response.status} ${response.statusText}`)
   }
-
-  return await response.json()
+  return result
 }
 
 /**

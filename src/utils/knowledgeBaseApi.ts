@@ -112,8 +112,11 @@ export async function uploadFileToMinio(userId: string, file: File): Promise<{ p
     method: 'POST',
     body: formData,
   })
-  const json = await res.json()
-  if (json.status !== 'success') throw new Error(json.message || 'upload failed')
+  const json = await res.json().catch(() => ({} as any))
+  if (!res.ok) {
+    throw new Error(json?.detail || json?.message || `upload failed (${res.status})`)
+  }
+  if (json.status !== 'success') throw new Error(json.message || json.detail || 'upload failed')
   return json.data
 }
 
@@ -133,8 +136,13 @@ export async function processFileToKnowledgeBase(params: {
     method: 'POST',
     body: formData,
   })
-  const json = await res.json()
-  if (json.status !== 'ok' && json.status !== 'success') throw new Error(json.message || 'process failed')
+  const json = await res.json().catch(() => ({} as any))
+  if (!res.ok) {
+    throw new Error(json?.detail || json?.message || `process failed (${res.status})`)
+  }
+  if (json.status !== 'ok' && json.status !== 'success') {
+    throw new Error(json.message || json.detail || 'process failed')
+  }
 }
 
 export async function deleteFileFromKnowledgeBase(params: { userId: string; fileId: string; kbId: string }): Promise<void> {
